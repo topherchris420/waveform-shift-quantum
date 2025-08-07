@@ -52,15 +52,12 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
+				quantum: {
+					field: 'hsl(var(--quantum-field))',
+					glow: 'hsl(var(--quantum-glow))',
+					wave: 'hsl(var(--quantum-wave))',
+					entangle: 'hsl(var(--quantum-entangle))',
+					collapse: 'hsl(var(--quantum-collapse))'
 				}
 			},
 			borderRadius: {
@@ -88,7 +85,12 @@ export default {
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'quantum-pulse': 'quantum-pulse 2s ease-in-out infinite',
+				'wave-oscillate': 'wave-oscillate 1.5s ease-in-out infinite',
+				'teleport-collapse': 'teleport-collapse 0.8s ease-in-out',
+				'teleport-emerge': 'teleport-emerge 0.8s ease-in-out',
+				'entanglement-link': 'entanglement-link 3s linear infinite'
 			}
 		}
 	},
