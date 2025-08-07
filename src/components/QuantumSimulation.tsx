@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { Zap, Radio, Waves, Target, RotateCcw } from 'lucide-react';
+import { Zap, Radio, Waves, Target, RotateCcw, Eye, EyeOff, Atom, CheckCircle } from 'lucide-react';
 
 interface QuantumObject {
   id: string;
@@ -57,6 +57,9 @@ export const QuantumSimulation: React.FC = () => {
   const [resonanceNodes, setResonanceNodes] = useState<ResonanceNode[]>([]);
   const [fieldIntensity, setFieldIntensity] = useState([0.5]);
   const [time, setTime] = useState(0);
+  const [showInterference, setShowInterference] = useState(true);
+  const [particleCount, setParticleCount] = useState([20]);
+  const [teleportationSuccess, setTeleportationSuccess] = useState<string | null>(null);
 
   // Generate resonance nodes for the quantum field
   useEffect(() => {
@@ -85,7 +88,23 @@ export const QuantumSimulation: React.FC = () => {
       ctx.fillStyle = gradient;
       ctx.fillRect(node.x - 30, node.y - 30, 60, 60);
     });
-  }, [resonanceNodes, fieldIntensity, time]);
+
+    // Draw quantum particles if enabled
+    if (showInterference) {
+      for (let i = 0; i < particleCount[0]; i++) {
+        const x = (Math.sin(time * 0.03 + i) * 200 + 400) + Math.cos(time * 0.02 + i * 2) * 150;
+        const y = (Math.cos(time * 0.04 + i) * 150 + 300) + Math.sin(time * 0.03 + i * 3) * 100;
+        const size = 2 + Math.sin(time * 0.1 + i) * 1;
+        
+        const particleGradient = ctx.createRadialGradient(x, y, 0, x, y, size * 2);
+        particleGradient.addColorStop(0, 'hsla(280, 80%, 70%, 0.8)');
+        particleGradient.addColorStop(1, 'transparent');
+        
+        ctx.fillStyle = particleGradient;
+        ctx.fillRect(x - size, y - size, size * 2, size * 2);
+      }
+    }
+  }, [resonanceNodes, fieldIntensity, time, showInterference, particleCount]);
 
   const drawWaveform = useCallback((ctx: CanvasRenderingContext2D, obj: QuantumObject) => {
     const { x, y, frequency, phase, amplitude } = obj;
@@ -244,7 +263,34 @@ export const QuantumSimulation: React.FC = () => {
         newObjects[1].isTeleporting = false;
         return newObjects;
       });
+      
+      // Show success notification
+      setTeleportationSuccess('Quantum teleportation successful!');
+      setTimeout(() => setTeleportationSuccess(null), 3000);
     }, 800);
+  };
+
+  const addQuantumObject = () => {
+    const newObj: QuantumObject = {
+      id: `obj${objects.length + 1}`,
+      x: Math.random() * 600 + 100,
+      y: Math.random() * 400 + 100,
+      frequency: 1.5 + Math.random() * 3,
+      phase: Math.random() * Math.PI * 2,
+      amplitude: 40 + Math.random() * 20,
+      isEntangled: false,
+      isTeleporting: false
+    };
+    setObjects(prev => [...prev, newObj]);
+  };
+
+  const toggleEntanglement = (objId: string) => {
+    setObjects(prev => prev.map(obj => {
+      if (obj.id === objId) {
+        return { ...obj, isEntangled: !obj.isEntangled };
+      }
+      return obj;
+    }));
   };
 
   const updateFrequency = (value: number[]) => {
@@ -263,10 +309,16 @@ export const QuantumSimulation: React.FC = () => {
       <Card className="w-80 m-4 p-6 quantum-border">
         <div className="space-y-6">
           <div>
-            <h2 className="text-xl font-bold quantum-text mb-2">Quantum Teleportation</h2>
+            <h2 className="text-xl font-bold quantum-text mb-2">Vers3Dynamics Teleportation</h2>
             <p className="text-sm text-muted-foreground">
-              Visualizing quantum objects as standing waveforms with embedded location variables
+              Advanced quantum simulation with interactive waveform visualization and particle interference
             </p>
+            {teleportationSuccess && (
+              <div className="mt-2 p-2 bg-green-500/10 border border-green-500/30 rounded-lg flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-400" />
+                <span className="text-xs text-green-400">{teleportationSuccess}</span>
+              </div>
+            )}
           </div>
           
           <div className="space-y-4">
@@ -288,6 +340,24 @@ export const QuantumSimulation: React.FC = () => {
               </span>
             </div>
             
+            <div>
+              <label className="text-sm font-medium flex items-center gap-2 mb-2">
+                <Atom className="w-4 h-4" />
+                Particle Count
+              </label>
+              <Slider
+                value={particleCount}
+                onValueChange={setParticleCount}
+                max={50}
+                min={5}
+                step={5}
+                className="w-full"
+              />
+              <span className="text-xs text-muted-foreground">
+                {particleCount[0]} particles
+              </span>
+            </div>
+
             {selectedObj && (
               <div>
                 <label className="text-sm font-medium flex items-center gap-2 mb-2">
@@ -319,13 +389,33 @@ export const QuantumSimulation: React.FC = () => {
               Initiate Teleportation
             </Button>
             
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                onClick={() => setIsRunning(!isRunning)}
+                variant="secondary"
+                size="sm"
+              >
+                {isRunning ? <Zap className="w-4 h-4 mr-1" /> : <RotateCcw className="w-4 h-4 mr-1" />}
+                {isRunning ? 'Pause' : 'Resume'}
+              </Button>
+              
+              <Button 
+                onClick={() => setShowInterference(!showInterference)}
+                variant="outline"
+                size="sm"
+              >
+                {showInterference ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
+                Particles
+              </Button>
+            </div>
+
             <Button 
-              onClick={() => setIsRunning(!isRunning)}
-              variant="secondary"
+              onClick={addQuantumObject}
+              variant="outline"
               className="w-full"
             >
-              {isRunning ? <Zap className="w-4 h-4 mr-2" /> : <RotateCcw className="w-4 h-4 mr-2" />}
-              {isRunning ? 'Pause' : 'Resume'} Simulation
+              <Atom className="w-4 h-4 mr-2" />
+              Add Quantum Object
             </Button>
           </div>
           
@@ -345,6 +435,15 @@ export const QuantumSimulation: React.FC = () => {
                     <div className="flex gap-1">
                       {obj.isEntangled && <Badge variant="secondary">Entangled</Badge>}
                       {obj.isTeleporting && <Badge variant="destructive">Teleporting</Badge>}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleEntanglement(obj.id);
+                        }}
+                        className="text-xs px-2 py-1 rounded border hover:bg-primary/10 transition-colors"
+                      >
+                        {obj.isEntangled ? 'Unlink' : 'Entangle'}
+                      </button>
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
