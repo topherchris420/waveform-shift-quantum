@@ -3,7 +3,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { Zap, Radio, Waves, Target, RotateCcw, Eye, EyeOff, Atom, CheckCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Zap, Radio, Waves, Target, RotateCcw, Eye, EyeOff, Atom, CheckCircle, Beaker, Volume2, VolumeX, Settings, Play, Pause, BarChart } from 'lucide-react';
 
 interface QuantumObject {
   id: string;
@@ -22,6 +23,14 @@ interface ResonanceNode {
   y: number;
   intensity: number;
   phase: number;
+}
+
+type ExperimentMode = 'teleportation' | 'interference' | 'tunneling' | 'superposition';
+
+interface Measurement {
+  timestamp: number;
+  value: number;
+  type: string;
 }
 
 export const QuantumSimulation: React.FC = () => {
@@ -60,6 +69,13 @@ export const QuantumSimulation: React.FC = () => {
   const [showInterference, setShowInterference] = useState(true);
   const [particleCount, setParticleCount] = useState([20]);
   const [teleportationSuccess, setTeleportationSuccess] = useState<string | null>(null);
+  const [experimentMode, setExperimentMode] = useState<ExperimentMode>('teleportation');
+  const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [barrierHeight, setBarrierHeight] = useState([50]);
+  const [waveSpeed, setWaveSpeed] = useState([1]);
+  const [measurementMode, setMeasurementMode] = useState(false);
+  const [interactionProbability, setInteractionProbability] = useState(0);
 
   // Generate resonance nodes for the quantum field
   useEffect(() => {
@@ -105,6 +121,86 @@ export const QuantumSimulation: React.FC = () => {
       }
     }
   }, [resonanceNodes, fieldIntensity, time, showInterference, particleCount]);
+
+  const drawInterferencePattern = useCallback((ctx: CanvasRenderingContext2D) => {
+    if (experimentMode !== 'interference') return;
+    
+    // Double-slit interference pattern
+    const slitY1 = 200;
+    const slitY2 = 400;
+    const slitWidth = 20;
+    const barrierX = 300;
+    
+    // Draw barrier
+    ctx.fillStyle = 'hsl(var(--muted))';
+    ctx.fillRect(barrierX - 5, 0, 10, slitY1 - slitWidth);
+    ctx.fillRect(barrierX - 5, slitY1 + slitWidth, 10, slitY2 - slitY1 - 2 * slitWidth);
+    ctx.fillRect(barrierX - 5, slitY2 + slitWidth, 10, 600 - slitY2 - slitWidth);
+    
+    // Draw interference pattern on screen
+    const screenX = 600;
+    for (let y = 0; y < 600; y += 2) {
+      const d1 = Math.sqrt((screenX - barrierX) ** 2 + (y - slitY1) ** 2);
+      const d2 = Math.sqrt((screenX - barrierX) ** 2 + (y - slitY2) ** 2);
+      const phase = (d1 - d2) * 0.02 * fieldIntensity[0];
+      const intensity = Math.cos(phase + time * 0.1) ** 2;
+      
+      ctx.fillStyle = `hsla(195, 100%, 65%, ${intensity * 0.3})`;
+      ctx.fillRect(screenX, y, 20, 2);
+    }
+  }, [experimentMode, fieldIntensity, time]);
+
+  const drawTunnelingBarrier = useCallback((ctx: CanvasRenderingContext2D) => {
+    if (experimentMode !== 'tunneling') return;
+    
+    const barrierX = 350;
+    const barrierWidth = 100;
+    const height = barrierHeight[0] * 4;
+    
+    // Draw potential barrier
+    const gradient = ctx.createLinearGradient(barrierX, 300 - height/2, barrierX + barrierWidth, 300 + height/2);
+    gradient.addColorStop(0, 'hsla(0, 75%, 60%, 0.3)');
+    gradient.addColorStop(0.5, 'hsla(0, 75%, 60%, 0.6)');
+    gradient.addColorStop(1, 'hsla(0, 75%, 60%, 0.3)');
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(barrierX, 300 - height/2, barrierWidth, height);
+    
+    // Draw tunneling probability
+    const tunnelingProb = Math.exp(-barrierHeight[0] * 0.1);
+    ctx.fillStyle = `hsla(120, 70%, 50%, ${tunnelingProb})`;
+    ctx.fillRect(barrierX + barrierWidth + 10, 280, 20, 40);
+  }, [experimentMode, barrierHeight]);
+
+  const drawSuperpositionStates = useCallback((ctx: CanvasRenderingContext2D) => {
+    if (experimentMode !== 'superposition') return;
+    
+    const centerX = 400;
+    const centerY = 300;
+    
+    // Draw multiple superposition states
+    for (let i = 0; i < 3; i++) {
+      const angle = (i * 2 * Math.PI / 3) + time * 0.05;
+      const x = centerX + Math.cos(angle) * 100;
+      const y = centerY + Math.sin(angle) * 100;
+      const alpha = 0.3 + 0.2 * Math.sin(time * 0.1 + i);
+      
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, 50);
+      gradient.addColorStop(0, `hsla(${120 + i * 120}, 80%, 70%, ${alpha})`);
+      gradient.addColorStop(1, 'transparent');
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x - 50, y - 50, 100, 100);
+    }
+    
+    // Central coherent state
+    const coherenceGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 30);
+    coherenceGradient.addColorStop(0, 'hsla(60, 100%, 80%, 0.8)');
+    coherenceGradient.addColorStop(1, 'transparent');
+    
+    ctx.fillStyle = coherenceGradient;
+    ctx.fillRect(centerX - 30, centerY - 30, 60, 60);
+  }, [experimentMode, time]);
 
   const drawWaveform = useCallback((ctx: CanvasRenderingContext2D, obj: QuantumObject) => {
     const { x, y, frequency, phase, amplitude } = obj;
@@ -197,6 +293,11 @@ export const QuantumSimulation: React.FC = () => {
     // Draw quantum field
     drawQuantumField(ctx);
     
+    // Draw experiment-specific elements
+    drawInterferencePattern(ctx);
+    drawTunnelingBarrier(ctx);
+    drawSuperpositionStates(ctx);
+    
     // Draw entanglement links
     for (let i = 0; i < objects.length; i++) {
       for (let j = i + 1; j < objects.length; j++) {
@@ -211,15 +312,28 @@ export const QuantumSimulation: React.FC = () => {
       drawWaveform(ctx, obj);
     });
     
-  }, [drawQuantumField, drawWaveform, drawEntanglementLink, objects]);
+    // Update measurements
+    if (measurementMode && time % 10 < 0.02) {
+      const newMeasurement: Measurement = {
+        timestamp: time,
+        value: Math.random() * fieldIntensity[0],
+        type: experimentMode
+      };
+      setMeasurements(prev => [...prev.slice(-19), newMeasurement]);
+    }
+    
+    // Calculate interaction probability
+    const prob = Math.sin(time * 0.1) * 0.5 + 0.5;
+    setInteractionProbability(prob);
+  }, [drawQuantumField, drawWaveform, drawEntanglementLink, drawInterferencePattern, drawTunnelingBarrier, drawSuperpositionStates, objects, experimentMode, measurementMode, time, fieldIntensity]);
 
   const animate = useCallback(() => {
     if (!isRunning) return;
     
-    setTime(prev => prev + 0.02);
+    setTime(prev => prev + 0.02 * waveSpeed[0]);
     render();
     animationRef.current = requestAnimationFrame(animate);
-  }, [isRunning, render]);
+  }, [isRunning, render, waveSpeed]);
 
   useEffect(() => {
     if (isRunning) {
@@ -301,25 +415,127 @@ export const QuantumSimulation: React.FC = () => {
     }
   };
 
+  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = (event.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+    
+    if (experimentMode === 'teleportation') {
+      // Add quantum object at click position
+      const newObj: QuantumObject = {
+        id: `obj${Date.now()}`,
+        x, y,
+        frequency: 1.5 + Math.random() * 3,
+        phase: Math.random() * Math.PI * 2,
+        amplitude: 40 + Math.random() * 20,
+        isEntangled: false,
+        isTeleporting: false
+      };
+      setObjects(prev => [...prev, newObj]);
+    }
+  };
+
+  const runExperiment = () => {
+    switch (experimentMode) {
+      case 'teleportation':
+        handleTeleport();
+        break;
+      case 'interference':
+        setShowInterference(true);
+        setTeleportationSuccess('Double-slit interference activated!');
+        setTimeout(() => setTeleportationSuccess(null), 3000);
+        break;
+      case 'tunneling':
+        setTeleportationSuccess(`Tunneling probability: ${(Math.exp(-barrierHeight[0] * 0.1) * 100).toFixed(1)}%`);
+        setTimeout(() => setTeleportationSuccess(null), 3000);
+        break;
+      case 'superposition':
+        setTeleportationSuccess('Quantum superposition states visualized!');
+        setTimeout(() => setTeleportationSuccess(null), 3000);
+        break;
+    }
+  };
+
+  const resetExperiment = () => {
+    setObjects([
+      {
+        id: 'obj1',
+        x: 150, y: 200,
+        frequency: 2.0, phase: 0, amplitude: 50,
+        isEntangled: true, entangledWith: 'obj2', isTeleporting: false
+      },
+      {
+        id: 'obj2',
+        x: 550, y: 300,
+        frequency: 2.0, phase: Math.PI, amplitude: 50,
+        isEntangled: true, entangledWith: 'obj1', isTeleporting: false
+      }
+    ]);
+    setMeasurements([]);
+    setTime(0);
+  };
+
   const selectedObj = objects.find(obj => obj.id === selectedObject);
 
   return (
     <div className="w-full h-screen bg-background flex">
       {/* Control Panel */}
-      <Card className="w-80 m-4 p-6 quantum-border">
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-bold quantum-text mb-2">Vers3Dynamics Teleportation</h2>
-            <p className="text-sm text-muted-foreground">
-              Advanced quantum simulation with interactive waveform visualization and particle interference
-            </p>
-            {teleportationSuccess && (
-              <div className="mt-2 p-2 bg-green-500/10 border border-green-500/30 rounded-lg flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-400" />
-                <span className="text-xs text-green-400">{teleportationSuccess}</span>
-              </div>
-            )}
-          </div>
+      <Card className="w-96 m-4 p-6 quantum-border">
+        <Tabs value={experimentMode} onValueChange={(value) => setExperimentMode(value as ExperimentMode)}>
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="teleportation">Teleport</TabsTrigger>
+            <TabsTrigger value="interference">Interference</TabsTrigger>
+          </TabsList>
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="tunneling">Tunneling</TabsTrigger>
+            <TabsTrigger value="superposition">Superposition</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="teleportation" className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold quantum-text mb-2">Quantum Teleportation</h2>
+              <p className="text-sm text-muted-foreground">
+                Teleport quantum states between entangled objects. Click canvas to add objects.
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="interference" className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold quantum-text mb-2">Wave Interference</h2>
+              <p className="text-sm text-muted-foreground">
+                Observe double-slit interference patterns and wave superposition.
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="tunneling" className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold quantum-text mb-2">Quantum Tunneling</h2>
+              <p className="text-sm text-muted-foreground">
+                Demonstrate particles tunneling through energy barriers.
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="superposition" className="space-y-6">
+            <div>
+              <h2 className="text-xl font-bold quantum-text mb-2">Superposition States</h2>
+              <p className="text-sm text-muted-foreground">
+                Visualize quantum objects existing in multiple states simultaneously.
+              </p>
+            </div>
+          </TabsContent>
+
+          {teleportationSuccess && (
+            <div className="mt-2 p-2 bg-green-500/10 border border-green-500/30 rounded-lg flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-400" />
+              <span className="text-xs text-green-400">{teleportationSuccess}</span>
+            </div>
+          )}
           
           <div className="space-y-4">
             <div>
@@ -330,16 +546,39 @@ export const QuantumSimulation: React.FC = () => {
               <Slider
                 value={fieldIntensity}
                 onValueChange={setFieldIntensity}
-                max={1}
-                min={0.1}
-                step={0.1}
+                max={1} min={0.1} step={0.1}
                 className="w-full"
               />
-              <span className="text-xs text-muted-foreground">
-                {fieldIntensity[0].toFixed(1)}
-              </span>
             </div>
             
+            <div>
+              <label className="text-sm font-medium flex items-center gap-2 mb-2">
+                <Zap className="w-4 h-4" />
+                Wave Speed
+              </label>
+              <Slider
+                value={waveSpeed}
+                onValueChange={setWaveSpeed}
+                max={3} min={0.1} step={0.1}
+                className="w-full"
+              />
+            </div>
+
+            {experimentMode === 'tunneling' && (
+              <div>
+                <label className="text-sm font-medium flex items-center gap-2 mb-2">
+                  <Target className="w-4 h-4" />
+                  Barrier Height
+                </label>
+                <Slider
+                  value={barrierHeight}
+                  onValueChange={setBarrierHeight}
+                  max={100} min={10} step={5}
+                  className="w-full"
+                />
+              </div>
+            )}
+
             <div>
               <label className="text-sm font-medium flex items-center gap-2 mb-2">
                 <Atom className="w-4 h-4" />
@@ -348,14 +587,9 @@ export const QuantumSimulation: React.FC = () => {
               <Slider
                 value={particleCount}
                 onValueChange={setParticleCount}
-                max={50}
-                min={5}
-                step={5}
+                max={50} min={5} step={5}
                 className="w-full"
               />
-              <span className="text-xs text-muted-foreground">
-                {particleCount[0]} particles
-              </span>
             </div>
 
             {selectedObj && (
@@ -367,36 +601,30 @@ export const QuantumSimulation: React.FC = () => {
                 <Slider
                   value={[selectedObj.frequency]}
                   onValueChange={updateFrequency}
-                  max={5}
-                  min={0.5}
-                  step={0.1}
+                  max={5} min={0.5} step={0.1}
                   className="w-full"
                 />
-                <span className="text-xs text-muted-foreground">
-                  {selectedObj.frequency.toFixed(1)} Hz
-                </span>
               </div>
             )}
           </div>
           
           <div className="space-y-3">
             <Button 
-              onClick={handleTeleport}
+              onClick={runExperiment}
               className="w-full"
               variant="default"
             >
-              <Target className="w-4 h-4 mr-2" />
-              Initiate Teleportation
+              <Beaker className="w-4 h-4 mr-2" />
+              Run Experiment
             </Button>
             
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <Button 
                 onClick={() => setIsRunning(!isRunning)}
                 variant="secondary"
                 size="sm"
               >
-                {isRunning ? <Zap className="w-4 h-4 mr-1" /> : <RotateCcw className="w-4 h-4 mr-1" />}
-                {isRunning ? 'Pause' : 'Resume'}
+                {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
               </Button>
               
               <Button 
@@ -404,8 +632,35 @@ export const QuantumSimulation: React.FC = () => {
                 variant="outline"
                 size="sm"
               >
-                {showInterference ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
-                Particles
+                {showInterference ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
+
+              <Button 
+                onClick={() => setAudioEnabled(!audioEnabled)}
+                variant="outline"
+                size="sm"
+              >
+                {audioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                onClick={() => setMeasurementMode(!measurementMode)}
+                variant={measurementMode ? "default" : "outline"}
+                size="sm"
+              >
+                <BarChart className="w-4 h-4 mr-1" />
+                Measure
+              </Button>
+
+              <Button 
+                onClick={resetExperiment}
+                variant="outline"
+                size="sm"
+              >
+                <RotateCcw className="w-4 h-4 mr-1" />
+                Reset
               </Button>
             </div>
 
@@ -420,12 +675,15 @@ export const QuantumSimulation: React.FC = () => {
           </div>
           
           <div>
-            <h3 className="text-sm font-medium mb-3">Quantum Objects</h3>
-            <div className="space-y-2">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium">Quantum Objects</h3>
+              <span className="text-xs text-muted-foreground">Click canvas to add</span>
+            </div>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
               {objects.map((obj, index) => (
                 <div 
                   key={obj.id}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-3 rounded-lg border cursor-pointer transition-all hover-scale ${
                     selectedObject === obj.id ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
                   }`}
                   onClick={() => setSelectedObject(obj.id)}
@@ -447,13 +705,33 @@ export const QuantumSimulation: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Frequency: {obj.frequency.toFixed(1)} Hz
+                    Freq: {obj.frequency.toFixed(1)} Hz | Pos: ({Math.round(obj.x)}, {Math.round(obj.y)})
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+
+          {measurementMode && (
+            <div>
+              <h3 className="text-sm font-medium mb-3">Live Measurements</h3>
+              <div className="space-y-2">
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Interaction Probability:</span>
+                  <span className="text-primary ml-2">{(interactionProbability * 100).toFixed(1)}%</span>
+                </div>
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Objects Tracked:</span>
+                  <span className="text-primary ml-2">{objects.length}</span>
+                </div>
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Simulation Time:</span>
+                  <span className="text-primary ml-2">{time.toFixed(2)}s</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </Tabs>
       </Card>
       
       {/* Simulation Canvas */}
@@ -465,10 +743,19 @@ export const QuantumSimulation: React.FC = () => {
             height={600}
             className="w-full h-full object-contain cursor-crosshair"
             style={{ imageRendering: 'pixelated' }}
+            onClick={handleCanvasClick}
           />
           <div className="absolute top-4 left-4 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
-            Quantum Field Visualization - t = {time.toFixed(2)}s
+            {experimentMode.charAt(0).toUpperCase() + experimentMode.slice(1)} Mode - t = {time.toFixed(2)}s
           </div>
+          <div className="absolute top-4 right-4 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
+            Objects: {objects.length} | Field: {fieldIntensity[0].toFixed(1)}
+          </div>
+          {measurementMode && (
+            <div className="absolute bottom-4 left-4 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
+              Live Measurement Mode Active
+            </div>
+          )}
         </Card>
       </div>
     </div>
