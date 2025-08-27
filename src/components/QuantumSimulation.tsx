@@ -76,6 +76,8 @@ export const QuantumSimulation: React.FC = () => {
   const [waveSpeed, setWaveSpeed] = useState([1]);
   const [measurementMode, setMeasurementMode] = useState(false);
   const [interactionProbability, setInteractionProbability] = useState(0);
+  const [controlsOpen, setControlsOpen] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(true);
 
   // Generate resonance nodes for the quantum field
   useEffect(() => {
@@ -378,8 +380,10 @@ export const QuantumSimulation: React.FC = () => {
         return newObjects;
       });
       
-      // Show success notification
+      // Show success notification with sound and haptic
       setTeleportationSuccess('Quantum teleportation successful!');
+      playSound('success');
+      triggerHaptic();
       setTimeout(() => setTeleportationSuccess(null), 3000);
     }, 800);
   };
@@ -446,14 +450,17 @@ export const QuantumSimulation: React.FC = () => {
       case 'interference':
         setShowInterference(true);
         setTeleportationSuccess('Double-slit interference activated!');
+        playSound('success');
         setTimeout(() => setTeleportationSuccess(null), 3000);
         break;
       case 'tunneling':
         setTeleportationSuccess(`Tunneling probability: ${(Math.exp(-barrierHeight[0] * 0.1) * 100).toFixed(1)}%`);
+        playSound('success');
         setTimeout(() => setTeleportationSuccess(null), 3000);
         break;
       case 'superposition':
         setTeleportationSuccess('Quantum superposition states visualized!');
+        playSound('success');
         setTimeout(() => setTeleportationSuccess(null), 3000);
         break;
     }
@@ -480,18 +487,118 @@ export const QuantumSimulation: React.FC = () => {
 
   const selectedObj = objects.find(obj => obj.id === selectedObject);
 
+  // Auto-hide tutorial after 5 seconds
+  useEffect(() => {
+    if (showTutorial) {
+      const timer = setTimeout(() => setShowTutorial(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showTutorial]);
+
+  // Add haptic feedback simulation
+  const triggerHaptic = () => {
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+  };
+
+  // Add sound effect simulation
+  const playSound = (type: 'teleport' | 'success' | 'click') => {
+    if (!audioEnabled) return;
+    
+    // Simulate sound with Web Audio API
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    switch (type) {
+      case 'teleport':
+        oscillator.frequency.value = 220;
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        break;
+      case 'success':
+        oscillator.frequency.value = 440;
+        gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+        break;
+      case 'click':
+        oscillator.frequency.value = 800;
+        gainNode.gain.setValueAtTime(0.02, audioContext.currentTime);
+        break;
+    }
+    
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.2);
+  };
+
   return (
-    <div className="w-full h-screen bg-background flex">
-      {/* Control Panel */}
-      <Card className="w-96 m-4 p-6 quantum-border">
-        <Tabs value={experimentMode} onValueChange={(value) => setExperimentMode(value as ExperimentMode)}>
+    <div className="w-full h-screen bg-background flex flex-col lg:flex-row relative overflow-hidden">
+      {/* Mobile Header */}
+      <div className="lg:hidden flex items-center justify-between p-4 bg-card border-b">
+        <h1 className="text-lg font-bold quantum-text">Vers3Dynamics</h1>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => {
+            setControlsOpen(!controlsOpen);
+            triggerHaptic();
+            playSound('click');
+          }}
+        >
+          <Settings className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Tutorial Overlay */}
+      {showTutorial && (
+        <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <Card className="p-6 max-w-sm mx-auto quantum-border">
+            <div className="text-center space-y-4">
+              <Atom className="w-12 h-12 mx-auto text-primary" />
+              <h2 className="text-xl font-bold">Welcome to Quantum Lab</h2>
+              <p className="text-sm text-muted-foreground">
+                Tap the canvas to create quantum objects. Use controls to experiment with different physics modes.
+              </p>
+              <Button onClick={() => setShowTutorial(false)} className="w-full">
+                Start Exploring
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Control Panel - Mobile Responsive */}
+      <Card className={`
+        ${controlsOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        fixed lg:relative top-0 left-0 h-full w-80 lg:w-96 
+        transition-transform duration-300 ease-in-out z-40
+        lg:m-4 p-4 lg:p-6 quantum-border overflow-y-auto
+        ${controlsOpen ? 'shadow-2xl' : ''}
+      `}>
+        {/* Mobile Close Button */}
+        <Button 
+          className="lg:hidden absolute top-4 right-4" 
+          variant="ghost" 
+          size="sm"
+          onClick={() => setControlsOpen(false)}
+        >
+          ×
+        </Button>
+
+        <Tabs value={experimentMode} onValueChange={(value) => {
+          setExperimentMode(value as ExperimentMode);
+          playSound('click');
+        }}>
           <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="teleportation">Teleport</TabsTrigger>
-            <TabsTrigger value="interference">Interference</TabsTrigger>
+            <TabsTrigger value="teleportation" className="text-xs lg:text-sm">Teleport</TabsTrigger>
+            <TabsTrigger value="interference" className="text-xs lg:text-sm">Interference</TabsTrigger>
           </TabsList>
           <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="tunneling">Tunneling</TabsTrigger>
-            <TabsTrigger value="superposition">Superposition</TabsTrigger>
+            <TabsTrigger value="tunneling" className="text-xs lg:text-sm">Tunneling</TabsTrigger>
+            <TabsTrigger value="superposition" className="text-xs lg:text-sm">Superposition</TabsTrigger>
           </TabsList>
 
           <TabsContent value="teleportation" className="space-y-6">
@@ -610,8 +717,12 @@ export const QuantumSimulation: React.FC = () => {
           
           <div className="space-y-3">
             <Button 
-              onClick={runExperiment}
-              className="w-full"
+              onClick={() => {
+                runExperiment();
+                triggerHaptic();
+                playSound('teleport');
+              }}
+              className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-200"
               variant="default"
             >
               <Beaker className="w-4 h-4 mr-2" />
@@ -620,25 +731,37 @@ export const QuantumSimulation: React.FC = () => {
             
             <div className="grid grid-cols-3 gap-2">
               <Button 
-                onClick={() => setIsRunning(!isRunning)}
+                onClick={() => {
+                  setIsRunning(!isRunning);
+                  playSound('click');
+                }}
                 variant="secondary"
                 size="sm"
+                className="hover:scale-105 transition-transform"
               >
                 {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
               </Button>
               
               <Button 
-                onClick={() => setShowInterference(!showInterference)}
+                onClick={() => {
+                  setShowInterference(!showInterference);
+                  playSound('click');
+                }}
                 variant="outline"
                 size="sm"
+                className="hover:scale-105 transition-transform"
               >
                 {showInterference ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </Button>
 
               <Button 
-                onClick={() => setAudioEnabled(!audioEnabled)}
-                variant="outline"
+                onClick={() => {
+                  setAudioEnabled(!audioEnabled);
+                  playSound('click');
+                }}
+                variant={audioEnabled ? "default" : "outline"}
                 size="sm"
+                className="hover:scale-105 transition-transform"
               >
                 {audioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
               </Button>
@@ -665,9 +788,13 @@ export const QuantumSimulation: React.FC = () => {
             </div>
 
             <Button 
-              onClick={addQuantumObject}
+              onClick={() => {
+                addQuantumObject();
+                triggerHaptic();
+                playSound('success');
+              }}
               variant="outline"
-              className="w-full"
+              className="w-full hover:bg-primary/10 border-primary/30 hover:border-primary transition-all duration-200"
             >
               <Atom className="w-4 h-4 mr-2" />
               Add Quantum Object
@@ -735,29 +862,103 @@ export const QuantumSimulation: React.FC = () => {
       </Card>
       
       {/* Simulation Canvas */}
-      <div className="flex-1 p-4">
-        <Card className="w-full h-full quantum-border relative overflow-hidden">
+      <div className="flex-1 lg:p-4 relative">
+        <Card className="w-full h-full quantum-border relative overflow-hidden rounded-none lg:rounded-lg">
           <canvas
             ref={canvasRef}
             width={800}
             height={600}
-            className="w-full h-full object-contain cursor-crosshair"
+            className="w-full h-full object-contain cursor-crosshair touch-none"
             style={{ imageRendering: 'pixelated' }}
             onClick={handleCanvasClick}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              const touch = e.touches[0];
+              const canvas = canvasRef.current;
+              if (!canvas) return;
+              
+              const rect = canvas.getBoundingClientRect();
+              const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+              const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+              
+              if (experimentMode === 'teleportation') {
+                const newObj: QuantumObject = {
+                  id: `obj${Date.now()}`,
+                  x, y,
+                  frequency: 1.5 + Math.random() * 3,
+                  phase: Math.random() * Math.PI * 2,
+                  amplitude: 40 + Math.random() * 20,
+                  isEntangled: false,
+                  isTeleporting: false
+                };
+                setObjects(prev => [...prev, newObj]);
+                triggerHaptic();
+                playSound('success');
+              }
+            }}
           />
-          <div className="absolute top-4 left-4 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
-            {experimentMode.charAt(0).toUpperCase() + experimentMode.slice(1)} Mode - t = {time.toFixed(2)}s
+          
+          {/* Floating UI Elements */}
+          <div className="absolute top-2 left-2 lg:top-4 lg:left-4">
+            <div className="text-xs text-muted-foreground bg-background/90 backdrop-blur-sm px-2 py-1 rounded-lg border shadow-sm">
+              {experimentMode.charAt(0).toUpperCase() + experimentMode.slice(1)} Mode
+            </div>
+            <div className="text-xs text-muted-foreground bg-background/90 backdrop-blur-sm px-2 py-1 rounded-lg border shadow-sm mt-1">
+              t = {time.toFixed(2)}s
+            </div>
           </div>
-          <div className="absolute top-4 right-4 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
-            Objects: {objects.length} | Field: {fieldIntensity[0].toFixed(1)}
+          
+          <div className="absolute top-2 right-2 lg:top-4 lg:right-4 space-y-1">
+            <div className="text-xs text-muted-foreground bg-background/90 backdrop-blur-sm px-2 py-1 rounded-lg border shadow-sm">
+              Objects: {objects.length}
+            </div>
+            <div className="text-xs text-muted-foreground bg-background/90 backdrop-blur-sm px-2 py-1 rounded-lg border shadow-sm">
+              Field: {fieldIntensity[0].toFixed(1)}
+            </div>
           </div>
+
           {measurementMode && (
-            <div className="absolute bottom-4 left-4 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
-              Live Measurement Mode Active
+            <div className="absolute bottom-2 left-2 lg:bottom-4 lg:left-4">
+              <div className="text-xs text-green-400 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-lg border border-green-500/30 shadow-sm flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                Live Measurement Active
+              </div>
+            </div>
+          )}
+
+          {/* Quick Action Button */}
+          <div className="absolute bottom-4 right-4 lg:hidden">
+            <Button
+              onClick={() => {
+                runExperiment();
+                triggerHaptic();
+                playSound('teleport');
+              }}
+              className="rounded-full w-14 h-14 bg-gradient-to-r from-primary to-primary/80 shadow-xl hover:scale-110 transition-all duration-200"
+            >
+              <Beaker className="w-6 h-6" />
+            </Button>
+          </div>
+
+          {/* Tap Indicator */}
+          {experimentMode === 'teleportation' && objects.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="text-center space-y-2 bg-background/80 backdrop-blur-sm p-4 rounded-lg border animate-pulse">
+                <Target className="w-8 h-8 mx-auto text-primary" />
+                <p className="text-sm text-muted-foreground">Tap to create quantum objects</p>
+              </div>
             </div>
           )}
         </Card>
       </div>
+
+      {/* Mobile Control Overlay */}
+      {controlsOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/20 z-30"
+          onClick={() => setControlsOpen(false)}
+        />
+      )}
     </div>
   );
 };
