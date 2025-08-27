@@ -78,6 +78,9 @@ export const QuantumSimulation: React.FC = () => {
   const [interactionProbability, setInteractionProbability] = useState(0);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [showTutorial, setShowTutorial] = useState(true);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [showHelp, setShowHelp] = useState(false);
+  const [highlightedElement, setHighlightedElement] = useState<string | null>(null);
 
   // Generate resonance nodes for the quantum field
   useEffect(() => {
@@ -487,13 +490,44 @@ export const QuantumSimulation: React.FC = () => {
 
   const selectedObj = objects.find(obj => obj.id === selectedObject);
 
-  // Auto-hide tutorial after 5 seconds
-  useEffect(() => {
-    if (showTutorial) {
-      const timer = setTimeout(() => setShowTutorial(false), 5000);
-      return () => clearTimeout(timer);
+  // Tutorial steps
+  const tutorialSteps = [
+    {
+      title: "Welcome to Quantum Lab!",
+      content: "Explore quantum physics through interactive experiments. Let me show you around!",
+      target: null
+    },
+    {
+      title: "Choose Your Experiment",
+      content: "Start with Teleportation mode. Each tab contains a different quantum physics experiment.",
+      target: "tabs"
+    },
+    {
+      title: "Interactive Canvas", 
+      content: "Tap anywhere on the canvas to create quantum objects. Watch them interact in real-time!",
+      target: "canvas"
+    },
+    {
+      title: "Control the Physics",
+      content: "Use these sliders to adjust field intensity, wave speed, and particle behavior.",
+      target: "controls"
+    },
+    {
+      title: "Run Experiments",
+      content: "Click 'Run Experiment' to see quantum effects like teleportation and interference!",
+      target: "experiment-button"
     }
-  }, [showTutorial]);
+  ];
+
+  const nextTutorialStep = () => {
+    if (tutorialStep < tutorialSteps.length - 1) {
+      setTutorialStep(tutorialStep + 1);
+      setHighlightedElement(tutorialSteps[tutorialStep + 1].target);
+    } else {
+      setShowTutorial(false);
+      setHighlightedElement(null);
+    }
+  };
 
   // Add haptic feedback simulation
   const triggerHaptic = () => {
@@ -552,18 +586,146 @@ export const QuantumSimulation: React.FC = () => {
         </Button>
       </div>
 
-      {/* Tutorial Overlay */}
+      {/* Enhanced Tutorial Overlay */}
       {showTutorial && (
-        <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <Card className="p-6 max-w-sm mx-auto quantum-border">
+        <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <Card className="p-6 max-w-md mx-auto quantum-border relative">
             <div className="text-center space-y-4">
-              <Atom className="w-12 h-12 mx-auto text-primary" />
-              <h2 className="text-xl font-bold">Welcome to Quantum Lab</h2>
-              <p className="text-sm text-muted-foreground">
-                Tap the canvas to create quantum objects. Use controls to experiment with different physics modes.
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Atom className="w-8 h-8 text-primary animate-spin" />
+                <span className="text-xs text-muted-foreground">
+                  Step {tutorialStep + 1} of {tutorialSteps.length}
+                </span>
+              </div>
+              
+              <h2 className="text-xl font-bold">{tutorialSteps[tutorialStep].title}</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {tutorialSteps[tutorialStep].content}
               </p>
-              <Button onClick={() => setShowTutorial(false)} className="w-full">
-                Start Exploring
+              
+              <div className="flex gap-2 pt-2">
+                {tutorialStep > 0 && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setTutorialStep(tutorialStep - 1)}
+                    className="flex-1"
+                  >
+                    Previous
+                  </Button>
+                )}
+                <Button 
+                  onClick={nextTutorialStep} 
+                  className="flex-1"
+                >
+                  {tutorialStep === tutorialSteps.length - 1 ? 'Start Exploring!' : 'Next'}
+                </Button>
+              </div>
+              
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => {
+                  setShowTutorial(false);
+                  setHighlightedElement(null);
+                }}
+                className="text-xs"
+              >
+                Skip Tutorial
+              </Button>
+            </div>
+            
+            {/* Step indicator dots */}
+            <div className="flex justify-center gap-1 mt-4">
+              {tutorialSteps.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    index === tutorialStep ? 'bg-primary' : 'bg-muted'
+                  }`}
+                />
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Help Button */}
+      <Button
+        className="fixed top-4 right-4 z-30 rounded-full w-12 h-12 shadow-lg lg:w-10 lg:h-10"
+        variant="outline"
+        onClick={() => setShowHelp(true)}
+      >
+        ?
+      </Button>
+
+      {/* Help Modal */}
+      {showHelp && (
+        <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <Card className="p-6 max-w-2xl mx-auto quantum-border max-h-[80vh] overflow-y-auto">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">How to Use Quantum Lab</h2>
+                <Button variant="ghost" size="sm" onClick={() => setShowHelp(false)}>×</Button>
+              </div>
+              
+              <div className="grid gap-6">
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-primary">🎯 Getting Started</h3>
+                  <ul className="space-y-2 text-sm text-muted-foreground ml-4">
+                    <li>• <strong>Tap the canvas</strong> to create quantum objects</li>
+                    <li>• <strong>Choose experiment modes</strong> using the tabs</li>
+                    <li>• <strong>Adjust controls</strong> with sliders to change physics</li>
+                    <li>• <strong>Run experiments</strong> to see quantum effects</li>
+                  </ul>
+                </div>
+                
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-primary">🧪 Experiment Modes</h3>
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <strong>Teleportation:</strong> Move quantum states between entangled objects instantly
+                    </div>
+                    <div>
+                      <strong>Interference:</strong> Observe wave patterns through double-slit experiments
+                    </div>
+                    <div>
+                      <strong>Tunneling:</strong> Watch particles pass through energy barriers
+                    </div>
+                    <div>
+                      <strong>Superposition:</strong> See objects existing in multiple states
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-primary">🎛️ Controls</h3>
+                  <ul className="space-y-2 text-sm text-muted-foreground ml-4">
+                    <li>• <strong>Field Intensity:</strong> Controls the strength of quantum effects</li>
+                    <li>• <strong>Wave Speed:</strong> Adjusts animation and wave propagation speed</li>
+                    <li>• <strong>Particle Count:</strong> Number of quantum particles to display</li>
+                    <li>• <strong>Measure:</strong> Enable live quantum measurements</li>
+                  </ul>
+                </div>
+                
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-primary">📱 Mobile Tips</h3>
+                  <ul className="space-y-2 text-sm text-muted-foreground ml-4">
+                    <li>• <strong>Settings button:</strong> Opens control panel</li>
+                    <li>• <strong>Floating action button:</strong> Quick experiment trigger</li>
+                    <li>• <strong>Touch and hold:</strong> Create multiple objects quickly</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={() => {
+                  setShowHelp(false);
+                  setShowTutorial(true);
+                  setTutorialStep(0);
+                }}
+                className="w-full"
+              >
+                Restart Tutorial
               </Button>
             </div>
           </Card>
@@ -577,6 +739,7 @@ export const QuantumSimulation: React.FC = () => {
         transition-transform duration-300 ease-in-out z-40
         lg:m-4 p-4 lg:p-6 quantum-border overflow-y-auto
         ${controlsOpen ? 'shadow-2xl' : ''}
+        ${highlightedElement === 'controls' ? 'ring-2 ring-primary ring-opacity-75 animate-pulse' : ''}
       `}>
         {/* Mobile Close Button */}
         <Button 
@@ -592,48 +755,94 @@ export const QuantumSimulation: React.FC = () => {
           setExperimentMode(value as ExperimentMode);
           playSound('click');
         }}>
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="teleportation" className="text-xs lg:text-sm">Teleport</TabsTrigger>
-            <TabsTrigger value="interference" className="text-xs lg:text-sm">Interference</TabsTrigger>
-          </TabsList>
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="tunneling" className="text-xs lg:text-sm">Tunneling</TabsTrigger>
-            <TabsTrigger value="superposition" className="text-xs lg:text-sm">Superposition</TabsTrigger>
-          </TabsList>
+          <div className={highlightedElement === 'tabs' ? 'ring-2 ring-primary ring-opacity-75 animate-pulse rounded-lg' : ''}>
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="teleportation" className="text-xs lg:text-sm">
+                <Zap className="w-3 h-3 mr-1" />
+                Teleport
+              </TabsTrigger>
+              <TabsTrigger value="interference" className="text-xs lg:text-sm">
+                <Waves className="w-3 h-3 mr-1" />
+                Interference
+              </TabsTrigger>
+            </TabsList>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="tunneling" className="text-xs lg:text-sm">
+                <Target className="w-3 h-3 mr-1" />
+                Tunneling
+              </TabsTrigger>
+              <TabsTrigger value="superposition" className="text-xs lg:text-sm">
+                <Atom className="w-3 h-3 mr-1" />
+                Superposition
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="teleportation" className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold quantum-text mb-2">Quantum Teleportation</h2>
-              <p className="text-sm text-muted-foreground">
-                Teleport quantum states between entangled objects. Click canvas to add objects.
+            <div className="bg-gradient-to-r from-primary/10 to-transparent p-4 rounded-lg border border-primary/20">
+              <h2 className="text-xl font-bold quantum-text mb-2 flex items-center gap-2">
+                <Zap className="w-5 h-5" />
+                Quantum Teleportation
+              </h2>
+              <p className="text-sm text-muted-foreground mb-3">
+                Transport quantum information instantly across space using entanglement.
               </p>
+              <div className="text-xs space-y-1 text-muted-foreground">
+                <div>• <strong>Tap canvas:</strong> Create quantum objects</div>
+                <div>• <strong>Entangle objects:</strong> Use toggle buttons</div>
+                <div>• <strong>Run experiment:</strong> Watch states teleport!</div>
+              </div>
             </div>
           </TabsContent>
 
           <TabsContent value="interference" className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold quantum-text mb-2">Wave Interference</h2>
-              <p className="text-sm text-muted-foreground">
-                Observe double-slit interference patterns and wave superposition.
+            <div className="bg-gradient-to-r from-blue-500/10 to-transparent p-4 rounded-lg border border-blue-500/20">
+              <h2 className="text-xl font-bold quantum-text mb-2 flex items-center gap-2">
+                <Waves className="w-5 h-5" />
+                Wave Interference
+              </h2>
+              <p className="text-sm text-muted-foreground mb-3">
+                Experience the famous double-slit experiment that proves wave-particle duality.
               </p>
+              <div className="text-xs space-y-1 text-muted-foreground">
+                <div>• <strong>Pattern appears:</strong> On the right detection screen</div>
+                <div>• <strong>Adjust intensity:</strong> Changes interference strength</div>
+                <div>• <strong>Particle view:</strong> Toggle to see individual particles</div>
+              </div>
             </div>
           </TabsContent>
 
           <TabsContent value="tunneling" className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold quantum-text mb-2">Quantum Tunneling</h2>
-              <p className="text-sm text-muted-foreground">
-                Demonstrate particles tunneling through energy barriers.
+            <div className="bg-gradient-to-r from-orange-500/10 to-transparent p-4 rounded-lg border border-orange-500/20">
+              <h2 className="text-xl font-bold quantum-text mb-2 flex items-center gap-2">
+                <Target className="w-5 h-5" />
+                Quantum Tunneling
+              </h2>
+              <p className="text-sm text-muted-foreground mb-3">
+                Watch particles pass through barriers they classically shouldn't be able to cross.
               </p>
+              <div className="text-xs space-y-1 text-muted-foreground">
+                <div>• <strong>Red barrier:</strong> Energy barrier to tunnel through</div>
+                <div>• <strong>Green glow:</strong> Shows tunneling probability</div>
+                <div>• <strong>Higher barriers:</strong> Lower tunneling chance</div>
+              </div>
             </div>
           </TabsContent>
 
           <TabsContent value="superposition" className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold quantum-text mb-2">Superposition States</h2>
-              <p className="text-sm text-muted-foreground">
-                Visualize quantum objects existing in multiple states simultaneously.
+            <div className="bg-gradient-to-r from-purple-500/10 to-transparent p-4 rounded-lg border border-purple-500/20">
+              <h2 className="text-xl font-bold quantum-text mb-2 flex items-center gap-2">
+                <Atom className="w-5 h-5" />
+                Superposition States
+              </h2>
+              <p className="text-sm text-muted-foreground mb-3">
+                See how quantum objects exist in multiple states until observed.
               </p>
+              <div className="text-xs space-y-1 text-muted-foreground">
+                <div>• <strong>Multiple states:</strong> Object exists in all positions</div>
+                <div>• <strong>Central coherence:</strong> Quantum coherence point</div>
+                <div>• <strong>Measurement collapses:</strong> The superposition</div>
+              </div>
             </div>
           </TabsContent>
 
@@ -722,11 +931,16 @@ export const QuantumSimulation: React.FC = () => {
                 triggerHaptic();
                 playSound('teleport');
               }}
-              className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-200"
+              className={`w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-200 ${
+                highlightedElement === 'experiment-button' ? 'ring-2 ring-primary ring-opacity-75 animate-pulse' : ''
+              }`}
               variant="default"
             >
               <Beaker className="w-4 h-4 mr-2" />
               Run Experiment
+              {objects.length === 0 && experimentMode === 'teleportation' && (
+                <span className="ml-2 text-xs opacity-75">(Add objects first)</span>
+              )}
             </Button>
             
             <div className="grid grid-cols-3 gap-2">
@@ -863,7 +1077,20 @@ export const QuantumSimulation: React.FC = () => {
       
       {/* Simulation Canvas */}
       <div className="flex-1 lg:p-4 relative">
-        <Card className="w-full h-full quantum-border relative overflow-hidden rounded-none lg:rounded-lg">
+        <Card className={`w-full h-full quantum-border relative overflow-hidden rounded-none lg:rounded-lg ${
+          highlightedElement === 'canvas' ? 'ring-2 ring-primary ring-opacity-75 animate-pulse' : ''
+        }`}>
+          {/* Canvas Instructions Overlay */}
+          {objects.length === 0 && experimentMode === 'teleportation' && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+              <div className="bg-background/90 backdrop-blur-sm border rounded-lg p-4 text-center animate-fade-in">
+                <div className="text-sm text-muted-foreground mb-2">Canvas is empty</div>
+                <div className="text-lg font-semibold text-primary">Tap anywhere to create quantum objects!</div>
+                <div className="text-xs text-muted-foreground mt-1">Each tap creates a new quantum particle</div>
+              </div>
+            </div>
+          )}
+          
           <canvas
             ref={canvasRef}
             width={800}
