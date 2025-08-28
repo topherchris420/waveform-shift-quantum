@@ -1,4 +1,4 @@
-# Quantum Location Theory: Location as Internal Resonance
+# Quantum Location Theory: Location as a Variable
 
 ## Core Insight
 
