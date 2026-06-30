@@ -1,7 +1,7 @@
-import { QuantumSimulation } from '@/components/QuantumSimulation';
+import { QuantumLab } from '@/components/QuantumLab';
 
 const Index = () => {
-  return <QuantumSimulation />;
+  return <QuantumLab />;
 };
 
 export default Index;

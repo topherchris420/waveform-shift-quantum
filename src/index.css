@@ -2,101 +2,93 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    /* Quantum-inspired color palette */
-    --background: 220 25% 8%;
-    --foreground: 200 15% 95%;
+    --background: 216 31% 7%;
+    --foreground: 210 30% 96%;
 
-    --card: 220 25% 12%;
-    --card-foreground: 200 15% 95%;
+    --card: 215 27% 11%;
+    --card-foreground: 210 30% 96%;
 
-    --popover: 220 25% 12%;
-    --popover-foreground: 200 15% 95%;
+    --panel: 214 26% 10%;
 
-    --primary: 195 100% 65%;
-    --primary-foreground: 220 25% 8%;
+    --popover: 215 27% 11%;
+    --popover-foreground: 210 30% 96%;
 
-    --secondary: 220 15% 18%;
-    --secondary-foreground: 200 15% 85%;
+    --primary: 190 93% 68%;
+    --primary-foreground: 214 35% 8%;
 
-    --muted: 220 15% 15%;
-    --muted-foreground: 200 8% 65%;
+    --secondary: 216 18% 17%;
+    --secondary-foreground: 210 22% 86%;
 
-    --accent: 280 80% 70%;
-    --accent-foreground: 220 25% 8%;
+    --muted: 216 16% 15%;
+    --muted-foreground: 213 12% 62%;
 
-    --destructive: 0 75% 60%;
-    --destructive-foreground: 200 15% 95%;
+    --accent: 44 92% 62%;
+    --accent-foreground: 214 35% 8%;
 
-    --border: 220 15% 20%;
-    --input: 220 15% 18%;
-    --ring: 195 100% 65%;
+    --destructive: 3 78% 62%;
+    --destructive-foreground: 210 30% 96%;
 
-    --radius: 0.75rem;
+    --border: 214 16% 20%;
+    --input: 214 16% 18%;
+    --ring: 190 93% 68%;
 
-    /* Quantum-specific design tokens */
-    --quantum-field: 220 25% 6%;
-    --quantum-glow: 195 100% 65%;
-    --quantum-wave: 180 90% 70%;
-    --quantum-entangle: 280 80% 70%;
-    --quantum-collapse: 15 90% 65%;
-    
-    /* Gradients */
-    --gradient-quantum: linear-gradient(135deg, hsl(195 100% 65% / 0.2), hsl(280 80% 70% / 0.2));
-    --gradient-field: radial-gradient(circle, hsl(195 100% 65% / 0.1), transparent);
-    --gradient-glow: radial-gradient(circle, hsl(195 100% 65% / 0.3), transparent);
-    
-    /* Shadows and effects */
-    --shadow-quantum: 0 0 20px hsl(195 100% 65% / 0.4);
-    --shadow-glow: 0 0 40px hsl(195 100% 65% / 0.6);
-    --shadow-elegant: 0 10px 30px -10px hsl(220 25% 8% / 0.8);
+    --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
+    --quantum-field: 216 31% 5%;
+    --quantum-glow: 190 93% 68%;
+    --quantum-wave: 173 82% 64%;
+    --quantum-entangle: 255 86% 80%;
+    --quantum-collapse: 31 93% 60%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 216 31% 7%;
+    --sidebar-foreground: 210 30% 96%;
+    --sidebar-primary: 190 93% 68%;
+    --sidebar-primary-foreground: 214 35% 8%;
+    --sidebar-accent: 216 18% 17%;
+    --sidebar-accent-foreground: 210 30% 96%;
+    --sidebar-border: 214 16% 20%;
+    --sidebar-ring: 190 93% 68%;
   }
 
   .light {
-    /* Light mode for scientific displays */
-    --background: 210 20% 96%;
-    --foreground: 220 25% 15%;
+    --background: 210 22% 96%;
+    --foreground: 216 31% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 15%;
-    --quantum-field: 210 20% 92%;
-    --quantum-glow: 195 85% 55%;
-    --quantum-wave: 180 70% 50%;
-    --quantum-entangle: 280 70% 60%;
+    --card-foreground: 216 31% 10%;
+    --panel: 0 0% 100%;
+    --muted: 210 22% 91%;
+    --muted-foreground: 216 12% 42%;
+    --border: 214 18% 84%;
+    --input: 214 18% 84%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground font-sans;
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  html,
+  body,
+  #root {
+    min-height: 100%;
   }
 
-  /* Quantum animations */
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'tnum';
+  }
+
+  h1,
+  h2,
+  h3,
+  p,
+  button,
+  span,
+  label {
+    letter-spacing: 0;
+  }
+
   @keyframes quantum-pulse {
     0%, 100% { opacity: 0.6; transform: scale(1); }
     50% { opacity: 1; transform: scale(1.05); }
@@ -123,21 +115,19 @@ All colors MUST be HSL.
     0%, 100% { stroke-dashoffset: 0; }
     50% { stroke-dashoffset: 20; }
   }
+}
 
-  /* Utility classes */
-  .quantum-glow {
-    box-shadow: var(--shadow-quantum);
+@layer utilities {
+  .bg-panel {
+    background-color: hsl(var(--panel));
   }
-  
+
   .quantum-text {
-    background: linear-gradient(45deg, hsl(var(--quantum-glow)), hsl(var(--quantum-wave)));
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: hsl(var(--quantum-glow));
   }
 
   .quantum-border {
-    border: 1px solid hsl(var(--quantum-glow) / 0.3);
-    background: var(--gradient-quantum);
+    border-color: hsl(var(--quantum-glow) / 0.24);
+    background: hsl(var(--panel));
   }
 }
