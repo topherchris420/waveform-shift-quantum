@@ -59,6 +59,18 @@ export default {
 					wave: 'hsl(var(--quantum-wave))',
 					entangle: 'hsl(var(--quantum-entangle))',
 					collapse: 'hsl(var(--quantum-collapse))'
+				},
+				copper: {
+					DEFAULT: 'hsl(var(--copper))',
+					foreground: 'hsl(var(--copper-foreground))'
+				},
+				lime: {
+					DEFAULT: 'hsl(var(--lime))',
+					foreground: 'hsl(var(--lime-foreground))'
+				},
+				violet: {
+					DEFAULT: 'hsl(var(--violet))',
+					foreground: 'hsl(var(--violet-foreground))'
 				}
 			},
 			borderRadius: {

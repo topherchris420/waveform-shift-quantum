@@ -171,14 +171,14 @@ export const QuantumLab: React.FC = () => {
 
   const drawQuantumField = useCallback((ctx: CanvasRenderingContext2D, currentTime: number) => {
     const background = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    background.addColorStop(0, '#05080d');
-    background.addColorStop(0.55, '#081015');
-    background.addColorStop(1, '#0c0f12');
+    background.addColorStop(0, '#060604');
+    background.addColorStop(0.52, '#11100d');
+    background.addColorStop(1, '#17120d');
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     // Scanning grid effect
-    ctx.strokeStyle = 'rgba(127, 221, 255, 0.03)';
+    ctx.strokeStyle = 'rgba(219, 198, 151, 0.035)';
     ctx.lineWidth = 1;
     const scanY = (currentTime * 50) % CANVAS_HEIGHT;
     ctx.beginPath();
@@ -186,7 +186,7 @@ export const QuantumLab: React.FC = () => {
     ctx.lineTo(CANVAS_WIDTH, scanY);
     ctx.stroke();
 
-    ctx.strokeStyle = 'rgba(127, 221, 255, 0.055)';
+    ctx.strokeStyle = 'rgba(126, 213, 203, 0.052)';
     ctx.lineWidth = 1;
     for (let x = 0; x <= CANVAS_WIDTH; x += 40) {
       ctx.beginPath();
@@ -228,11 +228,11 @@ export const QuantumLab: React.FC = () => {
     const slits = [220, 420];
     const slitWidth = 28;
 
-    ctx.fillStyle = 'rgba(210, 216, 225, 0.18)';
+    ctx.fillStyle = 'rgba(219, 198, 151, 0.18)';
     ctx.fillRect(barrierX - 6, 0, 12, slits[0] - slitWidth);
     ctx.fillRect(barrierX - 6, slits[0] + slitWidth, 12, slits[1] - slits[0] - slitWidth * 2);
     ctx.fillRect(barrierX - 6, slits[1] + slitWidth, 12, CANVAS_HEIGHT - slits[1] - slitWidth);
-    ctx.fillStyle = 'rgba(125, 221, 255, 0.9)';
+    ctx.fillStyle = 'rgba(126, 213, 203, 0.9)';
     slits.forEach((y) => ctx.fillRect(barrierX - 10, y - slitWidth, 20, slitWidth * 2));
 
     const screenX = 760;
@@ -270,7 +270,7 @@ export const QuantumLab: React.FC = () => {
     if (experimentMode !== 'superposition') return;
     const centerX = CANVAS_WIDTH / 2;
     const centerY = CANVAS_HEIGHT / 2;
-    const colors = ['rgba(125, 221, 255, 0.34)', 'rgba(163, 230, 53, 0.32)', 'rgba(251, 191, 36, 0.32)', 'rgba(248, 113, 113, 0.26)'];
+    const colors = ['rgba(126, 213, 203, 0.34)', 'rgba(179, 216, 95, 0.32)', 'rgba(229, 151, 83, 0.32)', 'rgba(185, 160, 242, 0.26)'];
 
     colors.forEach((color, index) => {
       const angle = index * Math.PI / 2 + currentTime * 0.55;
@@ -286,8 +286,8 @@ export const QuantumLab: React.FC = () => {
 
     const core = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 70);
     core.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
-    core.addColorStop(0.4, 'rgba(125, 221, 255, 0.32)');
-    core.addColorStop(1, 'rgba(125, 221, 255, 0)');
+    core.addColorStop(0.4, 'rgba(126, 213, 203, 0.32)');
+    core.addColorStop(1, 'rgba(126, 213, 203, 0)');
     ctx.fillStyle = core;
     ctx.fillRect(centerX - 70, centerY - 70, 140, 140);
   }, [experimentMode]);
@@ -297,7 +297,7 @@ export const QuantumLab: React.FC = () => {
     ctx.save();
     ctx.translate(object.x, object.y);
     ctx.globalAlpha = object.isTeleporting ? 0.32 : 0.9;
-    ctx.strokeStyle = object.isEntangled ? '#c4b5fd' : '#7ddcff';
+    ctx.strokeStyle = object.isEntangled ? '#b9a0f2' : '#7ed5cb';
     ctx.lineWidth = selected ? 3 : 2;
 
     ctx.beginPath();
@@ -317,13 +317,13 @@ export const QuantumLab: React.FC = () => {
     ctx.stroke();
 
     const core = ctx.createRadialGradient(0, 0, 0, 0, 0, selected ? 32 : 24);
-    core.addColorStop(0, object.isEntangled ? '#c4b5fd' : '#7ddcff');
+    core.addColorStop(0, object.isEntangled ? '#b9a0f2' : '#7ed5cb');
     core.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = core;
     ctx.fillRect(-34, -34, 68, 68);
 
     if (selected) {
-      ctx.strokeStyle = 'rgba(250, 204, 21, 0.9)';
+      ctx.strokeStyle = 'rgba(229, 151, 83, 0.92)';
       ctx.setLineDash([6, 6]);
       ctx.beginPath();
       ctx.arc(0, 0, object.amplitude + 14, 0, Math.PI * 2);
@@ -331,7 +331,7 @@ export const QuantumLab: React.FC = () => {
     }
     ctx.restore();
 
-    ctx.fillStyle = 'rgba(234, 242, 250, 0.82)';
+    ctx.fillStyle = 'rgba(242, 235, 219, 0.84)';
     ctx.font = '12px JetBrains Mono, monospace';
     ctx.fillText(object.id.toUpperCase(), object.x + 18, object.y - 18);
   }, [selectedObject]);
@@ -344,7 +344,7 @@ export const QuantumLab: React.FC = () => {
     const steps = Math.max(8, Math.floor(distance / 18));
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(196, 181, 253, 0.58)';
+    ctx.strokeStyle = 'rgba(185, 160, 242, 0.58)';
     ctx.lineWidth = 2;
     ctx.setLineDash([10, 8]);
     ctx.lineDashOffset = -currentTime * 20;
@@ -515,67 +515,106 @@ export const QuantumLab: React.FC = () => {
     else setStatusMessage('Canvas creation is available in teleportation mode. Switch modes to add new objects.');
   }, [addQuantumObject, experimentMode, objects]);
 
+  const ActiveIcon = activeExperiment.icon;
+
   return (
-    <main className="min-h-screen overflow-hidden bg-background text-foreground">
-      <section className="grid min-h-screen grid-rows-[auto,1fr]">
-        <header className="border-b border-white/10 bg-background/90 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-[1500px] flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+    <main className="lab-background min-h-screen overflow-hidden text-foreground">
+      <section className="mx-auto flex min-h-screen w-full max-w-[1680px] flex-col gap-4 px-3 py-3 sm:px-4 lg:px-5 lg:py-5">
+        <header className="lab-surface px-4 py-4 lg:px-5">
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_620px] xl:items-center">
             <div className="flex min-w-0 items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-cyan-300/30 bg-cyan-300/10 text-cyan-100">
-                <Atom className="h-5 w-5" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/[0.10] text-primary shadow-[0_0_28px_hsl(var(--primary)/0.18)]">
+                <ActiveIcon className="h-6 w-6" />
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge className="border border-amber-300/30 bg-amber-300/10 text-amber-100 hover:bg-amber-300/10">Vers3Dynamics Lab</Badge>
-                  <Badge variant="outline" className="border-white/15 text-slate-300">Conceptual simulation</Badge>
+                  <Badge className="border border-copper/30 bg-copper/[0.12] text-copper-foreground hover:bg-copper/[0.12]">Vers3Dynamics Lab</Badge>
+                  <Badge variant="outline" className="border-white/15 text-muted-foreground">Scientific sandbox</Badge>
                 </div>
-                <h1 className="mt-2 text-2xl font-semibold tracking-normal text-white sm:text-3xl">Waveform Shift Quantum</h1>
-                <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
-                  Location is treated as a resonance variable. Use the lab to test how pattern, phase, and measurement change what appears to be position.
+                <h1 className="mt-3 text-3xl font-semibold text-foreground sm:text-4xl">Waveform Shift Quantum</h1>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+                  A phase-space workbench for testing how resonance, measurement, and entanglement shape apparent position.
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[560px]">
-              <Metric label="Coherence" value={formatPercent(coherence)} icon={Activity} />
-              <Metric label="Entangled" value={String(entangledCount)} icon={Radio} />
-              <Metric label={activeExperiment.readoutLabel} value={formatPercent(activeReadout)} icon={Gauge} />
-              <Metric label="Phase delta" value={`${phaseDelta} deg`} icon={Waves} />
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Metric label="Coherence" value={formatPercent(coherence)} icon={Activity} tone="primary" />
+              <Metric label="Entangled" value={String(entangledCount)} icon={Radio} tone="violet" />
+              <Metric label={activeExperiment.readoutLabel} value={formatPercent(activeReadout)} icon={Gauge} tone="lime" />
+              <Metric label="Phase delta" value={`${phaseDelta} deg`} icon={Waves} tone="copper" />
             </div>
           </div>
         </header>
 
-        <div className="mx-auto grid h-full w-full max-w-[1500px] gap-4 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_390px] lg:px-6">
-          <section className="flex min-h-[520px] flex-col overflow-hidden rounded-lg border border-white/10 bg-panel shadow-2xl shadow-black/30">
+        <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_390px] xl:grid-cols-[280px_minmax(0,1fr)_390px]">
+          <aside className="lab-panel hidden min-h-0 flex-col overflow-hidden p-4 xl:flex">
+            <PanelHeader eyebrow="Protocol" title="Experiment set" icon={Beaker} />
+            <div className="mt-4 space-y-2">
+              {modeOrder.map((mode) => {
+                const definition = experiments[mode];
+                return (
+                  <ModeButton
+                    key={mode}
+                    definition={definition}
+                    active={experimentMode === mode}
+                    onSelect={() => {
+                      setExperimentMode(mode);
+                      setStatusMessage(`${definition.label} protocol loaded. ${definition.premise}`);
+                    }}
+                  />
+                );
+              })}
+            </div>
+
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <PanelHeader eyebrow="Specimens" title="Quantum objects" icon={Atom} />
+              <div className="mt-4 space-y-2">
+                {objects.map((object, index) => (
+                  <ObjectRow
+                    key={object.id}
+                    object={object}
+                    index={index}
+                    selected={selectedObject === object.id}
+                    onSelect={() => setSelectedObject(object.id)}
+                    onToggle={() => toggleEntanglement(object.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          <section className="field-shell flex min-h-[620px] min-w-0 flex-col overflow-hidden">
             <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Live field</p>
-                <h2 className="mt-1 text-lg font-semibold text-white">{activeExperiment.label} workspace</h2>
+              <div className="min-w-0">
+                <p className="section-eyebrow">Live Field</p>
+                <h2 className="mt-1 text-xl font-semibold text-foreground">{activeExperiment.label} workspace</h2>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Button size="sm" variant="outline" className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white" onClick={() => setIsRunning((current) => !current)}>
+                <Button size="sm" variant="outline" className="border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={() => setIsRunning((current) => !current)}>
                   {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   {isRunning ? 'Pause' : 'Resume'}
                 </Button>
-                <Button size="sm" className="bg-cyan-300 text-slate-950 hover:bg-cyan-200" onClick={runExperiment}>
+                <Button size="sm" className="bg-copper text-accent-foreground hover:bg-copper/90" onClick={runExperiment}>
                   <Beaker className="h-4 w-4" />
-                  Run experiment
+                  Run
                 </Button>
               </div>
             </div>
 
-            <div className="relative min-h-0 flex-1 bg-black">
+            <div className="field-stage relative min-h-[430px] flex-1 overflow-hidden bg-quantum-field">
               <canvas
                 ref={canvasRef}
                 width={CANVAS_WIDTH}
                 height={CANVAS_HEIGHT}
                 aria-label="Interactive quantum field simulation canvas"
-                className="h-full w-full cursor-crosshair object-contain"
+                className="relative z-0 h-full w-full cursor-crosshair object-contain"
                 onClick={handleCanvasPointer}
               />
+
               {selectedObj && (
                 <div
-                  className="absolute pointer-events-auto rounded-lg border border-cyan-300/30 bg-black/60 p-3 backdrop-blur-md transition-all duration-200"
+                  className="absolute z-10 max-w-[16rem] rounded-md border border-primary/30 bg-background/80 p-3 shadow-2xl shadow-black/40 backdrop-blur-md transition-all duration-200"
                   style={{
                     left: `${(selectedObj.x / CANVAS_WIDTH) * 100}%`,
                     top: `${(selectedObj.y / CANVAS_HEIGHT) * 100}%`,
@@ -583,92 +622,62 @@ export const QuantumLab: React.FC = () => {
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-300 text-slate-950 text-[10px] font-bold">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground text-[0.7rem] font-bold">
                       {selectedObj.id.toUpperCase()}
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] uppercase text-slate-400">Tuning Frequency</span>
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="section-eyebrow">Frequency</p>
+                      <div className="mt-2 flex items-center gap-2">
                         <Slider
-                          className="w-24"
+                          className="w-28"
                           value={[selectedObj.frequency]}
                           onValueChange={updateFrequency}
                           min={0.5}
                           max={5}
                           step={0.1}
                         />
-                        <span className="font-mono text-xs text-cyan-100">{selectedObj.frequency.toFixed(1)}Hz</span>
+                        <span className="font-mono text-xs text-primary">{selectedObj.frequency.toFixed(1)}Hz</span>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
-              <div className="pointer-events-none absolute left-3 top-3 space-y-2">
+
+              <div className="pointer-events-none absolute left-3 top-3 z-10 space-y-2">
                 <ReadoutPill label="Mode" value={activeExperiment.label} />
                 <ReadoutPill label="Time" value={`${time.toFixed(2)}s`} />
               </div>
-              <div className="pointer-events-none absolute right-3 top-3 space-y-2 text-right">
+              <div className="pointer-events-none absolute right-3 top-3 z-10 space-y-2 text-right">
                 <ReadoutPill label="Objects" value={String(objects.length)} />
                 <ReadoutPill label="Field" value={fieldIntensity[0].toFixed(1)} />
               </div>
               {measurementMode && (
-                <div className="absolute bottom-3 left-3 rounded-md border border-lime-300/30 bg-lime-300/10 px-3 py-2 text-xs font-medium text-lime-100">
-                  Live measurement active
+                <div className="absolute bottom-3 left-3 z-10 rounded-md border border-lime/35 bg-lime/[0.12] px-3 py-2 text-xs font-medium text-lime-foreground shadow-lg shadow-black/30 backdrop-blur-md">
+                  Measurement active
                 </div>
               )}
-              <div className="absolute bottom-3 right-3 lg:hidden">
-                <Button className="h-12 rounded-md bg-amber-300 px-4 text-slate-950 hover:bg-amber-200" onClick={() => setControlsOpen(true)}>
-                  Controls
+              <div className="absolute bottom-3 right-3 z-10 lg:hidden">
+                <Button className="h-11 rounded-md bg-copper px-4 text-accent-foreground hover:bg-copper/90" onClick={() => setControlsOpen(true)}>
                   <ChevronRight className="h-4 w-4" />
+                  Controls
                 </Button>
               </div>
             </div>
 
-              <div className="grid gap-3 border-t border-white/10 bg-white/[0.025] p-4 md:grid-cols-[1.2fr_0.8fr]">
-                <div className="flex flex-col justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Observation</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-300">{statusMessage}</p>
-                  </div>
-                  {measurements.length > 1 && (
-                    <div className="mt-4 h-12 w-full overflow-hidden rounded bg-black/40 p-1">
-                      <svg className="h-full w-full" preserveAspectRatio="none">
-                        <polyline
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          className="text-cyan-400"
-                          points={measurements
-                            .slice(-20)
-                            .map((m, i) => `${(i / 19) * 100},${100 - m.value * 100}`)
-                            .join(' ')}
-                          style={{ width: '100%', height: '100%' }}
-                        />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  {measurements.slice(-3).map((measurement) => (
-                    <div key={measurement.id} className="rounded-md border border-white/10 bg-black/20 p-2">
-                      <p className="text-slate-500">{experiments[measurement.type].label}</p>
-                      <p className="mt-1 font-mono text-cyan-100">{formatPercent(measurement.value)}</p>
-                    </div>
-                  ))}
-                  {measurements.length === 0 && (
-                    <div className="col-span-3 rounded-md border border-dashed border-white/10 p-3 text-slate-500">
-                      Run an experiment or enable measurement to collect readouts.
-                    </div>
-                  )}
-                </div>
+            <div className="grid gap-4 border-t border-white/10 bg-white/[0.025] p-4 md:grid-cols-[minmax(0,1fr)_300px]">
+              <div className="min-w-0">
+                <p className="section-eyebrow">Observation Log</p>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{statusMessage}</p>
               </div>
+              <MeasurementSparkline measurements={measurements} />
+            </div>
           </section>
 
           {controlsOpen && (
             <button
               type="button"
               aria-label="Close controls panel"
-              className="fixed inset-0 z-30 bg-black/55 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
               onClick={() => setControlsOpen(false)}
             />
           )}
@@ -677,59 +686,58 @@ export const QuantumLab: React.FC = () => {
             role={controlsOpen ? 'dialog' : undefined}
             aria-modal={controlsOpen ? true : undefined}
             aria-label="Experiment controls"
-            className={`fixed inset-y-0 right-0 z-40 w-full max-w-[420px] translate-x-full overflow-y-auto border-l border-white/10 bg-background p-4 shadow-2xl shadow-black/60 transition lg:static lg:z-auto lg:max-w-none lg:translate-x-0 lg:rounded-lg lg:border lg:bg-panel lg:shadow-none ${controlsOpen ? 'translate-x-0' : ''}`}
+            className={`lab-panel fixed inset-y-0 right-0 z-40 flex w-full max-w-[430px] flex-col overflow-y-auto p-4 shadow-2xl shadow-black/60 transition-transform lg:static lg:z-auto lg:max-w-none lg:translate-x-0 lg:shadow-none ${controlsOpen ? 'translate-x-0' : 'translate-x-full max-lg:hidden'}`}
           >
             <div className="mb-4 flex items-center justify-between lg:hidden">
-              <h2 className="text-lg font-semibold text-white">Controls</h2>
-              <Button variant="ghost" className="text-slate-300 hover:text-white" onClick={() => setControlsOpen(false)}>Close</Button>
+              <PanelHeader eyebrow="Controls" title="Instrument rack" icon={Gauge} />
+              <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={() => setControlsOpen(false)}>
+                <ChevronRight className="h-4 w-4 rotate-180" />
+                Close
+              </Button>
             </div>
 
-            <div className="space-y-4">
-              <section className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Experiment</p>
+            <div className="space-y-6">
+              <section className="xl:hidden">
+                <PanelHeader eyebrow="Protocol" title="Experiment set" icon={Beaker} />
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   {modeOrder.map((mode) => {
                     const definition = experiments[mode];
-                    const Icon = definition.icon;
-                    const active = experimentMode === mode;
                     return (
-                      <button
+                      <ModeButton
                         key={mode}
-                        type="button"
-                        aria-pressed={active}
-                        onClick={() => {
+                        definition={definition}
+                        active={experimentMode === mode}
+                        compact
+                        onSelect={() => {
                           setExperimentMode(mode);
-                          setStatusMessage(`${definition.label} loaded. ${definition.instruction}`);
+                          setStatusMessage(`${definition.label} protocol loaded. ${definition.premise}`);
                         }}
-                        className={`rounded-md border p-3 text-left transition ${active ? 'border-cyan-300/70 bg-cyan-300/10' : 'border-white/10 bg-black/20 hover:border-white/25'}`}
-                      >
-                        <Icon className={`h-4 w-4 ${active ? 'text-cyan-200' : 'text-slate-400'}`} />
-                        <p className="mt-2 text-sm font-medium text-white">{definition.label}</p>
-                        <p className="mt-1 text-xs leading-5 text-slate-500">{definition.eyebrow}</p>
-                      </button>
+                      />
                     );
                   })}
                 </div>
               </section>
 
-              <section className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Theory note</p>
-                <h2 className="mt-2 text-xl font-semibold text-white">{activeExperiment.label}</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-300">{activeExperiment.premise}</p>
-                <div className="mt-4 rounded-md border border-amber-300/20 bg-amber-300/10 p-3 text-sm leading-6 text-amber-50">
-                  {activeExperiment.instruction}
+              <section className="border-t border-white/10 pt-5 xl:border-t-0 xl:pt-0">
+                <PanelHeader eyebrow="Theory" title={activeExperiment.label} icon={activeExperiment.icon} />
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">{activeExperiment.premise}</p>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <DetailRow label="Readout" value={formatPercent(activeReadout)} />
+                  <DetailRow label="Coherence" value={formatPercent(coherence)} />
+                  <DetailRow label="Objects" value={String(objects.length)} />
+                  <DetailRow label="Phase" value={`${phaseDelta} deg`} />
                 </div>
               </section>
 
-              <section className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
+              <section className="border-t border-white/10 pt-5">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Controls</p>
-                  <Button size="sm" variant="ghost" className="h-8 px-2 text-slate-300 hover:text-white" onClick={resetExperiment}>
+                  <PanelHeader eyebrow="Tuning" title="Field controls" icon={Waves} />
+                  <Button size="sm" variant="ghost" className="h-8 px-2 text-muted-foreground hover:text-foreground" onClick={resetExperiment}>
                     <RotateCcw className="h-4 w-4" />
                     Reset
                   </Button>
                 </div>
-                <div className="mt-4 space-y-5">
+                <div className="mt-5 space-y-5">
                   <LabSlider icon={Waves} label="Field intensity" value={fieldIntensity} onValueChange={setFieldIntensity} min={0.1} max={1} step={0.1} display={fieldIntensity[0].toFixed(1)} />
                   <LabSlider icon={Zap} label="Wave speed" value={waveSpeed} onValueChange={setWaveSpeed} min={0.1} max={3} step={0.1} display={`${waveSpeed[0].toFixed(1)}x`} />
                   <LabSlider icon={Atom} label="Particle traces" value={particleCount} onValueChange={setParticleCount} min={5} max={60} step={5} display={String(particleCount[0])} />
@@ -742,53 +750,40 @@ export const QuantumLab: React.FC = () => {
                 </div>
               </section>
 
-              <section className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Actions</p>
+              <section className="border-t border-white/10 pt-5">
+                <PanelHeader eyebrow="Operations" title="Run controls" icon={Activity} />
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Button className="bg-cyan-300 text-slate-950 hover:bg-cyan-200" onClick={runExperiment}>
+                  <Button className="bg-copper text-accent-foreground hover:bg-copper/90" onClick={runExperiment}>
                     <Beaker className="h-4 w-4" />
                     Run
                   </Button>
-                  <Button variant="outline" className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white" onClick={() => addQuantumObject()}>
+                  <Button variant="outline" className="border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={() => addQuantumObject()}>
                     <Plus className="h-4 w-4" />
                     Add object
                   </Button>
-                  <Button variant={showTraces ? 'default' : 'outline'} className={showTraces ? 'bg-amber-300 text-slate-950 hover:bg-amber-200' : 'border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white'} onClick={() => setShowTraces((current) => !current)}>
+                  <Button variant={showTraces ? 'default' : 'outline'} className={showTraces ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground'} onClick={() => setShowTraces((current) => !current)}>
                     {showTraces ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                     Traces
                   </Button>
-                  <Button variant={measurementMode ? 'default' : 'outline'} className={measurementMode ? 'bg-lime-300 text-slate-950 hover:bg-lime-200' : 'border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white'} onClick={() => setMeasurementMode((current) => !current)}>
+                  <Button variant={measurementMode ? 'default' : 'outline'} className={measurementMode ? 'bg-lime text-accent-foreground hover:bg-lime/90' : 'border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground'} onClick={() => setMeasurementMode((current) => !current)}>
                     <BarChart3 className="h-4 w-4" />
                     Measure
                   </Button>
                 </div>
               </section>
 
-              <section className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Objects</p>
-                  <span className="text-xs text-slate-500">Select on canvas or list</span>
-                </div>
+              <section className="border-t border-white/10 pt-5 xl:hidden">
+                <PanelHeader eyebrow="Specimens" title="Quantum objects" icon={Atom} />
                 <div className="mt-4 space-y-2">
                   {objects.map((object, index) => (
-                    <div key={object.id} className={`rounded-md border p-3 transition ${selectedObject === object.id ? 'border-amber-300/70 bg-amber-300/10' : 'border-white/10 bg-black/20'}`}>
-                      <button type="button" onClick={() => setSelectedObject(object.id)} className="w-full text-left">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="text-sm font-medium text-white">Object {index + 1}: {object.id.toUpperCase()}</p>
-                            <p className="mt-1 font-mono text-xs text-slate-500">{object.frequency.toFixed(1)} Hz | ({Math.round(object.x)}, {Math.round(object.y)})</p>
-                          </div>
-                          <Badge className={object.isEntangled ? 'bg-violet-300/15 text-violet-100 hover:bg-violet-300/15' : 'bg-slate-700 text-slate-200 hover:bg-slate-700'}>
-                            {object.isEntangled ? 'Linked' : 'Free'}
-                          </Badge>
-                        </div>
-                      </button>
-                      <div className="mt-3 flex justify-end">
-                        <Button size="sm" variant="outline" className="h-8 border-white/15 bg-white/5 text-xs text-white hover:bg-white/10 hover:text-white" onClick={() => toggleEntanglement(object.id)}>
-                          {object.isEntangled ? 'Unlink' : 'Entangle'}
-                        </Button>
-                      </div>
-                    </div>
+                    <ObjectRow
+                      key={object.id}
+                      object={object}
+                      index={index}
+                      selected={selectedObject === object.id}
+                      onSelect={() => setSelectedObject(object.id)}
+                      onToggle={() => toggleEntanglement(object.id)}
+                    />
                   ))}
                 </div>
               </section>
@@ -804,17 +799,140 @@ interface MetricProps {
   label: string;
   value: string;
   icon: React.ElementType;
+  tone?: 'primary' | 'copper' | 'lime' | 'violet';
 }
 
-const Metric: React.FC<MetricProps> = ({ label, value, icon: Icon }) => (
-  <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-    <div className="flex items-center justify-between gap-2 text-slate-500">
-      <span className="text-xs uppercase tracking-[0.14em]">{label}</span>
+const metricToneStyles: Record<NonNullable<MetricProps['tone']>, string> = {
+  primary: 'border-primary/25 bg-primary/[0.08] text-primary',
+  copper: 'border-copper/30 bg-copper/[0.10] text-copper-foreground',
+  lime: 'border-lime/25 bg-lime/[0.09] text-lime-foreground',
+  violet: 'border-violet/25 bg-violet/[0.10] text-violet-foreground',
+};
+
+const Metric: React.FC<MetricProps> = ({ label, value, icon: Icon, tone = 'primary' }) => (
+  <div className={`rounded-md border p-3 ${metricToneStyles[tone]}`}>
+    <div className="flex items-center justify-between gap-2 text-muted-foreground">
+      <span className="section-eyebrow">{label}</span>
       <Icon className="h-4 w-4" />
     </div>
-    <p className="mt-2 font-mono text-lg text-white">{value}</p>
+    <p className="mt-2 font-mono text-lg text-foreground">{value}</p>
   </div>
 );
+
+interface PanelHeaderProps {
+  eyebrow: string;
+  title: string;
+  icon: React.ElementType;
+}
+
+const PanelHeader: React.FC<PanelHeaderProps> = ({ eyebrow, title, icon: Icon }) => (
+  <div className="flex items-center gap-3">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] text-primary">
+      <Icon className="h-4 w-4" />
+    </div>
+    <div className="min-w-0">
+      <p className="section-eyebrow">{eyebrow}</p>
+      <h3 className="mt-1 truncate text-sm font-semibold text-foreground">{title}</h3>
+    </div>
+  </div>
+);
+
+interface ModeButtonProps {
+  definition: ExperimentDefinition;
+  active: boolean;
+  compact?: boolean;
+  onSelect: () => void;
+}
+
+const ModeButton: React.FC<ModeButtonProps> = ({ definition, active, compact = false, onSelect }) => {
+  const Icon = definition.icon;
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onSelect}
+      className={`w-full rounded-md border p-3 text-left transition ${active ? 'border-primary/50 bg-primary/[0.12] text-foreground shadow-[inset_0_1px_0_hsl(var(--foreground)/0.06)]' : 'border-white/10 bg-black/20 text-muted-foreground hover:border-white/20 hover:bg-white/[0.04]'}`}
+    >
+      <div className="flex items-start gap-3">
+        <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground">{definition.label}</p>
+          {!compact && <p className="mt-1 text-xs leading-5 text-muted-foreground">{definition.eyebrow}</p>}
+        </div>
+      </div>
+    </button>
+  );
+};
+
+interface ObjectRowProps {
+  object: QuantumObject;
+  index: number;
+  selected: boolean;
+  onSelect: () => void;
+  onToggle: () => void;
+}
+
+const ObjectRow: React.FC<ObjectRowProps> = ({ object, index, selected, onSelect, onToggle }) => (
+  <div className={`rounded-md border p-3 transition ${selected ? 'border-copper/50 bg-copper/[0.10]' : 'border-white/10 bg-black/20'}`}>
+    <button type="button" onClick={onSelect} className="w-full text-left">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-foreground">Object {index + 1}: {object.id.toUpperCase()}</p>
+          <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{object.frequency.toFixed(1)} Hz | ({Math.round(object.x)}, {Math.round(object.y)})</p>
+        </div>
+        <Badge className={object.isEntangled ? 'bg-violet/[0.14] text-violet-foreground hover:bg-violet/[0.14]' : 'bg-white/[0.06] text-muted-foreground hover:bg-white/[0.06]'}>
+          {object.isEntangled ? 'Linked' : 'Free'}
+        </Badge>
+      </div>
+    </button>
+    <div className="mt-3 flex justify-end">
+      <Button size="sm" variant="outline" className="h-8 border-white/15 bg-white/[0.04] text-xs text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={onToggle}>
+        {object.isEntangled ? 'Unlink' : 'Entangle'}
+      </Button>
+    </div>
+  </div>
+);
+
+interface DetailRowProps {
+  label: string;
+  value: string;
+}
+
+const DetailRow: React.FC<DetailRowProps> = ({ label, value }) => (
+  <div className="rounded-md border border-white/10 bg-black/20 p-3">
+    <p className="section-eyebrow">{label}</p>
+    <p className="mt-2 font-mono text-sm text-foreground">{value}</p>
+  </div>
+);
+
+interface MeasurementSparklineProps {
+  measurements: Measurement[];
+}
+
+const MeasurementSparkline: React.FC<MeasurementSparklineProps> = ({ measurements }) => {
+  const recent = measurements.slice(-20);
+  const points = recent
+    .map((measurement, index) => `${(index / Math.max(1, recent.length - 1)) * 100},${44 - measurement.value * 40}`)
+    .join(' ');
+  const latest = recent[recent.length - 1];
+
+  return (
+    <div className="rounded-md border border-white/10 bg-black/25 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="section-eyebrow">Readout Trace</p>
+        <span className="font-mono text-xs text-primary">{latest ? formatPercent(latest.value) : '--'}</span>
+      </div>
+      <svg className="mt-3 h-12 w-full text-primary" viewBox="0 0 100 44" preserveAspectRatio="none" role="img" aria-label="Recent measurement readouts">
+        <line x1="0" y1="22" x2="100" y2="22" stroke="currentColor" strokeOpacity="0.16" strokeWidth="1" />
+        {recent.length > 1 ? (
+          <polyline fill="none" stroke="currentColor" strokeWidth="2" points={points} />
+        ) : (
+          <line x1="0" y1="36" x2="100" y2="36" stroke="currentColor" strokeOpacity="0.28" strokeWidth="2" />
+        )}
+      </svg>
+    </div>
+  );
+};
 
 interface ReadoutPillProps {
   label: string;
@@ -822,9 +940,9 @@ interface ReadoutPillProps {
 }
 
 const ReadoutPill: React.FC<ReadoutPillProps> = ({ label, value }) => (
-  <div className="rounded-md border border-white/10 bg-black/45 px-3 py-2 text-xs shadow-lg backdrop-blur-md">
-    <span className="text-slate-500">{label}</span>
-    <span className="ml-2 font-mono text-cyan-100">{value}</span>
+  <div className="rounded-md border border-white/10 bg-background/70 px-3 py-2 text-xs shadow-lg shadow-black/30 backdrop-blur-md">
+    <span className="text-muted-foreground">{label}</span>
+    <span className="ml-2 font-mono text-primary">{value}</span>
   </div>
 );
 
@@ -842,11 +960,11 @@ interface LabSliderProps {
 const LabSlider: React.FC<LabSliderProps> = ({ icon: Icon, label, value, onValueChange, min, max, step, display }) => (
   <div>
     <div className="mb-2 flex items-center justify-between gap-3">
-      <label className="flex items-center gap-2 text-sm font-medium text-slate-200">
-        <Icon className="h-4 w-4 text-cyan-200" />
-        {label}
+      <label className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
+        <Icon className="h-4 w-4 shrink-0 text-primary" />
+        <span className="truncate">{label}</span>
       </label>
-      <span className="font-mono text-xs text-slate-500">{display}</span>
+      <span className="shrink-0 font-mono text-xs text-muted-foreground">{display}</span>
     </div>
     <Slider aria-label={label} value={value} onValueChange={onValueChange} min={min} max={max} step={step} />
   </div>
