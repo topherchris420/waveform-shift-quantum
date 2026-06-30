@@ -142,6 +142,21 @@ export const QuantumLab: React.FC = () => {
     setResonanceNodes(nodes);
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsRunning((current) => !current);
+      }
+      if (e.code === 'Enter') {
+        e.preventDefault();
+        runExperiment();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [runExperiment]);
+
   const entangledCount = useMemo(() => objects.filter((object) => object.isEntangled).length, [objects]);
   const tunnelChance = useMemo(() => Math.exp(-barrierHeight[0] * 0.052), [barrierHeight]);
   const coherence = useMemo(() => {
@@ -174,6 +189,15 @@ export const QuantumLab: React.FC = () => {
     background.addColorStop(1, '#0c0f12');
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // Scanning grid effect
+    ctx.strokeStyle = 'rgba(127, 221, 255, 0.03)';
+    ctx.lineWidth = 1;
+    const scanY = (currentTime * 50) % CANVAS_HEIGHT;
+    ctx.beginPath();
+    ctx.moveTo(0, scanY);
+    ctx.lineTo(CANVAS_WIDTH, scanY);
+    ctx.stroke();
 
     ctx.strokeStyle = 'rgba(127, 221, 255, 0.055)';
     ctx.lineWidth = 1;
@@ -547,6 +571,36 @@ export const QuantumLab: React.FC = () => {
                 className="h-full w-full cursor-crosshair object-contain"
                 onClick={handleCanvasPointer}
               />
+              {selectedObj && (
+                <div
+                  className="absolute pointer-events-auto rounded-lg border border-cyan-300/30 bg-black/60 p-3 backdrop-blur-md transition-all duration-200"
+                  style={{
+                    left: `${(selectedObj.x / CANVAS_WIDTH) * 100}%`,
+                    top: `${(selectedObj.y / CANVAS_HEIGHT) * 100}%`,
+                    transform: 'translate(-50%, -120%)'
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-300 text-slate-950 text-[10px] font-bold">
+                      {selectedObj.id.toUpperCase()}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] uppercase text-slate-400">Tuning Frequency</span>
+                      <div className="flex items-center gap-2">
+                        <Slider
+                          className="w-24"
+                          value={[selectedObj.frequency]}
+                          onValueChange={updateFrequency}
+                          min={0.5}
+                          max={5}
+                          step={0.1}
+                        />
+                        <span className="font-mono text-xs text-cyan-100">{selectedObj.frequency.toFixed(1)}Hz</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="pointer-events-none absolute left-3 top-3 space-y-2">
                 <ReadoutPill label="Mode" value={activeExperiment.label} />
                 <ReadoutPill label="Time" value={`${time.toFixed(2)}s`} />
@@ -568,25 +622,44 @@ export const QuantumLab: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid gap-3 border-t border-white/10 bg-white/[0.025] p-4 md:grid-cols-[1.2fr_0.8fr]">
-              <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Observation</p>
-                <p className="mt-2 text-sm leading-6 text-slate-300">{statusMessage}</p>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                {measurements.slice(-3).map((measurement) => (
-                  <div key={measurement.id} className="rounded-md border border-white/10 bg-black/20 p-2">
-                    <p className="text-slate-500">{experiments[measurement.type].label}</p>
-                    <p className="mt-1 font-mono text-cyan-100">{formatPercent(measurement.value)}</p>
+              <div className="grid gap-3 border-t border-white/10 bg-white/[0.025] p-4 md:grid-cols-[1.2fr_0.8fr]">
+                <div className="flex flex-col justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Observation</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">{statusMessage}</p>
                   </div>
-                ))}
-                {measurements.length === 0 && (
-                  <div className="col-span-3 rounded-md border border-dashed border-white/10 p-3 text-slate-500">
-                    Run an experiment or enable measurement to collect readouts.
-                  </div>
-                )}
+                  {measurements.length > 1 && (
+                    <div className="mt-4 h-12 w-full overflow-hidden rounded bg-black/40 p-1">
+                      <svg className="h-full w-full" preserveAspectRatio="none">
+                        <polyline
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          className="text-cyan-400"
+                          points={measurements
+                            .slice(-20)
+                            .map((m, i) => `${(i / 19) * 100},${100 - m.value * 100}`)
+                            .join(' ')}
+                          style={{ width: '100%', height: '100%' }}
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  {measurements.slice(-3).map((measurement) => (
+                    <div key={measurement.id} className="rounded-md border border-white/10 bg-black/20 p-2">
+                      <p className="text-slate-500">{experiments[measurement.type].label}</p>
+                      <p className="mt-1 font-mono text-cyan-100">{formatPercent(measurement.value)}</p>
+                    </div>
+                  ))}
+                  {measurements.length === 0 && (
+                    <div className="col-span-3 rounded-md border border-dashed border-white/10 p-3 text-slate-500">
+                      Run an experiment or enable measurement to collect readouts.
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
           </section>
 
           {controlsOpen && (
