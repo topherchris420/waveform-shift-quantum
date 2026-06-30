@@ -142,20 +142,7 @@ export const QuantumLab: React.FC = () => {
     setResonanceNodes(nodes);
   }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        setIsRunning((current) => !current);
-      }
-      if (e.code === 'Enter') {
-        e.preventDefault();
-        runExperiment();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [runExperiment]);
+
 
   const entangledCount = useMemo(() => objects.filter((object) => object.isEntangled).length, [objects]);
   const tunnelChance = useMemo(() => Math.exp(-barrierHeight[0] * 0.052), [barrierHeight]);
@@ -479,6 +466,21 @@ export const QuantumLab: React.FC = () => {
     setStatusMessage('Superposition emphasized. Measurement will sample one branch of the field.');
     recordMeasurement('superposition', coherence);
   }, [activeReadout, coherence, experimentMode, objects.length, recordMeasurement, tunnelChance]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsRunning((current) => !current);
+      }
+      if (e.code === 'Enter') {
+        e.preventDefault();
+        runExperiment();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [runExperiment]);
 
   const toggleEntanglement = useCallback((objectId: string) => {
     setObjects((current) => current.map((object) => {
