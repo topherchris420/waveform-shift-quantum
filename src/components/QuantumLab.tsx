@@ -517,89 +517,60 @@ export const QuantumLab: React.FC = () => {
 
 
   return (
-    <main className="lab-background min-h-screen overflow-hidden text-foreground">
-      <section className="mx-auto flex min-h-screen w-full max-w-[1680px] flex-col gap-4 px-3 py-3 sm:px-4 lg:px-5 lg:py-5">
-        <header className="command-bar px-4 py-4 lg:px-5">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between xl:flex-1">
-              <div className="flex min-w-0 items-center gap-4">
-                <BrandMark />
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="instrument-mark">Vers3Dynamics Lab</span>
-                    <Badge variant="outline" className="border-white/15 bg-white/[0.03] text-muted-foreground">Phase-space instrument</Badge>
-                  </div>
-                  <h1 className="mt-3 max-w-3xl text-3xl font-semibold text-foreground sm:text-4xl lg:text-5xl">Waveform Shift Quantum</h1>
-                  <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base">
-                    A live resonance workbench for studying how entanglement, measurement, and field coherence shape apparent position.
-                  </p>
-                </div>
-              </div>
-
-              <div className="hidden shrink-0 items-center gap-2 lg:flex">
-                <Button size="sm" variant="outline" className="border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={() => setIsRunning((current) => !current)}>
-                  {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  {isRunning ? 'Pause' : 'Resume'}
-                </Button>
-                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={runExperiment}>
-                  <Beaker className="h-4 w-4" />
-                  Run protocol
-                </Button>
-              </div>
+    <main className="experience-background min-h-screen overflow-hidden text-foreground">
+      <section className="relative min-h-screen px-4 py-4 sm:px-6 lg:px-8">
+        <nav className="topline-nav mx-auto flex max-w-[1700px] items-center justify-between gap-4 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <BrandMark />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-foreground">Waveform Shift Quantum</p>
+              <p className="section-eyebrow mt-1">Vers3Dynamics resonance lab</p>
             </div>
+          </div>
+          <div className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
+            <a href="#scene" className="transition hover:text-foreground">Scene</a>
+            <a href="#protocols" className="transition hover:text-foreground">Protocols</a>
+            <a href="#controls" className="transition hover:text-foreground">Controls</a>
+          </div>
+          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={runExperiment}>
+            <Beaker className="h-4 w-4" />
+            Run
+          </Button>
+        </nav>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:w-[620px]">
+        <div className="mx-auto grid min-h-[calc(100vh-92px)] max-w-[1700px] gap-8 py-6 lg:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.18fr)] lg:items-center xl:gap-12">
+          <div className="hero-copy max-w-4xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="instrument-mark">Interactive theory lab</span>
+              <Badge variant="outline" className="border-white/15 bg-white/[0.03] text-muted-foreground">{activeExperiment.eyebrow}</Badge>
+            </div>
+            <h1 className="hero-title mt-6">Location is a waveform, not a place.</h1>
+            <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
+              A cinematic phase-space instrument for testing how resonance, measurement, and entanglement shape apparent position.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button className="h-12 bg-primary px-5 text-primary-foreground hover:bg-primary/90" onClick={runExperiment}>
+                <Beaker className="h-4 w-4" />
+                Run {activeExperiment.label}
+              </Button>
+              <Button variant="outline" className="h-12 border-white/15 bg-white/[0.04] px-5 text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={() => addQuantumObject()}>
+                <Plus className="h-4 w-4" />
+                Add object
+              </Button>
+            </div>
+            <div className="hero-stat-strip mt-10 grid grid-cols-2 gap-2 sm:grid-cols-4">
               <Metric label="Coherence" value={formatPercent(coherence)} icon={Activity} tone="primary" />
               <Metric label="Entangled" value={String(entangledCount)} icon={Radio} tone="violet" />
               <Metric label={activeExperiment.readoutLabel} value={formatPercent(activeReadout)} icon={Gauge} tone="lime" />
               <Metric label="Phase delta" value={`${phaseDelta} deg`} icon={Waves} tone="copper" />
             </div>
           </div>
-        </header>
 
-        <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_390px] xl:grid-cols-[280px_minmax(0,1fr)_390px]">
-          <aside className="lab-panel hidden min-h-0 flex-col overflow-hidden p-4 xl:flex">
-            <PanelHeader eyebrow="Protocol" title="Experiment set" icon={Beaker} />
-            <div className="mt-4 space-y-2">
-              {modeOrder.map((mode) => {
-                const definition = experiments[mode];
-                return (
-                  <ModeButton
-                    key={mode}
-                    definition={definition}
-                    active={experimentMode === mode}
-                    onSelect={() => {
-                      setExperimentMode(mode);
-                      setStatusMessage(`${definition.label} protocol loaded. ${definition.premise}`);
-                    }}
-                  />
-                );
-              })}
-            </div>
-
-            <div className="mt-6 border-t border-white/10 pt-5">
-              <PanelHeader eyebrow="Specimens" title="Quantum objects" icon={Atom} />
-              <div className="mt-4 space-y-2">
-                {objects.map((object, index) => (
-                  <ObjectRow
-                    key={object.id}
-                    object={object}
-                    index={index}
-                    selected={selectedObject === object.id}
-                    onSelect={() => setSelectedObject(object.id)}
-                    onToggle={() => toggleEntanglement(object.id)}
-                  />
-                ))}
-              </div>
-            </div>
-          </aside>
-
-          <section className="field-shell flex min-h-[680px] min-w-0 flex-col overflow-hidden">
-            <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <section id="scene" className="scene-showcase min-w-0 overflow-hidden">
+            <div className="scene-topbar flex flex-col gap-3 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <p className="section-eyebrow">Realtime Scene</p>
+                <p className="section-eyebrow">Live resonance scene</p>
                 <h2 className="mt-1 text-xl font-semibold text-foreground">{activeExperiment.label} field</h2>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">{activeExperiment.eyebrow}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Button size="sm" variant="outline" className="border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={() => setIsRunning((current) => !current)}>
@@ -613,13 +584,13 @@ export const QuantumLab: React.FC = () => {
               </div>
             </div>
 
-            <div className="field-stage relative min-h-[500px] flex-1 overflow-hidden bg-quantum-field">
+            <div className="scene-canvas relative min-h-[540px] overflow-hidden bg-quantum-field">
               <canvas
                 ref={canvasRef}
                 width={CANVAS_WIDTH}
                 height={CANVAS_HEIGHT}
                 aria-label="Interactive quantum field simulation canvas"
-                className="relative z-0 h-full w-full cursor-crosshair object-contain"
+                className="absolute inset-0 h-full w-full cursor-crosshair"
                 onClick={handleCanvasPointer}
               />
 
@@ -639,14 +610,7 @@ export const QuantumLab: React.FC = () => {
                     <div className="min-w-0 flex-1">
                       <p className="section-eyebrow">Frequency</p>
                       <div className="mt-2 flex items-center gap-2">
-                        <Slider
-                          className="w-28"
-                          value={[selectedObj.frequency]}
-                          onValueChange={updateFrequency}
-                          min={0.5}
-                          max={5}
-                          step={0.1}
-                        />
+                        <Slider className="w-28" value={[selectedObj.frequency]} onValueChange={updateFrequency} min={0.5} max={5} step={0.1} />
                         <span className="font-mono text-xs text-primary">{selectedObj.frequency.toFixed(1)}Hz</span>
                       </div>
                     </div>
@@ -677,135 +641,159 @@ export const QuantumLab: React.FC = () => {
 
             <div className="grid gap-4 border-t border-white/10 bg-white/[0.025] p-4 md:grid-cols-[minmax(0,1fr)_300px]">
               <div className="min-w-0">
-                <p className="section-eyebrow">Observation Log</p>
+                <p className="section-eyebrow">Observation log</p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{statusMessage}</p>
               </div>
               <MeasurementSparkline measurements={measurements} />
             </div>
           </section>
-
-          {controlsOpen && (
-            <button
-              type="button"
-              aria-label="Close controls panel"
-              className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
-              onClick={() => setControlsOpen(false)}
-            />
-          )}
-
-          <aside
-            role={controlsOpen ? 'dialog' : undefined}
-            aria-modal={controlsOpen ? true : undefined}
-            aria-label="Experiment controls"
-            className={`lab-panel fixed inset-y-0 right-0 z-40 flex w-full max-w-[430px] flex-col overflow-y-auto p-4 shadow-2xl shadow-black/60 transition-transform lg:static lg:z-auto lg:max-w-none lg:translate-x-0 lg:shadow-none ${controlsOpen ? 'translate-x-0' : 'translate-x-full max-lg:hidden'}`}
-          >
-            <div className="mb-4 flex items-center justify-between lg:hidden">
-              <PanelHeader eyebrow="Controls" title="Instrument rack" icon={Gauge} />
-              <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={() => setControlsOpen(false)}>
-                <ChevronRight className="h-4 w-4 rotate-180" />
-                Close
-              </Button>
-            </div>
-
-            <div className="space-y-6">
-              <section className="xl:hidden">
-                <PanelHeader eyebrow="Protocol" title="Experiment set" icon={Beaker} />
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  {modeOrder.map((mode) => {
-                    const definition = experiments[mode];
-                    return (
-                      <ModeButton
-                        key={mode}
-                        definition={definition}
-                        active={experimentMode === mode}
-                        compact
-                        onSelect={() => {
-                          setExperimentMode(mode);
-                          setStatusMessage(`${definition.label} protocol loaded. ${definition.premise}`);
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              </section>
-
-              <section className="border-t border-white/10 pt-5 xl:border-t-0 xl:pt-0">
-                <PanelHeader eyebrow="Briefing" title={activeExperiment.label} icon={activeExperiment.icon} />
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">{activeExperiment.premise}</p>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <DetailRow label="Readout" value={formatPercent(activeReadout)} />
-                  <DetailRow label="Coherence" value={formatPercent(coherence)} />
-                  <DetailRow label="Objects" value={String(objects.length)} />
-                  <DetailRow label="Phase" value={`${phaseDelta} deg`} />
-                </div>
-              </section>
-
-              <section className="border-t border-white/10 pt-5">
-                <div className="flex items-center justify-between gap-2">
-                  <PanelHeader eyebrow="Tuning" title="Field controls" icon={Waves} />
-                  <Button size="sm" variant="ghost" className="h-8 px-2 text-muted-foreground hover:text-foreground" onClick={resetExperiment}>
-                    <RotateCcw className="h-4 w-4" />
-                    Reset
-                  </Button>
-                </div>
-                <div className="mt-5 space-y-5">
-                  <LabSlider icon={Waves} label="Field intensity" value={fieldIntensity} onValueChange={setFieldIntensity} min={0.1} max={1} step={0.1} display={fieldIntensity[0].toFixed(1)} />
-                  <LabSlider icon={Zap} label="Wave speed" value={waveSpeed} onValueChange={setWaveSpeed} min={0.1} max={3} step={0.1} display={`${waveSpeed[0].toFixed(1)}x`} />
-                  <LabSlider icon={Atom} label="Particle traces" value={particleCount} onValueChange={setParticleCount} min={5} max={60} step={5} display={String(particleCount[0])} />
-                  {experimentMode === 'tunneling' && (
-                    <LabSlider icon={Target} label="Barrier height" value={barrierHeight} onValueChange={setBarrierHeight} min={10} max={100} step={5} display={String(barrierHeight[0])} />
-                  )}
-                  {selectedObj && (
-                    <LabSlider icon={Radio} label={`${selectedObj.id.toUpperCase()} frequency`} value={[selectedObj.frequency]} onValueChange={updateFrequency} min={0.5} max={5} step={0.1} display={`${selectedObj.frequency.toFixed(1)} Hz`} />
-                  )}
-                </div>
-              </section>
-
-              <section className="border-t border-white/10 pt-5">
-                <PanelHeader eyebrow="Operations" title="Run controls" icon={Activity} />
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={runExperiment}>
-                    <Beaker className="h-4 w-4" />
-                    Run
-                  </Button>
-                  <Button variant="outline" className="border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={() => addQuantumObject()}>
-                    <Plus className="h-4 w-4" />
-                    Add object
-                  </Button>
-                  <Button variant={showTraces ? 'default' : 'outline'} className={showTraces ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground'} onClick={() => setShowTraces((current) => !current)}>
-                    {showTraces ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                    Traces
-                  </Button>
-                  <Button variant={measurementMode ? 'default' : 'outline'} className={measurementMode ? 'bg-lime text-accent-foreground hover:bg-lime/90' : 'border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground'} onClick={() => setMeasurementMode((current) => !current)}>
-                    <BarChart3 className="h-4 w-4" />
-                    Measure
-                  </Button>
-                </div>
-              </section>
-
-              <section className="border-t border-white/10 pt-5 xl:hidden">
-                <PanelHeader eyebrow="Specimens" title="Quantum objects" icon={Atom} />
-                <div className="mt-4 space-y-2">
-                  {objects.map((object, index) => (
-                    <ObjectRow
-                      key={object.id}
-                      object={object}
-                      index={index}
-                      selected={selectedObject === object.id}
-                      onSelect={() => setSelectedObject(object.id)}
-                      onToggle={() => toggleEntanglement(object.id)}
-                    />
-                  ))}
-                </div>
-              </section>
-            </div>
-          </aside>
         </div>
       </section>
+
+      <section id="protocols" className="px-4 pb-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1700px]">
+          <div className="section-intro">
+            <p className="section-eyebrow">Experiment catalogue</p>
+            <h2 className="mt-3 max-w-3xl text-3xl font-semibold text-foreground sm:text-5xl">Four ways to bend the location variable.</h2>
+          </div>
+          <div className="mode-gallery mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {modeOrder.map((mode) => {
+              const definition = experiments[mode];
+              return (
+                <ModeButton
+                  key={mode}
+                  definition={definition}
+                  active={experimentMode === mode}
+                  onSelect={() => {
+                    setExperimentMode(mode);
+                    setStatusMessage(`${definition.label} protocol loaded. ${definition.premise}`);
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section id="controls" className="px-4 pb-10 sm:px-6 lg:px-8">
+        <div className="control-studio mx-auto grid max-w-[1700px] gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.55fr)_minmax(320px,0.55fr)]">
+          <section className="instrument-panel p-5">
+            <PanelHeader eyebrow="Briefing" title={activeExperiment.label} icon={activeExperiment.icon} />
+            <p className="mt-5 text-sm leading-7 text-muted-foreground">{activeExperiment.premise}</p>
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">{activeExperiment.instruction}</p>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <DetailRow label="Readout" value={formatPercent(activeReadout)} />
+              <DetailRow label="Coherence" value={formatPercent(coherence)} />
+              <DetailRow label="Objects" value={String(objects.length)} />
+              <DetailRow label="Phase" value={`${phaseDelta} deg`} />
+            </div>
+          </section>
+
+          <section className="instrument-panel p-5">
+            <div className="flex items-center justify-between gap-2">
+              <PanelHeader eyebrow="Tuning" title="Field controls" icon={Waves} />
+              <Button size="sm" variant="ghost" className="h-8 px-2 text-muted-foreground hover:text-foreground" onClick={resetExperiment}>
+                <RotateCcw className="h-4 w-4" />
+                Reset
+              </Button>
+            </div>
+            <div className="mt-6 space-y-5">
+              <LabSlider icon={Waves} label="Field intensity" value={fieldIntensity} onValueChange={setFieldIntensity} min={0.1} max={1} step={0.1} display={fieldIntensity[0].toFixed(1)} />
+              <LabSlider icon={Zap} label="Wave speed" value={waveSpeed} onValueChange={setWaveSpeed} min={0.1} max={3} step={0.1} display={`${waveSpeed[0].toFixed(1)}x`} />
+              <LabSlider icon={Atom} label="Particle traces" value={particleCount} onValueChange={setParticleCount} min={5} max={60} step={5} display={String(particleCount[0])} />
+              {experimentMode === 'tunneling' && (
+                <LabSlider icon={Target} label="Barrier height" value={barrierHeight} onValueChange={setBarrierHeight} min={10} max={100} step={5} display={String(barrierHeight[0])} />
+              )}
+              {selectedObj && (
+                <LabSlider icon={Radio} label={`${selectedObj.id.toUpperCase()} frequency`} value={[selectedObj.frequency]} onValueChange={updateFrequency} min={0.5} max={5} step={0.1} display={`${selectedObj.frequency.toFixed(1)} Hz`} />
+              )}
+            </div>
+          </section>
+
+          <section className="instrument-panel p-5">
+            <PanelHeader eyebrow="Operations" title="Objects and runs" icon={Activity} />
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={runExperiment}>
+                <Beaker className="h-4 w-4" />
+                Run
+              </Button>
+              <Button variant="outline" className="border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={() => addQuantumObject()}>
+                <Plus className="h-4 w-4" />
+                Add object
+              </Button>
+              <Button variant={showTraces ? 'default' : 'outline'} className={showTraces ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground'} onClick={() => setShowTraces((current) => !current)}>
+                {showTraces ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                Traces
+              </Button>
+              <Button variant={measurementMode ? 'default' : 'outline'} className={measurementMode ? 'bg-lime text-accent-foreground hover:bg-lime/90' : 'border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground'} onClick={() => setMeasurementMode((current) => !current)}>
+                <BarChart3 className="h-4 w-4" />
+                Measure
+              </Button>
+            </div>
+            <div className="mt-6 space-y-2">
+              {objects.map((object, index) => (
+                <ObjectRow key={object.id} object={object} index={index} selected={selectedObject === object.id} onSelect={() => setSelectedObject(object.id)} onToggle={() => toggleEntanglement(object.id)} />
+              ))}
+            </div>
+          </section>
+        </div>
+      </section>
+
+      {controlsOpen && (
+        <button type="button" aria-label="Close controls panel" className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setControlsOpen(false)} />
+      )}
+
+      <aside
+        role={controlsOpen ? 'dialog' : undefined}
+        aria-modal={controlsOpen ? true : undefined}
+        aria-hidden={!controlsOpen}
+        aria-label="Experiment controls"
+        className={`instrument-panel fixed inset-y-0 right-0 z-40 flex w-full max-w-[430px] flex-col overflow-y-auto p-4 shadow-2xl shadow-black/60 transition-transform lg:hidden ${controlsOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none'}`}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <PanelHeader eyebrow="Controls" title="Instrument rack" icon={Gauge} />
+          <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={() => setControlsOpen(false)}>
+            <ChevronRight className="h-4 w-4 rotate-180" />
+            Close
+          </Button>
+        </div>
+        <div className="space-y-6">
+          <section>
+            <PanelHeader eyebrow="Protocol" title="Experiment set" icon={Beaker} />
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {modeOrder.map((mode) => {
+                const definition = experiments[mode];
+                return (
+                  <ModeButton key={mode} definition={definition} active={experimentMode === mode} compact onSelect={() => {
+                    setExperimentMode(mode);
+                    setStatusMessage(`${definition.label} protocol loaded. ${definition.premise}`);
+                  }} />
+                );
+              })}
+            </div>
+          </section>
+          <section className="border-t border-white/10 pt-5">
+            <PanelHeader eyebrow="Tuning" title="Field controls" icon={Waves} />
+            <div className="mt-5 space-y-5">
+              <LabSlider icon={Waves} label="Field intensity" value={fieldIntensity} onValueChange={setFieldIntensity} min={0.1} max={1} step={0.1} display={fieldIntensity[0].toFixed(1)} />
+              <LabSlider icon={Zap} label="Wave speed" value={waveSpeed} onValueChange={setWaveSpeed} min={0.1} max={3} step={0.1} display={`${waveSpeed[0].toFixed(1)}x`} />
+              <LabSlider icon={Atom} label="Particle traces" value={particleCount} onValueChange={setParticleCount} min={5} max={60} step={5} display={String(particleCount[0])} />
+            </div>
+          </section>
+          <section className="border-t border-white/10 pt-5">
+            <PanelHeader eyebrow="Operations" title="Run controls" icon={Activity} />
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={runExperiment}><Beaker className="h-4 w-4" />Run</Button>
+              <Button variant="outline" className="border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={() => addQuantumObject()}><Plus className="h-4 w-4" />Add object</Button>
+              <Button variant={showTraces ? 'default' : 'outline'} className={showTraces ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground'} onClick={() => setShowTraces((current) => !current)}>{showTraces ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}Traces</Button>
+              <Button variant={measurementMode ? 'default' : 'outline'} className={measurementMode ? 'bg-lime text-accent-foreground hover:bg-lime/90' : 'border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground'} onClick={() => setMeasurementMode((current) => !current)}><BarChart3 className="h-4 w-4" />Measure</Button>
+            </div>
+          </section>
+        </div>
+      </aside>
     </main>
   );
 };
-
 const BrandMark: React.FC = () => (
   <div className="brand-mark" aria-hidden="true">
     <span className="brand-mark__ring" />
