@@ -171,14 +171,14 @@ export const QuantumLab: React.FC = () => {
 
   const drawQuantumField = useCallback((ctx: CanvasRenderingContext2D, currentTime: number) => {
     const background = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    background.addColorStop(0, '#060604');
-    background.addColorStop(0.52, '#11100d');
-    background.addColorStop(1, '#17120d');
+    background.addColorStop(0, '#030712');
+    background.addColorStop(0.52, '#07111d');
+    background.addColorStop(1, '#101326');
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     // Scanning grid effect
-    ctx.strokeStyle = 'rgba(219, 198, 151, 0.035)';
+    ctx.strokeStyle = 'rgba(148, 214, 255, 0.045)';
     ctx.lineWidth = 1;
     const scanY = (currentTime * 50) % CANVAS_HEIGHT;
     ctx.beginPath();
@@ -186,7 +186,7 @@ export const QuantumLab: React.FC = () => {
     ctx.lineTo(CANVAS_WIDTH, scanY);
     ctx.stroke();
 
-    ctx.strokeStyle = 'rgba(126, 213, 203, 0.052)';
+    ctx.strokeStyle = 'rgba(78, 234, 255, 0.055)';
     ctx.lineWidth = 1;
     for (let x = 0; x <= CANVAS_WIDTH; x += 40) {
       ctx.beginPath();
@@ -255,12 +255,12 @@ export const QuantumLab: React.FC = () => {
     const height = barrierHeight[0] * 4.6;
     const top = CANVAS_HEIGHT / 2 - height / 2;
     const barrier = ctx.createLinearGradient(barrierX, top, barrierX + barrierWidth, top + height);
-    barrier.addColorStop(0, 'rgba(251, 146, 60, 0.08)');
-    barrier.addColorStop(0.5, 'rgba(251, 146, 60, 0.52)');
-    barrier.addColorStop(1, 'rgba(251, 146, 60, 0.08)');
+    barrier.addColorStop(0, 'rgba(245, 158, 11, 0.08)');
+    barrier.addColorStop(0.5, 'rgba(245, 158, 11, 0.5)');
+    barrier.addColorStop(1, 'rgba(245, 158, 11, 0.08)');
     ctx.fillStyle = barrier;
     ctx.fillRect(barrierX, top, barrierWidth, height);
-    ctx.strokeStyle = 'rgba(251, 191, 36, 0.8)';
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.74)';
     ctx.strokeRect(barrierX, top, barrierWidth, height);
     ctx.fillStyle = `rgba(163, 230, 53, ${clamp(tunnelChance * 1.8, 0.08, 0.8)})`;
     ctx.fillRect(barrierX + barrierWidth + 28, CANVAS_HEIGHT / 2 - 44, 18, 88);
@@ -323,7 +323,7 @@ export const QuantumLab: React.FC = () => {
     ctx.fillRect(-34, -34, 68, 68);
 
     if (selected) {
-      ctx.strokeStyle = 'rgba(229, 151, 83, 0.92)';
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.88)';
       ctx.setLineDash([6, 6]);
       ctx.beginPath();
       ctx.arc(0, 0, object.amplitude + 14, 0, Math.PI * 2);
@@ -515,30 +515,40 @@ export const QuantumLab: React.FC = () => {
     else setStatusMessage('Canvas creation is available in teleportation mode. Switch modes to add new objects.');
   }, [addQuantumObject, experimentMode, objects]);
 
-  const ActiveIcon = activeExperiment.icon;
 
   return (
     <main className="lab-background min-h-screen overflow-hidden text-foreground">
       <section className="mx-auto flex min-h-screen w-full max-w-[1680px] flex-col gap-4 px-3 py-3 sm:px-4 lg:px-5 lg:py-5">
-        <header className="lab-surface px-4 py-4 lg:px-5">
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_620px] xl:items-center">
-            <div className="flex min-w-0 items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/[0.10] text-primary shadow-[0_0_28px_hsl(var(--primary)/0.18)]">
-                <ActiveIcon className="h-6 w-6" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge className="border border-copper/30 bg-copper/[0.12] text-copper-foreground hover:bg-copper/[0.12]">Vers3Dynamics Lab</Badge>
-                  <Badge variant="outline" className="border-white/15 text-muted-foreground">Scientific sandbox</Badge>
+        <header className="command-bar px-4 py-4 lg:px-5">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between xl:flex-1">
+              <div className="flex min-w-0 items-center gap-4">
+                <BrandMark />
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="instrument-mark">Vers3Dynamics Lab</span>
+                    <Badge variant="outline" className="border-white/15 bg-white/[0.03] text-muted-foreground">Phase-space instrument</Badge>
+                  </div>
+                  <h1 className="mt-3 max-w-3xl text-3xl font-semibold text-foreground sm:text-4xl lg:text-5xl">Waveform Shift Quantum</h1>
+                  <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base">
+                    A live resonance workbench for studying how entanglement, measurement, and field coherence shape apparent position.
+                  </p>
                 </div>
-                <h1 className="mt-3 text-3xl font-semibold text-foreground sm:text-4xl">Waveform Shift Quantum</h1>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-                  A phase-space workbench for testing how resonance, measurement, and entanglement shape apparent position.
-                </p>
+              </div>
+
+              <div className="hidden shrink-0 items-center gap-2 lg:flex">
+                <Button size="sm" variant="outline" className="border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={() => setIsRunning((current) => !current)}>
+                  {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  {isRunning ? 'Pause' : 'Resume'}
+                </Button>
+                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={runExperiment}>
+                  <Beaker className="h-4 w-4" />
+                  Run protocol
+                </Button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:w-[620px]">
               <Metric label="Coherence" value={formatPercent(coherence)} icon={Activity} tone="primary" />
               <Metric label="Entangled" value={String(entangledCount)} icon={Radio} tone="violet" />
               <Metric label={activeExperiment.readoutLabel} value={formatPercent(activeReadout)} icon={Gauge} tone="lime" />
@@ -584,25 +594,26 @@ export const QuantumLab: React.FC = () => {
             </div>
           </aside>
 
-          <section className="field-shell flex min-h-[620px] min-w-0 flex-col overflow-hidden">
+          <section className="field-shell flex min-h-[680px] min-w-0 flex-col overflow-hidden">
             <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <p className="section-eyebrow">Live Field</p>
-                <h2 className="mt-1 text-xl font-semibold text-foreground">{activeExperiment.label} workspace</h2>
+                <p className="section-eyebrow">Realtime Scene</p>
+                <h2 className="mt-1 text-xl font-semibold text-foreground">{activeExperiment.label} field</h2>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">{activeExperiment.eyebrow}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Button size="sm" variant="outline" className="border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={() => setIsRunning((current) => !current)}>
                   {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   {isRunning ? 'Pause' : 'Resume'}
                 </Button>
-                <Button size="sm" className="bg-copper text-accent-foreground hover:bg-copper/90" onClick={runExperiment}>
+                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={runExperiment}>
                   <Beaker className="h-4 w-4" />
                   Run
                 </Button>
               </div>
             </div>
 
-            <div className="field-stage relative min-h-[430px] flex-1 overflow-hidden bg-quantum-field">
+            <div className="field-stage relative min-h-[500px] flex-1 overflow-hidden bg-quantum-field">
               <canvas
                 ref={canvasRef}
                 width={CANVAS_WIDTH}
@@ -614,7 +625,7 @@ export const QuantumLab: React.FC = () => {
 
               {selectedObj && (
                 <div
-                  className="absolute z-10 max-w-[16rem] rounded-md border border-primary/30 bg-background/80 p-3 shadow-2xl shadow-black/40 backdrop-blur-md transition-all duration-200"
+                  className="absolute z-10 max-w-[16rem] rounded-md border border-primary/25 bg-background/85 p-3 shadow-2xl shadow-black/50 backdrop-blur-md transition-all duration-200"
                   style={{
                     left: `${(selectedObj.x / CANVAS_WIDTH) * 100}%`,
                     top: `${(selectedObj.y / CANVAS_HEIGHT) * 100}%`,
@@ -657,7 +668,7 @@ export const QuantumLab: React.FC = () => {
                 </div>
               )}
               <div className="absolute bottom-3 right-3 z-10 lg:hidden">
-                <Button className="h-11 rounded-md bg-copper px-4 text-accent-foreground hover:bg-copper/90" onClick={() => setControlsOpen(true)}>
+                <Button className="h-11 rounded-md bg-primary px-4 text-primary-foreground hover:bg-primary/90" onClick={() => setControlsOpen(true)}>
                   <ChevronRight className="h-4 w-4" />
                   Controls
                 </Button>
@@ -719,7 +730,7 @@ export const QuantumLab: React.FC = () => {
               </section>
 
               <section className="border-t border-white/10 pt-5 xl:border-t-0 xl:pt-0">
-                <PanelHeader eyebrow="Theory" title={activeExperiment.label} icon={activeExperiment.icon} />
+                <PanelHeader eyebrow="Briefing" title={activeExperiment.label} icon={activeExperiment.icon} />
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">{activeExperiment.premise}</p>
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <DetailRow label="Readout" value={formatPercent(activeReadout)} />
@@ -753,7 +764,7 @@ export const QuantumLab: React.FC = () => {
               <section className="border-t border-white/10 pt-5">
                 <PanelHeader eyebrow="Operations" title="Run controls" icon={Activity} />
                 <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Button className="bg-copper text-accent-foreground hover:bg-copper/90" onClick={runExperiment}>
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={runExperiment}>
                     <Beaker className="h-4 w-4" />
                     Run
                   </Button>
@@ -795,6 +806,14 @@ export const QuantumLab: React.FC = () => {
   );
 };
 
+const BrandMark: React.FC = () => (
+  <div className="brand-mark" aria-hidden="true">
+    <span className="brand-mark__ring" />
+    <span className="brand-mark__axis brand-mark__axis--x" />
+    <span className="brand-mark__axis brand-mark__axis--y" />
+    <span className="brand-mark__text">WQ</span>
+  </div>
+);
 interface MetricProps {
   label: string;
   value: string;
@@ -810,7 +829,7 @@ const metricToneStyles: Record<NonNullable<MetricProps['tone']>, string> = {
 };
 
 const Metric: React.FC<MetricProps> = ({ label, value, icon: Icon, tone = 'primary' }) => (
-  <div className={`rounded-md border p-3 ${metricToneStyles[tone]}`}>
+  <div className={`rounded-md border p-3 shadow-[inset_0_1px_0_hsl(var(--foreground)/0.05)] backdrop-blur ${metricToneStyles[tone]}`}>
     <div className="flex items-center justify-between gap-2 text-muted-foreground">
       <span className="section-eyebrow">{label}</span>
       <Icon className="h-4 w-4" />
@@ -827,7 +846,7 @@ interface PanelHeaderProps {
 
 const PanelHeader: React.FC<PanelHeaderProps> = ({ eyebrow, title, icon: Icon }) => (
   <div className="flex items-center gap-3">
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] text-primary">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/[0.035] text-primary">
       <Icon className="h-4 w-4" />
     </div>
     <div className="min-w-0">

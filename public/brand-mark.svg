@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Waveform Shift Quantum mark">
+  <rect width="64" height="64" rx="10" fill="#030712"/>
+  <path d="M12 32h40M32 12v40" stroke="#4eeaff" stroke-width="2" stroke-linecap="round" opacity="0.72"/>
+  <circle cx="32" cy="32" r="19" fill="none" stroke="#9b7cff" stroke-width="2.2" opacity="0.82"/>
+  <path d="M16 40c7-18 15-18 32 0" fill="none" stroke="#8df0b8" stroke-width="3" stroke-linecap="round"/>
+  <path d="M18 24c5 9 10 12 14 8s9-9 14 0" fill="none" stroke="#4eeaff" stroke-width="2.4" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="32" cy="32" r="4" fill="#f8fafc"/>
+</svg>

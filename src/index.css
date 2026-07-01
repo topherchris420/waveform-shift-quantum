@@ -4,58 +4,58 @@
 
 @layer base {
   :root {
-    --background: 38 18% 7%;
-    --foreground: 42 24% 94%;
+    --background: 222 28% 5%;
+    --foreground: 210 34% 96%;
 
-    --card: 38 14% 12%;
-    --card-foreground: 42 24% 94%;
+    --card: 220 22% 9%;
+    --card-foreground: 210 34% 96%;
 
-    --panel: 40 15% 10%;
+    --panel: 220 24% 8%;
 
-    --popover: 38 14% 12%;
-    --popover-foreground: 42 24% 94%;
+    --popover: 220 22% 9%;
+    --popover-foreground: 210 34% 96%;
 
-    --primary: 176 54% 58%;
-    --primary-foreground: 42 24% 8%;
+    --primary: 185 88% 62%;
+    --primary-foreground: 220 28% 7%;
 
-    --secondary: 40 12% 17%;
-    --secondary-foreground: 42 18% 86%;
+    --secondary: 220 16% 15%;
+    --secondary-foreground: 210 22% 88%;
 
-    --muted: 38 12% 15%;
-    --muted-foreground: 40 11% 64%;
+    --muted: 220 15% 14%;
+    --muted-foreground: 215 14% 68%;
 
-    --accent: 29 78% 58%;
-    --accent-foreground: 42 24% 8%;
+    --accent: 145 72% 55%;
+    --accent-foreground: 220 28% 7%;
 
     --destructive: 3 78% 62%;
-    --destructive-foreground: 42 24% 94%;
+    --destructive-foreground: 210 34% 96%;
 
-    --border: 38 12% 22%;
-    --input: 38 12% 18%;
-    --ring: 176 54% 58%;
+    --border: 218 16% 22%;
+    --input: 218 16% 18%;
+    --ring: 185 88% 62%;
 
     --radius: 0.5rem;
 
-    --quantum-field: 38 18% 5%;
-    --quantum-glow: 176 54% 58%;
-    --quantum-wave: 82 62% 61%;
-    --quantum-entangle: 263 52% 72%;
-    --quantum-collapse: 29 78% 58%;
-    --copper: 29 78% 58%;
-    --copper-foreground: 32 86% 91%;
-    --lime: 82 62% 61%;
-    --lime-foreground: 82 70% 88%;
-    --violet: 263 52% 72%;
-    --violet-foreground: 263 66% 90%;
+    --quantum-field: 222 28% 4%;
+    --quantum-glow: 185 88% 62%;
+    --quantum-wave: 145 72% 55%;
+    --quantum-entangle: 258 84% 74%;
+    --quantum-collapse: 42 92% 62%;
+    --copper: 42 92% 62%;
+    --copper-foreground: 42 96% 88%;
+    --lime: 145 72% 55%;
+    --lime-foreground: 145 78% 86%;
+    --violet: 258 84% 74%;
+    --violet-foreground: 258 88% 91%;
 
-    --sidebar-background: 38 18% 7%;
-    --sidebar-foreground: 42 24% 94%;
-    --sidebar-primary: 176 54% 58%;
-    --sidebar-primary-foreground: 42 24% 8%;
-    --sidebar-accent: 40 12% 17%;
-    --sidebar-accent-foreground: 42 24% 94%;
-    --sidebar-border: 38 12% 22%;
-    --sidebar-ring: 176 54% 58%;
+    --sidebar-background: 222 28% 5%;
+    --sidebar-foreground: 210 34% 96%;
+    --sidebar-primary: 185 88% 62%;
+    --sidebar-primary-foreground: 220 28% 7%;
+    --sidebar-accent: 220 16% 15%;
+    --sidebar-accent-foreground: 210 34% 96%;
+    --sidebar-border: 218 16% 22%;
+    --sidebar-ring: 185 88% 62%;
   }
 
   .light {
@@ -139,17 +139,26 @@
 
   .lab-background {
     background:
-      repeating-linear-gradient(90deg, hsl(var(--foreground) / 0.035) 0 1px, transparent 1px 96px),
-      repeating-linear-gradient(0deg, hsl(var(--foreground) / 0.026) 0 1px, transparent 1px 96px),
-      linear-gradient(115deg, hsl(38 22% 6%) 0%, hsl(42 18% 8%) 40%, hsl(35 20% 5%) 100%);
+      linear-gradient(90deg, hsl(var(--foreground) / 0.035) 1px, transparent 1px) 0 0 / 88px 88px,
+      linear-gradient(0deg, hsl(var(--foreground) / 0.026) 1px, transparent 1px) 0 0 / 88px 88px,
+      linear-gradient(135deg, hsl(226 34% 7%) 0%, hsl(220 30% 4%) 46%, hsl(216 34% 6%) 100%);
+  }
+
+  .command-bar {
+    border: 1px solid hsl(var(--border) / 0.82);
+    border-radius: var(--radius);
+    background:
+      linear-gradient(90deg, hsl(var(--primary) / 0.08), transparent 32%),
+      linear-gradient(180deg, hsl(220 24% 11% / 0.92), hsl(220 26% 7% / 0.94));
+    box-shadow: 0 26px 80px hsl(0 0% 0% / 0.38), inset 0 1px 0 hsl(var(--foreground) / 0.06);
   }
 
   .lab-surface {
     border: 1px solid hsl(var(--border) / 0.86);
     border-radius: var(--radius);
     background:
-      repeating-linear-gradient(135deg, hsl(var(--foreground) / 0.035) 0 1px, transparent 1px 14px),
-      linear-gradient(135deg, hsl(var(--panel) / 0.98), hsl(38 17% 8% / 0.96));
+      linear-gradient(135deg, hsl(var(--primary) / 0.05), transparent 42%),
+      linear-gradient(135deg, hsl(var(--panel) / 0.98), hsl(220 24% 7% / 0.96));
     box-shadow: 0 22px 70px hsl(0 0% 0% / 0.42), inset 0 1px 0 hsl(var(--foreground) / 0.05);
   }
 
@@ -157,8 +166,8 @@
     border: 1px solid hsl(var(--border) / 0.82);
     border-radius: var(--radius);
     background:
-      repeating-linear-gradient(90deg, hsl(var(--foreground) / 0.022) 0 1px, transparent 1px 18px),
-      linear-gradient(180deg, hsl(40 14% 12% / 0.94), hsl(38 16% 8% / 0.96));
+      linear-gradient(180deg, hsl(220 22% 11% / 0.94), hsl(220 26% 7% / 0.96)),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.026) 1px, transparent 1px) 0 0 / 28px 28px;
     box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.045);
   }
 
@@ -166,7 +175,7 @@
     border: 1px solid hsl(var(--border) / 0.9);
     border-radius: var(--radius);
     background: hsl(var(--panel));
-    box-shadow: 0 24px 80px hsl(0 0% 0% / 0.48), inset 0 1px 0 hsl(var(--foreground) / 0.05);
+    box-shadow: 0 32px 100px hsl(0 0% 0% / 0.52), inset 0 1px 0 hsl(var(--foreground) / 0.05);
   }
 
   .field-stage::after {
@@ -176,18 +185,74 @@
     pointer-events: none;
     border-radius: inherit;
     background:
-      linear-gradient(90deg, hsl(var(--foreground) / 0.08) 1px, transparent 1px) 0 0 / 80px 80px,
-      linear-gradient(0deg, hsl(var(--foreground) / 0.055) 1px, transparent 1px) 0 0 / 80px 80px,
-      linear-gradient(180deg, transparent 0%, hsl(0 0% 0% / 0.18) 100%);
+      linear-gradient(90deg, hsl(var(--primary) / 0.10) 1px, transparent 1px) 0 0 / 80px 80px,
+      linear-gradient(0deg, hsl(var(--primary) / 0.065) 1px, transparent 1px) 0 0 / 80px 80px,
+      linear-gradient(180deg, transparent 0%, hsl(0 0% 0% / 0.2) 100%);
     mix-blend-mode: screen;
   }
 
+  .brand-mark {
+    position: relative;
+    display: grid;
+    height: 3rem;
+    width: 3rem;
+    flex-shrink: 0;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid hsl(var(--primary) / 0.42);
+    border-radius: var(--radius);
+    background: linear-gradient(145deg, hsl(220 26% 12%), hsl(220 32% 5%));
+    box-shadow: 0 0 34px hsl(var(--primary) / 0.18), inset 0 1px 0 hsl(var(--foreground) / 0.08);
+  }
+
+  .brand-mark::before {
+    content: "";
+    position: absolute;
+    inset: 0.5rem;
+    border: 1px solid hsl(var(--primary) / 0.28);
+    transform: rotate(45deg);
+  }
+
+  .brand-mark__ring {
+    position: absolute;
+    height: 2.1rem;
+    width: 2.1rem;
+    border: 1px solid hsl(var(--violet) / 0.6);
+    border-radius: 999px;
+  }
+
+  .brand-mark__axis {
+    position: absolute;
+    display: block;
+    background: hsl(var(--primary) / 0.66);
+  }
+
+  .brand-mark__axis--x {
+    height: 1px;
+    width: 2.2rem;
+  }
+
+  .brand-mark__axis--y {
+    height: 2.2rem;
+    width: 1px;
+  }
+
+  .brand-mark__text {
+    position: relative;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: hsl(var(--foreground));
+  }
+
   .instrument-mark {
-    border-left: 2px solid hsl(var(--copper));
-    color: hsl(var(--muted-foreground));
+    border: 1px solid hsl(var(--primary) / 0.22);
+    border-radius: calc(var(--radius) - 2px);
+    background: hsl(var(--primary) / 0.07);
+    color: hsl(var(--primary));
     font-size: 0.72rem;
     line-height: 1;
-    padding-left: 0.55rem;
+    padding: 0.36rem 0.55rem;
     text-transform: uppercase;
   }
 
@@ -198,4 +263,3 @@
     text-transform: uppercase;
   }
 }
-
