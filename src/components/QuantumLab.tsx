@@ -25,7 +25,7 @@ import { BlochSphere } from '@/components/lab/BlochSphere';
 import { TeleportationCircuit, type TeleportStep } from '@/components/lab/TeleportationCircuit';
 import { EquationBlock } from '@/components/lab/EquationBlock';
 import { ReferencesFooter } from '@/components/lab/ReferencesFooter';
-import { barrierTransmission, bornProbabilities, teleportationFidelity, toCSV, phaseColor } from '@/lib/physics';
+import { barrierTransmission, bornProbabilities, teleportationFidelity, toCSV } from '@/lib/physics';
 
 type ExperimentMode = 'teleportation' | 'interference' | 'tunneling' | 'superposition';
 
