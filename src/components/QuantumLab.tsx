@@ -474,45 +474,82 @@ export const QuantumLab: React.FC = () => {
   const runExperiment = useCallback(() => {
     if (experimentMode === 'teleportation') {
       if (objects.length < 2) {
-        setStatusMessage('Add at least two quantum objects before transferring state.');
+        setStatusMessage('Add at least two quantum objects before running the protocol.');
         return;
       }
-      setObjects((current) => current.map((object, index) => index < 2 ? { ...object, isTeleporting: true } : object));
-      window.setTimeout(() => {
+      setObjects((current) => current.map((object, index) => (index < 2 ? { ...object, isTeleporting: true } : object)));
+      setStatusMessage('Step 1/4 · Preparing Bell pair |Φ⁺⟩ on (B, C) via H⊗I then CNOT.');
+      setTeleportStep(1);
+      setTeleportBits(undefined);
+      const t2 = window.setTimeout(() => {
+        setTeleportStep(2);
+        setStatusMessage('Step 2/4 · Entangling input |ψ⟩ with B: CNOT then Hadamard on A.');
+      }, 500);
+      const t3 = window.setTimeout(() => {
+        setTeleportStep(3);
+        const b: [0 | 1, 0 | 1] = [Math.random() < 0.5 ? 0 : 1, Math.random() < 0.5 ? 0 : 1];
+        setTeleportBits(b);
+        setStatusMessage(`Step 3/4 · Bell-basis measurement on (A, B) → classical bits m₁m₂ = ${b[0]}${b[1]}.`);
+      }, 1000);
+      const t4 = window.setTimeout(() => {
+        setTeleportStep(4);
+        setStatusMessage(`Step 4/4 · Applying Pauli correction X^{m₂} Z^{m₁} on C. Fidelity F = ${fidelity.toFixed(4)}.`);
         setObjects((current) => {
           const next = [...current];
-          const first = { ...next[0] };
-          const second = { ...next[1] };
-          [first.x, second.x] = [second.x, first.x];
-          [first.y, second.y] = [second.y, first.y];
-          first.isTeleporting = false;
-          second.isTeleporting = false;
-          next[0] = first;
-          next[1] = second;
+          const [a, b] = [{ ...next[0] }, { ...next[1] }];
+          [a.x, b.x] = [b.x, a.x];
+          [a.y, b.y] = [b.y, a.y];
+          a.isTeleporting = false;
+          b.isTeleporting = false;
+          next[0] = a;
+          next[1] = b;
           return next;
         });
-        setStatusMessage('State transfer complete. The pattern moved, not the matter.');
-        recordMeasurement('teleportation', 0.86 + Math.random() * 0.08);
-      }, 620);
-      return;
+        recordMeasurement('teleportation', fidelity);
+      }, 1500);
+      const t5 = window.setTimeout(() => setTeleportStep(0), 3200);
+      return () => [t2, t3, t4, t5].forEach(window.clearTimeout);
     }
 
     if (experimentMode === 'interference') {
       setShowTraces(true);
-      setStatusMessage('Interference screen activated. Bright bands mark constructive paths.');
-      recordMeasurement('interference', activeReadout);
+      setStatusMessage(
+        `Screen active. Fringe spacing Δy = λL/d = ${((wavelength[0] * screenL[0]) / (slitD[0] * 1000)).toFixed(2)} mm; visibility V = ${fringeVisibility.toFixed(3)}.`,
+      );
+      recordMeasurement('interference', fringeVisibility);
       return;
     }
 
     if (experimentMode === 'tunneling') {
-      setStatusMessage(`Barrier sampled. Estimated tunnel chance is ${formatPercent(tunnelChance)}.`);
-      recordMeasurement('tunneling', tunnelChance);
+      const { T, regime } = tunnelResult;
+      setStatusMessage(
+        regime === 'tunneling'
+          ? `Sub-barrier regime (E < V). Transmission T = ${T.toExponential(3)} for a = ${barrierA[0]} nm, κa = ${tunnelResult.kappa_a.toFixed(2)}.`
+          : `Above-barrier regime (E > V). T = ${T.toFixed(4)}, ka = ${tunnelResult.kappa_a.toFixed(2)}.`,
+      );
+      recordMeasurement('tunneling', T);
       return;
     }
 
-    setStatusMessage('Superposition emphasized. Measurement will sample one branch of the field.');
-    recordMeasurement('superposition', coherence);
-  }, [activeReadout, coherence, experimentMode, objects.length, recordMeasurement, tunnelChance]);
+    // Superposition: sample a projective measurement using the Born rule.
+    const outcome = Math.random() < bornP.p0 ? 0 : 1;
+    setStatusMessage(
+      `Projective measurement in {|0⟩,|1⟩}. Predicted P(0) = ${bornP.p0.toFixed(4)}. Sample outcome: |${outcome}⟩.`,
+    );
+    recordMeasurement('superposition', outcome === 0 ? 1 : 0);
+  }, [
+    barrierA,
+    bornP.p0,
+    experimentMode,
+    fidelity,
+    fringeVisibility,
+    objects.length,
+    recordMeasurement,
+    screenL,
+    slitD,
+    tunnelResult,
+    wavelength,
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
