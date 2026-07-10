@@ -142,8 +142,26 @@ export const QuantumLab: React.FC = () => {
   const [measurementMode, setMeasurementMode] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
-  const [statusMessage, setStatusMessage] = useState('System initialized. Entangled pair alpha/beta is phase-locked.');
+  const [statusMessage, setStatusMessage] = useState('Bell pair (A, B) initialized in |Φ⁺⟩. Ready to run the Bennett teleportation protocol.');
   const [time, setTime] = useState(0);
+
+  // Tunneling — rectangular barrier: E, V (eV), a (nm)
+  const [energyE, setEnergyE] = useState([1.2]);
+  const [barrierV, setBarrierV] = useState([2.0]);
+  const [barrierA, setBarrierA] = useState([0.4]);
+  // Interference — d (µm), λ (nm), L (mm)
+  const [slitD, setSlitD] = useState([25]);
+  const [wavelength, setWavelength] = useState([650]);
+  const [screenL, setScreenL] = useState([1200]);
+  // Superposition — Bloch angles (rad)
+  const [blochTheta, setBlochTheta] = useState([Math.PI / 3]);
+  const [blochPhi, setBlochPhi] = useState([Math.PI / 4]);
+  // Teleportation — input state + protocol step + measured bits
+  const [inputTheta, setInputTheta] = useState([Math.PI / 3]);
+  const [inputPhi, setInputPhi] = useState([Math.PI / 5]);
+  const [bellPurity, setBellPurity] = useState([0.98]);
+  const [teleportStep, setTeleportStep] = useState<TeleportStep>(0);
+  const [teleportBits, setTeleportBits] = useState<[0 | 1, 0 | 1] | undefined>(undefined);
 
   const activeExperiment = experiments[experimentMode];
   const selectedObj = objects.find((object) => object.id === selectedObject) ?? objects[0];
@@ -161,7 +179,20 @@ export const QuantumLab: React.FC = () => {
 
 
   const entangledCount = useMemo(() => objects.filter((object) => object.isEntangled).length, [objects]);
-  const tunnelChance = useMemo(() => Math.exp(-barrierHeight[0] * 0.052), [barrierHeight]);
+  const tunnelResult = useMemo(
+    () => barrierTransmission(energyE[0], barrierV[0], barrierA[0]),
+    [energyE, barrierV, barrierA],
+  );
+  const tunnelChance = tunnelResult.T;
+  const bornP = useMemo(() => bornProbabilities(blochTheta[0]), [blochTheta]);
+  const fringeVisibility = useMemo(() => {
+    // Ideal double slit gives V = 1; degrade with slit-width / coherence budget from field intensity.
+    return clamp(0.55 + fieldIntensity[0] * 0.42);
+  }, [fieldIntensity]);
+  const fidelity = useMemo(
+    () => teleportationFidelity(bellPurity[0], 1 - fieldIntensity[0] * 0.7),
+    [bellPurity, fieldIntensity],
+  );
   const coherence = useMemo(() => {
     const crowdingPenalty = objects.length * 0.028;
     const barrierPenalty = experimentMode === 'tunneling' ? barrierHeight[0] / 420 : 0;
@@ -169,10 +200,10 @@ export const QuantumLab: React.FC = () => {
   }, [barrierHeight, experimentMode, objects.length, time]);
   const activeReadout = useMemo(() => {
     if (experimentMode === 'tunneling') return tunnelChance;
-    if (experimentMode === 'superposition') return coherence;
-    if (experimentMode === 'interference') return clamp(fieldIntensity[0] * 0.82 + particleCount[0] / 250);
-    return clamp(0.5 + entangledCount * 0.11 + Math.sin(time * 1.2) * 0.08);
-  }, [coherence, entangledCount, experimentMode, fieldIntensity, particleCount, time, tunnelChance]);
+    if (experimentMode === 'superposition') return bornP.p0;
+    if (experimentMode === 'interference') return fringeVisibility;
+    return fidelity;
+  }, [bornP.p0, experimentMode, fidelity, fringeVisibility, tunnelChance]);
   const phaseDelta = useMemo(() => {
     if (objects.length < 2) return 0;
     return Math.round(((Math.abs(objects[0].phase - objects[1].phase) % (Math.PI * 2)) * 180) / Math.PI);
