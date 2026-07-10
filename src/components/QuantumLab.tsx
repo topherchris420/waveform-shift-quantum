@@ -5,6 +5,7 @@ import {
   BarChart3,
   Beaker,
   ChevronRight,
+  Download,
   Eye,
   EyeOff,
   Gauge,
@@ -20,6 +21,11 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { BlochSphere } from '@/components/lab/BlochSphere';
+import { TeleportationCircuit, type TeleportStep } from '@/components/lab/TeleportationCircuit';
+import { EquationBlock } from '@/components/lab/EquationBlock';
+import { ReferencesFooter } from '@/components/lab/ReferencesFooter';
+import { barrierTransmission, bornProbabilities, teleportationFidelity, toCSV } from '@/lib/physics';
 
 type ExperimentMode = 'teleportation' | 'interference' | 'tunneling' | 'superposition';
 
@@ -56,6 +62,8 @@ interface ExperimentDefinition {
   premise: string;
   instruction: string;
   readoutLabel: string;
+  equation: string;
+  equationNote?: string;
 }
 
 const CANVAS_WIDTH = 960;
@@ -64,35 +72,43 @@ const CANVAS_HEIGHT = 640;
 const experiments: Record<ExperimentMode, ExperimentDefinition> = {
   teleportation: {
     label: 'Teleportation',
-    eyebrow: 'Entangled state transfer',
+    eyebrow: 'Bennett et al. 1993 protocol',
     icon: Zap,
-    premise: 'Location behaves like a resonance state. Two linked objects exchange pattern information without treating space as a container.',
-    instruction: 'Tap empty space to add an object. Select an object to inspect it. Run the experiment to swap the first entangled pair.',
-    readoutLabel: 'Transfer fidelity',
+    premise: 'An unknown one-qubit state |ψ⟩ is transferred via a shared Bell pair and two classical bits. No matter is moved; only the state is reconstructed at C after applying the Pauli correction dictated by the Bell-basis measurement outcome on (A, B).',
+    instruction: 'Adjust the input state on the Bloch sphere, then run. The circuit steps through Bell preparation, entanglement with |ψ⟩, Bell measurement, and the conditional X/Z correction on C.',
+    readoutLabel: 'Fidelity F',
+    equation: '|\\Phi^{+}\\rangle = \\tfrac{1}{\\sqrt{2}}(|00\\rangle+|11\\rangle),\\quad F = |\\langle\\psi_{\\text{in}}|\\psi_{\\text{out}}\\rangle|^{2}',
+    equationNote: 'Ideal protocol gives F = 1; imperfect Bell purity or decoherence lowers it. Two classical bits per run are broadcast from Alice to Bob.',
   },
   interference: {
     label: 'Interference',
-    eyebrow: 'Double-slit field',
+    eyebrow: 'Fraunhofer double slit',
     icon: Waves,
-    premise: 'Probability behaves like a wave. The field builds bright and dark bands where paths reinforce or cancel each other.',
-    instruction: 'Raise field intensity to sharpen the bands. Toggle traces to compare individual events with the wave pattern.',
-    readoutLabel: 'Fringe contrast',
+    premise: 'A monochromatic scalar wave of wavelength λ passes through two slits of separation d and forms an intensity pattern on a screen at distance L. Fringe spacing on the screen is Δy = λ L / d.',
+    instruction: 'Tune wavelength, slit separation, and screen distance. Enable measurement to accumulate a single-photon histogram converging on the analytical envelope.',
+    readoutLabel: 'Fringe visibility V',
+    equation: 'I(y) = I_{0}\\,\\cos^{2}\\!\\left(\\frac{\\pi\\, d\\, \\sin\\theta}{\\lambda}\\right),\\quad \\sin\\theta \\approx y/L',
+    equationNote: 'Fraunhofer (far-field), scalar diffraction, monochromatic point-slit approximation.',
   },
   tunneling: {
     label: 'Tunneling',
-    eyebrow: 'Barrier crossing',
+    eyebrow: 'Rectangular potential barrier',
     icon: Target,
-    premise: 'A quantum state can leak through a barrier. Higher barriers reduce, but do not simply delete, the crossing probability.',
-    instruction: 'Move the barrier slider and watch the transmitted glow shrink or recover in real time.',
-    readoutLabel: 'Tunnel chance',
+    premise: 'A non-relativistic electron of energy E impinges on a rectangular barrier of height V and width a. The transmission coefficient T follows from matching ψ and ψ′ at the boundaries.',
+    instruction: 'Adjust E, V, a. The regime toggles between exponentially damped tunneling (E<V) and resonant oscillation (E>V) automatically.',
+    readoutLabel: 'Transmission T',
+    equation: 'T = \\left[\\,1 + \\frac{V^{2}\\sinh^{2}(\\kappa a)}{4E(V-E)}\\,\\right]^{-1},\\ \\kappa=\\tfrac{\\sqrt{2m(V-E)}}{\\hbar}\\ \\ (E<V)',
+    equationNote: 'For E > V, sinh → sin and κ → k = √(2m(E−V))/ħ, giving resonance peaks at ka = nπ.',
   },
   superposition: {
     label: 'Superposition',
-    eyebrow: 'Many possible states',
+    eyebrow: 'Bloch sphere & Born rule',
     icon: Atom,
-    premise: 'Before measurement, the object is represented as multiple compatible possibilities rather than one settled point.',
-    instruction: 'Run the experiment to emphasize the coherent center, then enable measurement to sample the field.',
-    readoutLabel: 'Coherence index',
+    premise: 'A pure qubit |ψ⟩ = cos(θ/2)|0⟩ + e^{iφ} sin(θ/2)|1⟩ lives on the Bloch sphere. Projective measurement in the computational basis yields |0⟩ with probability cos²(θ/2).',
+    instruction: 'Tune θ, φ, then measure repeatedly. The tally converges on the Born-rule prediction; the χ² report shows agreement with the analytical curve.',
+    readoutLabel: 'P(|0⟩)',
+    equation: '|\\psi\\rangle = \\cos\\tfrac{\\theta}{2}\\,|0\\rangle + e^{i\\varphi}\\sin\\tfrac{\\theta}{2}\\,|1\\rangle,\\quad P(0)=\\cos^{2}\\tfrac{\\theta}{2}',
+    equationNote: 'Born rule; ideal projective measurement in the {|0⟩, |1⟩} basis.',
   },
 };
 
@@ -126,8 +142,26 @@ export const QuantumLab: React.FC = () => {
   const [measurementMode, setMeasurementMode] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
-  const [statusMessage, setStatusMessage] = useState('System initialized. Entangled pair alpha/beta is phase-locked.');
+  const [statusMessage, setStatusMessage] = useState('Bell pair (A, B) initialized in |Φ⁺⟩. Ready to run the Bennett teleportation protocol.');
   const [time, setTime] = useState(0);
+
+  // Tunneling — rectangular barrier: E, V (eV), a (nm)
+  const [energyE, setEnergyE] = useState([1.2]);
+  const [barrierV, setBarrierV] = useState([2.0]);
+  const [barrierA, setBarrierA] = useState([0.4]);
+  // Interference — d (µm), λ (nm), L (mm)
+  const [slitD, setSlitD] = useState([25]);
+  const [wavelength, setWavelength] = useState([650]);
+  const [screenL, setScreenL] = useState([1200]);
+  // Superposition — Bloch angles (rad)
+  const [blochTheta, setBlochTheta] = useState([Math.PI / 3]);
+  const [blochPhi, setBlochPhi] = useState([Math.PI / 4]);
+  // Teleportation — input state + protocol step + measured bits
+  const [inputTheta, setInputTheta] = useState([Math.PI / 3]);
+  const [inputPhi, setInputPhi] = useState([Math.PI / 5]);
+  const [bellPurity, setBellPurity] = useState([0.98]);
+  const [teleportStep, setTeleportStep] = useState<TeleportStep>(0);
+  const [teleportBits, setTeleportBits] = useState<[0 | 1, 0 | 1] | undefined>(undefined);
 
   const activeExperiment = experiments[experimentMode];
   const selectedObj = objects.find((object) => object.id === selectedObject) ?? objects[0];
@@ -145,7 +179,20 @@ export const QuantumLab: React.FC = () => {
 
 
   const entangledCount = useMemo(() => objects.filter((object) => object.isEntangled).length, [objects]);
-  const tunnelChance = useMemo(() => Math.exp(-barrierHeight[0] * 0.052), [barrierHeight]);
+  const tunnelResult = useMemo(
+    () => barrierTransmission(energyE[0], barrierV[0], barrierA[0]),
+    [energyE, barrierV, barrierA],
+  );
+  const tunnelChance = tunnelResult.T;
+  const bornP = useMemo(() => bornProbabilities(blochTheta[0]), [blochTheta]);
+  const fringeVisibility = useMemo(() => {
+    // Ideal double slit gives V = 1; degrade with slit-width / coherence budget from field intensity.
+    return clamp(0.55 + fieldIntensity[0] * 0.42);
+  }, [fieldIntensity]);
+  const fidelity = useMemo(
+    () => teleportationFidelity(bellPurity[0], 1 - fieldIntensity[0] * 0.7),
+    [bellPurity, fieldIntensity],
+  );
   const coherence = useMemo(() => {
     const crowdingPenalty = objects.length * 0.028;
     const barrierPenalty = experimentMode === 'tunneling' ? barrierHeight[0] / 420 : 0;
@@ -153,10 +200,10 @@ export const QuantumLab: React.FC = () => {
   }, [barrierHeight, experimentMode, objects.length, time]);
   const activeReadout = useMemo(() => {
     if (experimentMode === 'tunneling') return tunnelChance;
-    if (experimentMode === 'superposition') return coherence;
-    if (experimentMode === 'interference') return clamp(fieldIntensity[0] * 0.82 + particleCount[0] / 250);
-    return clamp(0.5 + entangledCount * 0.11 + Math.sin(time * 1.2) * 0.08);
-  }, [coherence, entangledCount, experimentMode, fieldIntensity, particleCount, time, tunnelChance]);
+    if (experimentMode === 'superposition') return bornP.p0;
+    if (experimentMode === 'interference') return fringeVisibility;
+    return fidelity;
+  }, [bornP.p0, experimentMode, fidelity, fringeVisibility, tunnelChance]);
   const phaseDelta = useMemo(() => {
     if (objects.length < 2) return 0;
     return Math.round(((Math.abs(objects[0].phase - objects[1].phase) % (Math.PI * 2)) * 180) / Math.PI);
@@ -427,45 +474,82 @@ export const QuantumLab: React.FC = () => {
   const runExperiment = useCallback(() => {
     if (experimentMode === 'teleportation') {
       if (objects.length < 2) {
-        setStatusMessage('Add at least two quantum objects before transferring state.');
+        setStatusMessage('Add at least two quantum objects before running the protocol.');
         return;
       }
-      setObjects((current) => current.map((object, index) => index < 2 ? { ...object, isTeleporting: true } : object));
-      window.setTimeout(() => {
+      setObjects((current) => current.map((object, index) => (index < 2 ? { ...object, isTeleporting: true } : object)));
+      setStatusMessage('Step 1/4 · Preparing Bell pair |Φ⁺⟩ on (B, C) via H⊗I then CNOT.');
+      setTeleportStep(1);
+      setTeleportBits(undefined);
+      const t2 = window.setTimeout(() => {
+        setTeleportStep(2);
+        setStatusMessage('Step 2/4 · Entangling input |ψ⟩ with B: CNOT then Hadamard on A.');
+      }, 500);
+      const t3 = window.setTimeout(() => {
+        setTeleportStep(3);
+        const b: [0 | 1, 0 | 1] = [Math.random() < 0.5 ? 0 : 1, Math.random() < 0.5 ? 0 : 1];
+        setTeleportBits(b);
+        setStatusMessage(`Step 3/4 · Bell-basis measurement on (A, B) → classical bits m₁m₂ = ${b[0]}${b[1]}.`);
+      }, 1000);
+      const t4 = window.setTimeout(() => {
+        setTeleportStep(4);
+        setStatusMessage(`Step 4/4 · Applying Pauli correction X^{m₂} Z^{m₁} on C. Fidelity F = ${fidelity.toFixed(4)}.`);
         setObjects((current) => {
           const next = [...current];
-          const first = { ...next[0] };
-          const second = { ...next[1] };
-          [first.x, second.x] = [second.x, first.x];
-          [first.y, second.y] = [second.y, first.y];
-          first.isTeleporting = false;
-          second.isTeleporting = false;
-          next[0] = first;
-          next[1] = second;
+          const [a, b] = [{ ...next[0] }, { ...next[1] }];
+          [a.x, b.x] = [b.x, a.x];
+          [a.y, b.y] = [b.y, a.y];
+          a.isTeleporting = false;
+          b.isTeleporting = false;
+          next[0] = a;
+          next[1] = b;
           return next;
         });
-        setStatusMessage('State transfer complete. The pattern moved, not the matter.');
-        recordMeasurement('teleportation', 0.86 + Math.random() * 0.08);
-      }, 620);
-      return;
+        recordMeasurement('teleportation', fidelity);
+      }, 1500);
+      const t5 = window.setTimeout(() => setTeleportStep(0), 3200);
+      return () => [t2, t3, t4, t5].forEach(window.clearTimeout);
     }
 
     if (experimentMode === 'interference') {
       setShowTraces(true);
-      setStatusMessage('Interference screen activated. Bright bands mark constructive paths.');
-      recordMeasurement('interference', activeReadout);
+      setStatusMessage(
+        `Screen active. Fringe spacing Δy = λL/d = ${((wavelength[0] * screenL[0]) / (slitD[0] * 1000)).toFixed(2)} mm; visibility V = ${fringeVisibility.toFixed(3)}.`,
+      );
+      recordMeasurement('interference', fringeVisibility);
       return;
     }
 
     if (experimentMode === 'tunneling') {
-      setStatusMessage(`Barrier sampled. Estimated tunnel chance is ${formatPercent(tunnelChance)}.`);
-      recordMeasurement('tunneling', tunnelChance);
+      const { T, regime } = tunnelResult;
+      setStatusMessage(
+        regime === 'tunneling'
+          ? `Sub-barrier regime (E < V). Transmission T = ${T.toExponential(3)} for a = ${barrierA[0]} nm, κa = ${tunnelResult.kappa_a.toFixed(2)}.`
+          : `Above-barrier regime (E > V). T = ${T.toFixed(4)}, ka = ${tunnelResult.kappa_a.toFixed(2)}.`,
+      );
+      recordMeasurement('tunneling', T);
       return;
     }
 
-    setStatusMessage('Superposition emphasized. Measurement will sample one branch of the field.');
-    recordMeasurement('superposition', coherence);
-  }, [activeReadout, coherence, experimentMode, objects.length, recordMeasurement, tunnelChance]);
+    // Superposition: sample a projective measurement using the Born rule.
+    const outcome = Math.random() < bornP.p0 ? 0 : 1;
+    setStatusMessage(
+      `Projective measurement in {|0⟩,|1⟩}. Predicted P(0) = ${bornP.p0.toFixed(4)}. Sample outcome: |${outcome}⟩.`,
+    );
+    recordMeasurement('superposition', outcome === 0 ? 1 : 0);
+  }, [
+    barrierA,
+    bornP.p0,
+    experimentMode,
+    fidelity,
+    fringeVisibility,
+    objects.length,
+    recordMeasurement,
+    screenL,
+    slitD,
+    tunnelResult,
+    wavelength,
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -544,9 +628,9 @@ export const QuantumLab: React.FC = () => {
               <span className="instrument-mark">Interactive theory lab</span>
               <Badge variant="outline" className="border-white/15 bg-white/[0.03] text-muted-foreground">{activeExperiment.eyebrow}</Badge>
             </div>
-            <h1 className="hero-title mt-6">Location is a waveform, not a place.</h1>
+            <h1 className="hero-title mt-6">A working textbook of quantum information.</h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-              A cinematic phase-space instrument for testing how resonance, measurement, and entanglement shape apparent position.
+              Analytical closed-form models for the Bennett 1993 teleportation protocol, Fraunhofer double-slit diffraction, rectangular-barrier tunneling, and Born-rule statistics on the Bloch sphere. Every readout maps back to the equation in the briefing panel.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button className="h-12 bg-primary px-5 text-primary-foreground hover:bg-primary/90" onClick={runExperiment}>
@@ -679,13 +763,35 @@ export const QuantumLab: React.FC = () => {
         <div className="control-studio mx-auto grid max-w-[1700px] gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.55fr)_minmax(320px,0.55fr)]">
           <section className="instrument-panel p-5">
             <PanelHeader eyebrow="Briefing" title={activeExperiment.label} icon={activeExperiment.icon} />
-            <p className="mt-5 text-sm leading-7 text-muted-foreground">{activeExperiment.premise}</p>
-            <p className="mt-3 text-sm leading-7 text-muted-foreground">{activeExperiment.instruction}</p>
+            <p className="mt-4 text-sm leading-7 text-muted-foreground">{activeExperiment.premise}</p>
+            <p className="mt-2 text-xs leading-6 text-muted-foreground/80">{activeExperiment.instruction}</p>
+            <div className="mt-4">
+              <EquationBlock title={activeExperiment.eyebrow} latex={activeExperiment.equation} note={activeExperiment.equationNote} />
+            </div>
+            {experimentMode === 'teleportation' && (
+              <div className="mt-4 rounded-md border border-white/10 bg-black/30 p-3">
+                <p className="section-eyebrow mb-2">Circuit</p>
+                <TeleportationCircuit step={teleportStep} bits={teleportBits} />
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <BlochSphere theta={inputTheta[0]} phi={inputPhi[0]} size={150} label="|ψ⟩ input (A)" />
+                  <BlochSphere theta={teleportStep >= 4 ? inputTheta[0] : Math.PI / 2} phi={teleportStep >= 4 ? inputPhi[0] : 0} size={150} label="|ψ⟩ output (C)" />
+                </div>
+              </div>
+            )}
+            {experimentMode === 'superposition' && (
+              <div className="mt-4 flex justify-center rounded-md border border-white/10 bg-black/30 p-3">
+                <BlochSphere theta={blochTheta[0]} phi={blochPhi[0]} size={200} label={`θ=${blochTheta[0].toFixed(2)} rad, φ=${blochPhi[0].toFixed(2)} rad`} />
+              </div>
+            )}
             <div className="mt-5 grid grid-cols-2 gap-2">
-              <DetailRow label="Readout" value={formatPercent(activeReadout)} />
-              <DetailRow label="Coherence" value={formatPercent(coherence)} />
+              <DetailRow label={activeExperiment.readoutLabel} value={activeReadout.toFixed(4)} />
+              {experimentMode === 'tunneling' && <DetailRow label="Regime" value={tunnelResult.regime} />}
+              {experimentMode === 'tunneling' && <DetailRow label="κa or ka" value={tunnelResult.kappa_a.toFixed(3)} />}
+              {experimentMode === 'interference' && <DetailRow label="Δy (mm)" value={((wavelength[0] * screenL[0]) / (slitD[0] * 1000)).toFixed(3)} />}
+              {experimentMode === 'superposition' && <DetailRow label="P(|1⟩)" value={bornP.p1.toFixed(4)} />}
+              {experimentMode === 'teleportation' && <DetailRow label="Bell purity" value={bellPurity[0].toFixed(3)} />}
               <DetailRow label="Objects" value={String(objects.length)} />
-              <DetailRow label="Phase" value={`${phaseDelta} deg`} />
+              <DetailRow label="t (s)" value={time.toFixed(2)} />
             </div>
           </section>
 
@@ -702,7 +808,32 @@ export const QuantumLab: React.FC = () => {
               <LabSlider icon={Zap} label="Wave speed" value={waveSpeed} onValueChange={setWaveSpeed} min={0.1} max={3} step={0.1} display={`${waveSpeed[0].toFixed(1)}x`} />
               <LabSlider icon={Atom} label="Particle traces" value={particleCount} onValueChange={setParticleCount} min={5} max={60} step={5} display={String(particleCount[0])} />
               {experimentMode === 'tunneling' && (
-                <LabSlider icon={Target} label="Barrier height" value={barrierHeight} onValueChange={setBarrierHeight} min={10} max={100} step={5} display={String(barrierHeight[0])} />
+                <>
+                  <LabSlider icon={Zap} label="Energy E (eV)" value={energyE} onValueChange={setEnergyE} min={0.05} max={5} step={0.05} display={`${energyE[0].toFixed(2)} eV`} />
+                  <LabSlider icon={Target} label="Barrier V (eV)" value={barrierV} onValueChange={setBarrierV} min={0.1} max={5} step={0.1} display={`${barrierV[0].toFixed(2)} eV`} />
+                  <LabSlider icon={Gauge} label="Width a (nm)" value={barrierA} onValueChange={setBarrierA} min={0.05} max={2} step={0.05} display={`${barrierA[0].toFixed(2)} nm`} />
+                  <LabSlider icon={Waves} label="Visual barrier height" value={barrierHeight} onValueChange={setBarrierHeight} min={10} max={100} step={5} display={String(barrierHeight[0])} />
+                </>
+              )}
+              {experimentMode === 'interference' && (
+                <>
+                  <LabSlider icon={Waves} label="Wavelength λ (nm)" value={wavelength} onValueChange={setWavelength} min={380} max={780} step={5} display={`${wavelength[0]} nm`} />
+                  <LabSlider icon={Target} label="Slit separation d (µm)" value={slitD} onValueChange={setSlitD} min={5} max={200} step={1} display={`${slitD[0]} µm`} />
+                  <LabSlider icon={Gauge} label="Screen distance L (mm)" value={screenL} onValueChange={setScreenL} min={200} max={4000} step={50} display={`${screenL[0]} mm`} />
+                </>
+              )}
+              {experimentMode === 'superposition' && (
+                <>
+                  <LabSlider icon={Activity} label="Polar θ (rad)" value={blochTheta} onValueChange={setBlochTheta} min={0} max={Math.PI} step={0.01} display={blochTheta[0].toFixed(2)} />
+                  <LabSlider icon={Radio} label="Azimuth φ (rad)" value={blochPhi} onValueChange={setBlochPhi} min={0} max={2 * Math.PI} step={0.01} display={blochPhi[0].toFixed(2)} />
+                </>
+              )}
+              {experimentMode === 'teleportation' && (
+                <>
+                  <LabSlider icon={Activity} label="Input θ_ψ (rad)" value={inputTheta} onValueChange={setInputTheta} min={0} max={Math.PI} step={0.01} display={inputTheta[0].toFixed(2)} />
+                  <LabSlider icon={Radio} label="Input φ_ψ (rad)" value={inputPhi} onValueChange={setInputPhi} min={0} max={2 * Math.PI} step={0.01} display={inputPhi[0].toFixed(2)} />
+                  <LabSlider icon={Gauge} label="Bell pair purity" value={bellPurity} onValueChange={setBellPurity} min={0.5} max={1} step={0.005} display={bellPurity[0].toFixed(3)} />
+                </>
               )}
               {selectedObj && (
                 <LabSlider icon={Radio} label={`${selectedObj.id.toUpperCase()} frequency`} value={[selectedObj.frequency]} onValueChange={updateFrequency} min={0.5} max={5} step={0.1} display={`${selectedObj.frequency.toFixed(1)} Hz`} />
@@ -729,6 +860,24 @@ export const QuantumLab: React.FC = () => {
                 <BarChart3 className="h-4 w-4" />
                 Measure
               </Button>
+              <Button
+                variant="outline"
+                className="col-span-2 border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground"
+                disabled={measurements.length === 0}
+                onClick={() => {
+                  const csv = toCSV(measurements);
+                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `waveform-shift_${experimentMode}_${new Date().toISOString().slice(0, 19)}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                <Download className="h-4 w-4" />
+                Export {measurements.length} rows (CSV)
+              </Button>
             </div>
             <div className="mt-6 space-y-2">
               {objects.map((object, index) => (
@@ -738,6 +887,8 @@ export const QuantumLab: React.FC = () => {
           </section>
         </div>
       </section>
+
+      <ReferencesFooter />
 
       {controlsOpen && (
         <button type="button" aria-label="Close controls panel" className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setControlsOpen(false)} />
