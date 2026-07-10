@@ -5,6 +5,7 @@ import {
   BarChart3,
   Beaker,
   ChevronRight,
+  Download,
   Eye,
   EyeOff,
   Gauge,
@@ -20,6 +21,11 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { BlochSphere } from '@/components/lab/BlochSphere';
+import { TeleportationCircuit, type TeleportStep } from '@/components/lab/TeleportationCircuit';
+import { EquationBlock } from '@/components/lab/EquationBlock';
+import { ReferencesFooter } from '@/components/lab/ReferencesFooter';
+import { barrierTransmission, bornProbabilities, teleportationFidelity, toCSV, phaseColor } from '@/lib/physics';
 
 type ExperimentMode = 'teleportation' | 'interference' | 'tunneling' | 'superposition';
 
