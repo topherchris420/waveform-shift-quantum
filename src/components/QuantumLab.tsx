@@ -628,9 +628,9 @@ export const QuantumLab: React.FC = () => {
               <span className="instrument-mark">Interactive theory lab</span>
               <Badge variant="outline" className="border-white/15 bg-white/[0.03] text-muted-foreground">{activeExperiment.eyebrow}</Badge>
             </div>
-            <h1 className="hero-title mt-6">Location is a waveform, not a place.</h1>
+            <h1 className="hero-title mt-6">A working textbook of quantum information.</h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
-              A cinematic phase-space instrument for testing how resonance, measurement, and entanglement shape apparent position.
+              Analytical closed-form models for the Bennett 1993 teleportation protocol, Fraunhofer double-slit diffraction, rectangular-barrier tunneling, and Born-rule statistics on the Bloch sphere. Every readout maps back to the equation in the briefing panel.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button className="h-12 bg-primary px-5 text-primary-foreground hover:bg-primary/90" onClick={runExperiment}>
@@ -763,13 +763,35 @@ export const QuantumLab: React.FC = () => {
         <div className="control-studio mx-auto grid max-w-[1700px] gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.55fr)_minmax(320px,0.55fr)]">
           <section className="instrument-panel p-5">
             <PanelHeader eyebrow="Briefing" title={activeExperiment.label} icon={activeExperiment.icon} />
-            <p className="mt-5 text-sm leading-7 text-muted-foreground">{activeExperiment.premise}</p>
-            <p className="mt-3 text-sm leading-7 text-muted-foreground">{activeExperiment.instruction}</p>
+            <p className="mt-4 text-sm leading-7 text-muted-foreground">{activeExperiment.premise}</p>
+            <p className="mt-2 text-xs leading-6 text-muted-foreground/80">{activeExperiment.instruction}</p>
+            <div className="mt-4">
+              <EquationBlock title={activeExperiment.eyebrow} latex={activeExperiment.equation} note={activeExperiment.equationNote} />
+            </div>
+            {experimentMode === 'teleportation' && (
+              <div className="mt-4 rounded-md border border-white/10 bg-black/30 p-3">
+                <p className="section-eyebrow mb-2">Circuit</p>
+                <TeleportationCircuit step={teleportStep} bits={teleportBits} />
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <BlochSphere theta={inputTheta[0]} phi={inputPhi[0]} size={150} label="|ψ⟩ input (A)" />
+                  <BlochSphere theta={teleportStep >= 4 ? inputTheta[0] : Math.PI / 2} phi={teleportStep >= 4 ? inputPhi[0] : 0} size={150} label="|ψ⟩ output (C)" />
+                </div>
+              </div>
+            )}
+            {experimentMode === 'superposition' && (
+              <div className="mt-4 flex justify-center rounded-md border border-white/10 bg-black/30 p-3">
+                <BlochSphere theta={blochTheta[0]} phi={blochPhi[0]} size={200} label={`θ=${blochTheta[0].toFixed(2)} rad, φ=${blochPhi[0].toFixed(2)} rad`} />
+              </div>
+            )}
             <div className="mt-5 grid grid-cols-2 gap-2">
-              <DetailRow label="Readout" value={formatPercent(activeReadout)} />
-              <DetailRow label="Coherence" value={formatPercent(coherence)} />
+              <DetailRow label={activeExperiment.readoutLabel} value={activeReadout.toFixed(4)} />
+              {experimentMode === 'tunneling' && <DetailRow label="Regime" value={tunnelResult.regime} />}
+              {experimentMode === 'tunneling' && <DetailRow label="κa or ka" value={tunnelResult.kappa_a.toFixed(3)} />}
+              {experimentMode === 'interference' && <DetailRow label="Δy (mm)" value={((wavelength[0] * screenL[0]) / (slitD[0] * 1000)).toFixed(3)} />}
+              {experimentMode === 'superposition' && <DetailRow label="P(|1⟩)" value={bornP.p1.toFixed(4)} />}
+              {experimentMode === 'teleportation' && <DetailRow label="Bell purity" value={bellPurity[0].toFixed(3)} />}
               <DetailRow label="Objects" value={String(objects.length)} />
-              <DetailRow label="Phase" value={`${phaseDelta} deg`} />
+              <DetailRow label="t (s)" value={time.toFixed(2)} />
             </div>
           </section>
 
@@ -786,7 +808,32 @@ export const QuantumLab: React.FC = () => {
               <LabSlider icon={Zap} label="Wave speed" value={waveSpeed} onValueChange={setWaveSpeed} min={0.1} max={3} step={0.1} display={`${waveSpeed[0].toFixed(1)}x`} />
               <LabSlider icon={Atom} label="Particle traces" value={particleCount} onValueChange={setParticleCount} min={5} max={60} step={5} display={String(particleCount[0])} />
               {experimentMode === 'tunneling' && (
-                <LabSlider icon={Target} label="Barrier height" value={barrierHeight} onValueChange={setBarrierHeight} min={10} max={100} step={5} display={String(barrierHeight[0])} />
+                <>
+                  <LabSlider icon={Zap} label="Energy E (eV)" value={energyE} onValueChange={setEnergyE} min={0.05} max={5} step={0.05} display={`${energyE[0].toFixed(2)} eV`} />
+                  <LabSlider icon={Target} label="Barrier V (eV)" value={barrierV} onValueChange={setBarrierV} min={0.1} max={5} step={0.1} display={`${barrierV[0].toFixed(2)} eV`} />
+                  <LabSlider icon={Gauge} label="Width a (nm)" value={barrierA} onValueChange={setBarrierA} min={0.05} max={2} step={0.05} display={`${barrierA[0].toFixed(2)} nm`} />
+                  <LabSlider icon={Waves} label="Visual barrier height" value={barrierHeight} onValueChange={setBarrierHeight} min={10} max={100} step={5} display={String(barrierHeight[0])} />
+                </>
+              )}
+              {experimentMode === 'interference' && (
+                <>
+                  <LabSlider icon={Waves} label="Wavelength λ (nm)" value={wavelength} onValueChange={setWavelength} min={380} max={780} step={5} display={`${wavelength[0]} nm`} />
+                  <LabSlider icon={Target} label="Slit separation d (µm)" value={slitD} onValueChange={setSlitD} min={5} max={200} step={1} display={`${slitD[0]} µm`} />
+                  <LabSlider icon={Gauge} label="Screen distance L (mm)" value={screenL} onValueChange={setScreenL} min={200} max={4000} step={50} display={`${screenL[0]} mm`} />
+                </>
+              )}
+              {experimentMode === 'superposition' && (
+                <>
+                  <LabSlider icon={Activity} label="Polar θ (rad)" value={blochTheta} onValueChange={setBlochTheta} min={0} max={Math.PI} step={0.01} display={blochTheta[0].toFixed(2)} />
+                  <LabSlider icon={Radio} label="Azimuth φ (rad)" value={blochPhi} onValueChange={setBlochPhi} min={0} max={2 * Math.PI} step={0.01} display={blochPhi[0].toFixed(2)} />
+                </>
+              )}
+              {experimentMode === 'teleportation' && (
+                <>
+                  <LabSlider icon={Activity} label="Input θ_ψ (rad)" value={inputTheta} onValueChange={setInputTheta} min={0} max={Math.PI} step={0.01} display={inputTheta[0].toFixed(2)} />
+                  <LabSlider icon={Radio} label="Input φ_ψ (rad)" value={inputPhi} onValueChange={setInputPhi} min={0} max={2 * Math.PI} step={0.01} display={inputPhi[0].toFixed(2)} />
+                  <LabSlider icon={Gauge} label="Bell pair purity" value={bellPurity} onValueChange={setBellPurity} min={0.5} max={1} step={0.005} display={bellPurity[0].toFixed(3)} />
+                </>
               )}
               {selectedObj && (
                 <LabSlider icon={Radio} label={`${selectedObj.id.toUpperCase()} frequency`} value={[selectedObj.frequency]} onValueChange={updateFrequency} min={0.5} max={5} step={0.1} display={`${selectedObj.frequency.toFixed(1)} Hz`} />
@@ -813,6 +860,24 @@ export const QuantumLab: React.FC = () => {
                 <BarChart3 className="h-4 w-4" />
                 Measure
               </Button>
+              <Button
+                variant="outline"
+                className="col-span-2 border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground"
+                disabled={measurements.length === 0}
+                onClick={() => {
+                  const csv = toCSV(measurements);
+                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `waveform-shift_${experimentMode}_${new Date().toISOString().slice(0, 19)}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                <Download className="h-4 w-4" />
+                Export {measurements.length} rows (CSV)
+              </Button>
             </div>
             <div className="mt-6 space-y-2">
               {objects.map((object, index) => (
@@ -822,6 +887,8 @@ export const QuantumLab: React.FC = () => {
           </section>
         </div>
       </section>
+
+      <ReferencesFooter />
 
       {controlsOpen && (
         <button type="button" aria-label="Close controls panel" className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setControlsOpen(false)} />
