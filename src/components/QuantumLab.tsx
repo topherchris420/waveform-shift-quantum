@@ -62,6 +62,8 @@ interface ExperimentDefinition {
   premise: string;
   instruction: string;
   readoutLabel: string;
+  equation: string;
+  equationNote?: string;
 }
 
 const CANVAS_WIDTH = 960;
@@ -70,35 +72,43 @@ const CANVAS_HEIGHT = 640;
 const experiments: Record<ExperimentMode, ExperimentDefinition> = {
   teleportation: {
     label: 'Teleportation',
-    eyebrow: 'Entangled state transfer',
+    eyebrow: 'Bennett et al. 1993 protocol',
     icon: Zap,
-    premise: 'Location behaves like a resonance state. Two linked objects exchange pattern information without treating space as a container.',
-    instruction: 'Tap empty space to add an object. Select an object to inspect it. Run the experiment to swap the first entangled pair.',
-    readoutLabel: 'Transfer fidelity',
+    premise: 'An unknown one-qubit state |ψ⟩ is transferred via a shared Bell pair and two classical bits. No matter is moved; only the state is reconstructed at C after applying the Pauli correction dictated by the Bell-basis measurement outcome on (A, B).',
+    instruction: 'Adjust the input state on the Bloch sphere, then run. The circuit steps through Bell preparation, entanglement with |ψ⟩, Bell measurement, and the conditional X/Z correction on C.',
+    readoutLabel: 'Fidelity F',
+    equation: '|\\Phi^{+}\\rangle = \\tfrac{1}{\\sqrt{2}}(|00\\rangle+|11\\rangle),\\quad F = |\\langle\\psi_{\\text{in}}|\\psi_{\\text{out}}\\rangle|^{2}',
+    equationNote: 'Ideal protocol gives F = 1; imperfect Bell purity or decoherence lowers it. Two classical bits per run are broadcast from Alice to Bob.',
   },
   interference: {
     label: 'Interference',
-    eyebrow: 'Double-slit field',
+    eyebrow: 'Fraunhofer double slit',
     icon: Waves,
-    premise: 'Probability behaves like a wave. The field builds bright and dark bands where paths reinforce or cancel each other.',
-    instruction: 'Raise field intensity to sharpen the bands. Toggle traces to compare individual events with the wave pattern.',
-    readoutLabel: 'Fringe contrast',
+    premise: 'A monochromatic scalar wave of wavelength λ passes through two slits of separation d and forms an intensity pattern on a screen at distance L. Fringe spacing on the screen is Δy = λ L / d.',
+    instruction: 'Tune wavelength, slit separation, and screen distance. Enable measurement to accumulate a single-photon histogram converging on the analytical envelope.',
+    readoutLabel: 'Fringe visibility V',
+    equation: 'I(y) = I_{0}\\,\\cos^{2}\\!\\left(\\frac{\\pi\\, d\\, \\sin\\theta}{\\lambda}\\right),\\quad \\sin\\theta \\approx y/L',
+    equationNote: 'Fraunhofer (far-field), scalar diffraction, monochromatic point-slit approximation.',
   },
   tunneling: {
     label: 'Tunneling',
-    eyebrow: 'Barrier crossing',
+    eyebrow: 'Rectangular potential barrier',
     icon: Target,
-    premise: 'A quantum state can leak through a barrier. Higher barriers reduce, but do not simply delete, the crossing probability.',
-    instruction: 'Move the barrier slider and watch the transmitted glow shrink or recover in real time.',
-    readoutLabel: 'Tunnel chance',
+    premise: 'A non-relativistic electron of energy E impinges on a rectangular barrier of height V and width a. The transmission coefficient T follows from matching ψ and ψ′ at the boundaries.',
+    instruction: 'Adjust E, V, a. The regime toggles between exponentially damped tunneling (E<V) and resonant oscillation (E>V) automatically.',
+    readoutLabel: 'Transmission T',
+    equation: 'T = \\left[\\,1 + \\frac{V^{2}\\sinh^{2}(\\kappa a)}{4E(V-E)}\\,\\right]^{-1},\\ \\kappa=\\tfrac{\\sqrt{2m(V-E)}}{\\hbar}\\ \\ (E<V)',
+    equationNote: 'For E > V, sinh → sin and κ → k = √(2m(E−V))/ħ, giving resonance peaks at ka = nπ.',
   },
   superposition: {
     label: 'Superposition',
-    eyebrow: 'Many possible states',
+    eyebrow: 'Bloch sphere & Born rule',
     icon: Atom,
-    premise: 'Before measurement, the object is represented as multiple compatible possibilities rather than one settled point.',
-    instruction: 'Run the experiment to emphasize the coherent center, then enable measurement to sample the field.',
-    readoutLabel: 'Coherence index',
+    premise: 'A pure qubit |ψ⟩ = cos(θ/2)|0⟩ + e^{iφ} sin(θ/2)|1⟩ lives on the Bloch sphere. Projective measurement in the computational basis yields |0⟩ with probability cos²(θ/2).',
+    instruction: 'Tune θ, φ, then measure repeatedly. The tally converges on the Born-rule prediction; the χ² report shows agreement with the analytical curve.',
+    readoutLabel: 'P(|0⟩)',
+    equation: '|\\psi\\rangle = \\cos\\tfrac{\\theta}{2}\\,|0\\rangle + e^{i\\varphi}\\sin\\tfrac{\\theta}{2}\\,|1\\rangle,\\quad P(0)=\\cos^{2}\\tfrac{\\theta}{2}',
+    equationNote: 'Born rule; ideal projective measurement in the {|0⟩, |1⟩} basis.',
   },
 };
 
