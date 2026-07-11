@@ -25,7 +25,8 @@ import { BlochSphere } from '@/components/lab/BlochSphere';
 import { TeleportationCircuit, type TeleportStep } from '@/components/lab/TeleportationCircuit';
 import { EquationBlock } from '@/components/lab/EquationBlock';
 import { ReferencesFooter } from '@/components/lab/ReferencesFooter';
-import { barrierTransmission, bornProbabilities, teleportationFidelity, toCSV } from '@/lib/physics';
+import { barrierTransmission, bornProbabilities, teleportationFidelity, toCSV, wernerConcurrence, zzCorrelation } from '@/lib/physics';
+import { EntanglementOverlay, type BellRecord } from '@/components/lab/EntanglementOverlay';
 
 type ExperimentMode = 'teleportation' | 'interference' | 'tunneling' | 'superposition';
 
@@ -162,6 +163,9 @@ export const QuantumLab: React.FC = () => {
   const [bellPurity, setBellPurity] = useState([0.98]);
   const [teleportStep, setTeleportStep] = useState<TeleportStep>(0);
   const [teleportBits, setTeleportBits] = useState<[0 | 1, 0 | 1] | undefined>(undefined);
+  const [bellHistory, setBellHistory] = useState<BellRecord[]>([]);
+  const bellIdRef = useRef(0);
+  const [showEntanglementOverlay, setShowEntanglementOverlay] = useState(true);
 
   const activeExperiment = experiments[experimentMode];
   const selectedObj = objects.find((object) => object.id === selectedObject) ?? objects[0];
@@ -193,6 +197,8 @@ export const QuantumLab: React.FC = () => {
     () => teleportationFidelity(bellPurity[0], 1 - fieldIntensity[0] * 0.7),
     [bellPurity, fieldIntensity],
   );
+  const concurrence = useMemo(() => wernerConcurrence(bellPurity[0]), [bellPurity]);
+  const zz = useMemo(() => zzCorrelation(bellHistory.slice(-20).map((r) => r.bits)), [bellHistory]);
   const coherence = useMemo(() => {
     const crowdingPenalty = objects.length * 0.028;
     const barrierPenalty = experimentMode === 'tunneling' ? barrierHeight[0] / 420 : 0;
@@ -487,8 +493,21 @@ export const QuantumLab: React.FC = () => {
       }, 500);
       const t3 = window.setTimeout(() => {
         setTeleportStep(3);
-        const b: [0 | 1, 0 | 1] = [Math.random() < 0.5 ? 0 : 1, Math.random() < 0.5 ? 0 : 1];
+        // Sample correlated bits from the Werner state: with prob p emit a |Φ⁺⟩ outcome
+        // (m₁ = m₂), otherwise a uniform random pair (depolarised background).
+        const p = bellPurity[0];
+        let b: [0 | 1, 0 | 1];
+        if (Math.random() < p) {
+          const same = Math.random() < 0.5 ? 0 : 1;
+          b = [same as 0 | 1, same as 0 | 1];
+        } else {
+          b = [Math.random() < 0.5 ? 0 : 1, Math.random() < 0.5 ? 0 : 1];
+        }
         setTeleportBits(b);
+        setBellHistory((current) => [
+          ...current.slice(-49),
+          { id: (bellIdRef.current += 1), t: timeRef.current, bits: b, mode: 'teleportation', fidelity },
+        ]);
         setStatusMessage(`Step 3/4 · Bell-basis measurement on (A, B) → classical bits m₁m₂ = ${b[0]}${b[1]}.`);
       }, 1000);
       const t4 = window.setTimeout(() => {
@@ -533,12 +552,20 @@ export const QuantumLab: React.FC = () => {
 
     // Superposition: sample a projective measurement using the Born rule.
     const outcome = Math.random() < bornP.p0 ? 0 : 1;
+    // Correlate a companion bit through the shared Bell pair so the overlay
+    // keeps updating outside teleportation mode as well.
+    const partner: 0 | 1 = Math.random() < bellPurity[0] ? outcome as 0 | 1 : (Math.random() < 0.5 ? 0 : 1);
+    setBellHistory((current) => [
+      ...current.slice(-49),
+      { id: (bellIdRef.current += 1), t: timeRef.current, bits: [outcome as 0 | 1, partner], mode: experimentMode, fidelity },
+    ]);
     setStatusMessage(
       `Projective measurement in {|0⟩,|1⟩}. Predicted P(0) = ${bornP.p0.toFixed(4)}. Sample outcome: |${outcome}⟩.`,
     );
     recordMeasurement('superposition', outcome === 0 ? 1 : 0);
   }, [
     barrierA,
+    bellPurity,
     bornP.p0,
     experimentMode,
     fidelity,
@@ -713,6 +740,16 @@ export const QuantumLab: React.FC = () => {
               {measurementMode && (
                 <div className="absolute bottom-3 left-3 z-10 rounded-md border border-lime/35 bg-lime/[0.12] px-3 py-2 text-xs font-medium text-lime-foreground shadow-lg shadow-black/30 backdrop-blur-md">
                   Measurement active
+                </div>
+              )}
+              {showEntanglementOverlay && (
+                <div className="absolute right-3 bottom-3 z-10 hidden w-[300px] sm:block">
+                  <EntanglementOverlay history={bellHistory} concurrence={concurrence} purity={bellPurity[0]} zz={zz} />
+                </div>
+              )}
+              {showEntanglementOverlay && (
+                <div className="absolute inset-x-3 bottom-16 z-10 sm:hidden">
+                  <EntanglementOverlay history={bellHistory} concurrence={concurrence} purity={bellPurity[0]} zz={zz} compact />
                 </div>
               )}
               <div className="absolute bottom-3 right-3 z-10 lg:hidden">
