@@ -68,3 +68,21 @@ export function toCSV(rows: { id: number; timestamp: number; value: number; type
   const body = rows.map((r) => `${r.id},${r.timestamp.toFixed(4)},${r.value.toFixed(6)},${r.type}`).join('\n');
   return `${header}\n${body}\n`;
 }
+
+/**
+ * Concurrence of a Werner state ρ = p|Φ⁺⟩⟨Φ⁺| + (1-p) I/4.
+ * C(ρ) = max(0, (3p − 1) / 2).  Entangled iff p > 1/3.
+ */
+export function wernerConcurrence(purity: number) {
+  return Math.max(0, (3 * purity - 1) / 2);
+}
+
+/**
+ * ⟨ZZ⟩ correlator estimated from a list of two-bit Bell measurements.
+ * For |Φ⁺⟩ the ideal value is +1 (m₁ = m₂ always).
+ */
+export function zzCorrelation(bits: Array<[0 | 1, 0 | 1]>) {
+  if (bits.length === 0) return 0;
+  const sum = bits.reduce((acc, [a, b]) => acc + (a === b ? 1 : -1), 0);
+  return sum / bits.length;
+}
