@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { BlochSphere } from '@/components/lab/BlochSphere';
 import { TeleportationCircuit, type TeleportStep } from '@/components/lab/TeleportationCircuit';
+import { PauliCorrectionVisualizer } from '@/components/lab/PauliCorrectionVisualizer';
 import { EquationBlock } from '@/components/lab/EquationBlock';
 import { ReferencesFooter } from '@/components/lab/ReferencesFooter';
 import { barrierTransmission, bornProbabilities, teleportationFidelity, toCSV, wernerConcurrence, zzCorrelation } from '@/lib/physics';
@@ -812,6 +813,9 @@ export const QuantumLab: React.FC = () => {
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <BlochSphere theta={inputTheta[0]} phi={inputPhi[0]} size={150} label="|ψ⟩ input (A)" />
                   <BlochSphere theta={teleportStep >= 4 ? inputTheta[0] : Math.PI / 2} phi={teleportStep >= 4 ? inputPhi[0] : 0} size={150} label="|ψ⟩ output (C)" />
+                </div>
+                <div className="mt-3">
+                  <PauliCorrectionVisualizer step={teleportStep} bits={teleportBits} />
                 </div>
               </div>
             )}
