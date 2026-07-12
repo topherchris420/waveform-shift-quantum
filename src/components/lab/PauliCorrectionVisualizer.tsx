@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { TeleportStep } from './TeleportationCircuit';
 
 interface PauliCorrectionVisualizerProps {
@@ -15,6 +15,8 @@ interface PauliInfo {
   matrix: [[string, string], [string, string]];
   action: string;
   tint: string;
+  preState: string;   // Bob's qubit state before correction
+  postState: string;  // after applying U
 }
 
 const PAULIS: PauliInfo[] = [
@@ -25,6 +27,8 @@ const PAULIS: PauliInfo[] = [
     matrix: [['1', '0'], ['0', '1']],
     action: 'no correction — state already matches |ψ⟩',
     tint: 'hsl(var(--foreground) / 0.6)',
+    preState: 'α|0⟩ + β|1⟩',
+    postState: 'α|0⟩ + β|1⟩',
   },
   {
     key: 'X',
@@ -33,6 +37,8 @@ const PAULIS: PauliInfo[] = [
     matrix: [['0', '1'], ['1', '0']],
     action: 'flip |0⟩ ↔ |1⟩ on qubit C',
     tint: 'hsl(var(--primary))',
+    preState: 'β|0⟩ + α|1⟩',
+    postState: 'α|0⟩ + β|1⟩',
   },
   {
     key: 'Z',
@@ -41,6 +47,8 @@ const PAULIS: PauliInfo[] = [
     matrix: [['1', '0'], ['0', '-1']],
     action: 'apply π phase to |1⟩ component',
     tint: 'hsl(var(--copper))',
+    preState: 'α|0⟩ − β|1⟩',
+    postState: 'α|0⟩ + β|1⟩',
   },
   {
     key: 'XZ',
@@ -49,6 +57,8 @@ const PAULIS: PauliInfo[] = [
     matrix: [['0', '-1'], ['1', '0']],
     action: 'bit flip followed by phase flip',
     tint: 'hsl(var(--violet))',
+    preState: '−β|0⟩ + α|1⟩',
+    postState: 'α|0⟩ + β|1⟩',
   },
 ];
 
