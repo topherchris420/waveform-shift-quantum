@@ -814,13 +814,53 @@ export const QuantumLab: React.FC = () => {
             {experimentMode === 'teleportation' && (
               <div className="mt-4 rounded-md border border-white/10 bg-black/30 p-3">
                 <p className="section-eyebrow mb-2">Circuit</p>
-                <TeleportationCircuit step={teleportStep} bits={teleportBits} />
+                <TeleportationCircuit
+                  step={scrubEventId === null ? teleportStep : scrubStep}
+                  bits={
+                    scrubEventId === null
+                      ? teleportBits
+                      : bellHistory.find((e) => e.id === scrubEventId)?.bits
+                  }
+                />
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <BlochSphere theta={inputTheta[0]} phi={inputPhi[0]} size={150} label="|ψ⟩ input (A)" />
-                  <BlochSphere theta={teleportStep >= 4 ? inputTheta[0] : Math.PI / 2} phi={teleportStep >= 4 ? inputPhi[0] : 0} size={150} label="|ψ⟩ output (C)" />
+                  <BlochSphere
+                    theta={
+                      (scrubEventId === null ? teleportStep : scrubStep) >= 4
+                        ? inputTheta[0]
+                        : Math.PI / 2
+                    }
+                    phi={
+                      (scrubEventId === null ? teleportStep : scrubStep) >= 4 ? inputPhi[0] : 0
+                    }
+                    size={150}
+                    label="|ψ⟩ output (C)"
+                  />
                 </div>
                 <div className="mt-3">
-                  <PauliCorrectionVisualizer step={teleportStep} bits={teleportBits} />
+                  <PauliCorrectionVisualizer
+                    step={scrubEventId === null ? teleportStep : scrubStep}
+                    bits={
+                      scrubEventId === null
+                        ? teleportBits
+                        : bellHistory.find((e) => e.id === scrubEventId)?.bits
+                    }
+                  />
+                </div>
+                <div className="mt-3">
+                  <TeleportTimeline
+                    events={bellHistory}
+                    selectedEventId={scrubEventId}
+                    onSelectEvent={(id) => {
+                      setScrubEventId(id);
+                      if (id !== null) setScrubStep(4);
+                    }}
+                    scrubStep={scrubStep}
+                    onScrubStep={(s) => setScrubStep(s)}
+                    isLive={scrubEventId === null}
+                    onGoLive={() => setScrubEventId(null)}
+                    liveStep={teleportStep}
+                  />
                 </div>
               </div>
             )}
