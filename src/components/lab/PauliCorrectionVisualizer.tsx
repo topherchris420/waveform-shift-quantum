@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { TeleportStep } from './TeleportationCircuit';
 
 interface PauliCorrectionVisualizerProps {
@@ -15,6 +15,8 @@ interface PauliInfo {
   matrix: [[string, string], [string, string]];
   action: string;
   tint: string;
+  preState: string;   // Bob's qubit state before correction
+  postState: string;  // after applying U
 }
 
 const PAULIS: PauliInfo[] = [
@@ -25,6 +27,8 @@ const PAULIS: PauliInfo[] = [
     matrix: [['1', '0'], ['0', '1']],
     action: 'no correction — state already matches |ψ⟩',
     tint: 'hsl(var(--foreground) / 0.6)',
+    preState: 'α|0⟩ + β|1⟩',
+    postState: 'α|0⟩ + β|1⟩',
   },
   {
     key: 'X',
@@ -33,6 +37,8 @@ const PAULIS: PauliInfo[] = [
     matrix: [['0', '1'], ['1', '0']],
     action: 'flip |0⟩ ↔ |1⟩ on qubit C',
     tint: 'hsl(var(--primary))',
+    preState: 'β|0⟩ + α|1⟩',
+    postState: 'α|0⟩ + β|1⟩',
   },
   {
     key: 'Z',
@@ -41,6 +47,8 @@ const PAULIS: PauliInfo[] = [
     matrix: [['1', '0'], ['0', '-1']],
     action: 'apply π phase to |1⟩ component',
     tint: 'hsl(var(--copper))',
+    preState: 'α|0⟩ − β|1⟩',
+    postState: 'α|0⟩ + β|1⟩',
   },
   {
     key: 'XZ',
@@ -49,6 +57,8 @@ const PAULIS: PauliInfo[] = [
     matrix: [['0', '-1'], ['1', '0']],
     action: 'bit flip followed by phase flip',
     tint: 'hsl(var(--violet))',
+    preState: '−β|0⟩ + α|1⟩',
+    postState: 'α|0⟩ + β|1⟩',
   },
 ];
 
@@ -71,6 +81,19 @@ export const PauliCorrectionVisualizer: React.FC<PauliCorrectionVisualizerProps>
   const revealed = step >= 3; // outcome known
   const applied = step >= 4;  // correction applied
   const selected = PAULIS.find((p) => p.key === selectedKey);
+
+  // Trigger a brief transition whenever the applied correction changes.
+  const runKey = `${selectedKey ?? 'none'}-${applied ? '1' : '0'}`;
+  const [phase, setPhase] = useState<'idle' | 'run'>('idle');
+  useEffect(() => {
+    if (!applied || !selected) {
+      setPhase('idle');
+      return;
+    }
+    setPhase('idle');
+    const raf = requestAnimationFrame(() => setPhase('run'));
+    return () => cancelAnimationFrame(raf);
+  }, [runKey, applied, selected]);
 
   return (
     <div className="rounded-md border border-white/10 bg-black/30 p-3">
@@ -168,6 +191,101 @@ export const PauliCorrectionVisualizer: React.FC<PauliCorrectionVisualizerProps>
               </p>
               <p className="mt-0.5 text-[10.5px] leading-snug text-muted-foreground">
                 {selected.action}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* State-vector transformation animation */}
+      <div
+        key={runKey}
+        className="mt-3 overflow-hidden rounded border border-white/10 bg-black/40 p-2.5"
+        aria-live="polite"
+      >
+        <div className="flex items-center justify-between">
+          <p className="section-eyebrow">State transformation</p>
+          <span className="font-mono text-[9.5px] uppercase tracking-widest text-muted-foreground">
+            |ψ_pre⟩ → U|ψ_pre⟩ = |ψ⟩
+          </span>
+        </div>
+
+        {!revealed || !selected ? (
+          <p className="mt-2 font-mono text-[11px] text-muted-foreground">
+            Bob's qubit C waits in one of four possible states — the measurement selects U and reconstructs |ψ⟩.
+          </p>
+        ) : (
+          <div
+            className="relative mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2"
+            style={{ minHeight: 54 }}
+          >
+            {/* Pre state */}
+            <div
+              className="rounded border border-white/10 bg-white/[0.03] px-2 py-1.5 transition-all duration-500"
+              style={{
+                opacity: phase === 'run' && applied ? 0.55 : 1,
+                transform: phase === 'run' && applied ? 'translateX(-4px)' : 'translateX(0)',
+                borderColor: applied ? undefined : selected.tint,
+              }}
+            >
+              <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                |ψ_pre⟩ on C
+              </p>
+              <p className="mt-0.5 font-mono text-[13px] text-foreground">{selected.preState}</p>
+            </div>
+
+            {/* Operator moving along the wire */}
+            <div className="relative flex h-[42px] w-16 items-center justify-center">
+              <span
+                aria-hidden
+                className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2"
+                style={{ background: `linear-gradient(90deg, transparent, ${selected.tint}, transparent)` }}
+              />
+              <span
+                className="relative z-10 inline-flex h-7 min-w-7 items-center justify-center rounded border px-1.5 font-mono text-[12px] font-semibold transition-all duration-500 ease-out"
+                style={{
+                  color: selected.tint,
+                  borderColor: selected.tint,
+                  background: 'hsl(var(--background) / 0.9)',
+                  transform:
+                    phase === 'run' && applied
+                      ? 'translateX(0) scale(1)'
+                      : applied
+                      ? 'translateX(-22px) scale(0.92)'
+                      : 'translateX(0) scale(1)',
+                  boxShadow:
+                    phase === 'run' && applied
+                      ? `0 0 18px ${selected.tint}`
+                      : `0 0 0 transparent`,
+                }}
+              >
+                {selected.key === 'XZ' ? 'X·Z' : selected.key}
+              </span>
+            </div>
+
+            {/* Post state */}
+            <div
+              className="rounded border px-2 py-1.5 transition-all duration-500"
+              style={{
+                borderColor: applied && phase === 'run' ? selected.tint : 'hsl(var(--border) / 0.4)',
+                background:
+                  applied && phase === 'run'
+                    ? `linear-gradient(135deg, ${selected.tint.replace(')', ' / 0.14)')}, transparent)`
+                    : 'hsl(var(--foreground) / 0.02)',
+                opacity: applied ? 1 : 0.5,
+                transform: applied && phase === 'run' ? 'translateX(0) scale(1.02)' : 'translateX(4px) scale(1)',
+                boxShadow:
+                  applied && phase === 'run' ? `0 0 22px ${selected.tint.replace(')', ' / 0.35)')}` : 'none',
+              }}
+            >
+              <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                |ψ⟩ reconstructed
+              </p>
+              <p
+                className="mt-0.5 font-mono text-[13px]"
+                style={{ color: applied && phase === 'run' ? selected.tint : 'hsl(var(--foreground) / 0.75)' }}
+              >
+                {selected.postState}
               </p>
             </div>
           </div>
