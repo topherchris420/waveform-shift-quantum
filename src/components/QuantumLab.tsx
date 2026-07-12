@@ -490,6 +490,7 @@ export const QuantumLab: React.FC = () => {
       }
       setObjects((current) => current.map((object, index) => (index < 2 ? { ...object, isTeleporting: true } : object)));
       setStatusMessage('Step 1/4 · Preparing Bell pair |Φ⁺⟩ on (B, C) via H⊗I then CNOT.');
+      setScrubEventId(null);
       setTeleportStep(1);
       setTeleportBits(undefined);
       const t2 = window.setTimeout(() => {
