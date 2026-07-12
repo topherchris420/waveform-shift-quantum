@@ -168,6 +168,9 @@ export const QuantumLab: React.FC = () => {
   const [bellHistory, setBellHistory] = useState<BellRecord[]>([]);
   const bellIdRef = useRef(0);
   const [showEntanglementOverlay, setShowEntanglementOverlay] = useState(true);
+  // Scrubbing state — when non-null, the visualizer/circuit reflect a past event.
+  const [scrubEventId, setScrubEventId] = useState<number | null>(null);
+  const [scrubStep, setScrubStep] = useState<TeleportStep>(4);
 
   const activeExperiment = experiments[experimentMode];
   const selectedObj = objects.find((object) => object.id === selectedObject) ?? objects[0];
