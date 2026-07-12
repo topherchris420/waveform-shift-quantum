@@ -24,6 +24,7 @@ import { Slider } from '@/components/ui/slider';
 import { BlochSphere } from '@/components/lab/BlochSphere';
 import { TeleportationCircuit, type TeleportStep } from '@/components/lab/TeleportationCircuit';
 import { PauliCorrectionVisualizer } from '@/components/lab/PauliCorrectionVisualizer';
+import { TeleportTimeline } from '@/components/lab/TeleportTimeline';
 import { EquationBlock } from '@/components/lab/EquationBlock';
 import { ReferencesFooter } from '@/components/lab/ReferencesFooter';
 import { barrierTransmission, bornProbabilities, teleportationFidelity, toCSV, wernerConcurrence, zzCorrelation } from '@/lib/physics';
