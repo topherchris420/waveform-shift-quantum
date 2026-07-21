@@ -1,0 +1,200 @@
+{
+  "version": 1,
+  "sdk_version": "0.24.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "vers3dynamics-teleportation-mcp",
+      "version": "0.1.0",
+      "title": "Vers3Dynamics Teleportation"
+    },
+    "tools": [
+      {
+        "name": "barrier_transmission",
+        "title": "1D barrier transmission",
+        "description": "Compute the transmission coefficient T for a non-relativistic electron crossing a 1D rectangular potential barrier. Handles tunneling (E<V), resonant (E=V), and oscillatory (E>V) regimes.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "energy_eV": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Particle energy E in eV."
+            },
+            "barrier_eV": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Barrier height V in eV."
+            },
+            "width_nm": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Barrier width a in nm."
+            }
+          },
+          "required": [
+            "energy_eV",
+            "barrier_eV",
+            "width_nm"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "double_slit_intensity",
+        "title": "Double-slit intensity",
+        "description": "Fraunhofer double-slit intensity (arbitrary units, normalized to 1) at screen position y for slit separation d, wavelength λ, and screen distance L.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "y_mm": {
+              "type": "number",
+              "description": "Screen position y in millimeters (may be negative)."
+            },
+            "slit_separation_um": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Slit separation d in micrometers."
+            },
+            "wavelength_nm": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Wavelength λ in nanometers."
+            },
+            "screen_distance_mm": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Slit-to-screen distance L in millimeters."
+            }
+          },
+          "required": [
+            "y_mm",
+            "slit_separation_um",
+            "wavelength_nm",
+            "screen_distance_mm"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "born_probabilities",
+        "title": "Born-rule probabilities",
+        "description": "Compute measurement probabilities p(0) and p(1) for a single-qubit state |ψ⟩ = cos(θ/2)|0⟩ + e^{iφ} sin(θ/2)|1⟩ in the computational basis.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "theta_rad": {
+              "type": "number",
+              "description": "Polar angle θ on the Bloch sphere, in radians."
+            }
+          },
+          "required": [
+            "theta_rad"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "teleportation_fidelity",
+        "title": "Teleportation fidelity",
+        "description": "Estimate the average teleportation fidelity F using a Werner Bell-pair of purity p degraded by a decoherence factor d ∈ [0, 1]. Also returns the Werner concurrence of the shared pair.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "bell_purity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Bell-pair Werner purity p ∈ [0, 1]."
+            },
+            "decoherence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Decoherence factor d ∈ [0, 1] (0 = ideal)."
+            }
+          },
+          "required": [
+            "bell_purity",
+            "decoherence"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "pauli_correction",
+        "title": "Teleportation Pauli correction",
+        "description": "Given Alice's two classical measurement bits (m1, m2) from a Bell-basis measurement in the standard quantum teleportation protocol, return the Pauli correction Bob must apply to recover |ψ⟩.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "m1": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "const": 0
+                },
+                {
+                  "type": "number",
+                  "const": 1
+                }
+              ],
+              "description": "First Bell-basis bit m1."
+            },
+            "m2": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "const": 0
+                },
+                {
+                  "type": "number",
+                  "const": 1
+                }
+              ],
+              "description": "Second Bell-basis bit m2."
+            }
+          },
+          "required": [
+            "m1",
+            "m2"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
