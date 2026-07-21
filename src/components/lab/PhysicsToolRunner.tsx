@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { Loader2, Play, Terminal, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
 
 type FieldType = 'number' | 'bit';
 
