@@ -27,6 +27,7 @@ import { PauliCorrectionVisualizer } from '@/components/lab/PauliCorrectionVisua
 import { TeleportTimeline } from '@/components/lab/TeleportTimeline';
 import { EquationBlock } from '@/components/lab/EquationBlock';
 import { ReferencesFooter } from '@/components/lab/ReferencesFooter';
+import { PhysicsToolRunner } from '@/components/lab/PhysicsToolRunner';
 import { barrierTransmission, bornProbabilities, teleportationFidelity, toCSV, wernerConcurrence, zzCorrelation } from '@/lib/physics';
 import { EntanglementOverlay, type BellRecord } from '@/components/lab/EntanglementOverlay';
 
