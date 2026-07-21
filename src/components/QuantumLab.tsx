@@ -975,6 +975,8 @@ export const QuantumLab: React.FC = () => {
         </div>
       </section>
 
+      <PhysicsToolRunner />
+
       <ReferencesFooter />
 
       {controlsOpen && (
