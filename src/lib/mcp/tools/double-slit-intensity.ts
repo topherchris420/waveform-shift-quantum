@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { doubleSlitIntensity } from "@/lib/physics";
+import { doubleSlitIntensity } from "../../physics";
 
 export default defineTool({
   name: "double_slit_intensity",

@@ -8,7 +8,45 @@ import { defineMcp } from "npm:@lovable.dev/mcp-js@0.24.0";
 // src/lib/mcp/tools/barrier-transmission.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.24.0";
 import { z } from "npm:zod@^4.4.3";
-import { barrierTransmission } from "npm:@/lib/physics";
+
+// src/lib/physics.ts
+var clamp = (v, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
+function barrierTransmission(E_eV, V_eV, a_nm) {
+  const K0 = 5.1231;
+  if (Math.abs(E_eV - V_eV) < 1e-6) {
+    const denom2 = 1 + K0 * K0 * V_eV * a_nm * a_nm / 4;
+    return { T: 1 / denom2, kappa_a: 0, regime: "resonant" };
+  }
+  if (E_eV < V_eV) {
+    const kappa = K0 * Math.sqrt(V_eV - E_eV);
+    const ka2 = kappa * a_nm;
+    const sh = Math.sinh(ka2);
+    const denom2 = 1 + V_eV * V_eV * sh * sh / (4 * E_eV * (V_eV - E_eV));
+    return { T: 1 / denom2, kappa_a: ka2, regime: "tunneling" };
+  }
+  const k = K0 * Math.sqrt(E_eV - V_eV);
+  const ka = k * a_nm;
+  const s = Math.sin(ka);
+  const denom = 1 + V_eV * V_eV * s * s / (4 * E_eV * (E_eV - V_eV));
+  return { T: 1 / denom, kappa_a: ka, regime: "oscillatory" };
+}
+function doubleSlitIntensity(y_mm, d_um, lambda_nm, L_mm) {
+  const theta = Math.atan2(y_mm, L_mm);
+  const arg = Math.PI * (d_um * 1e3) * Math.sin(theta) / lambda_nm;
+  return Math.cos(arg) ** 2;
+}
+function bornProbabilities(theta) {
+  const p0 = Math.cos(theta / 2) ** 2;
+  return { p0, p1: 1 - p0 };
+}
+function teleportationFidelity(bellPurity, decoherence) {
+  return clamp(bellPurity * (1 - decoherence * 0.5) + 0.25 * (1 - bellPurity));
+}
+function wernerConcurrence(purity) {
+  return Math.max(0, (3 * purity - 1) / 2);
+}
+
+// src/lib/mcp/tools/barrier-transmission.ts
 var barrier_transmission_default = defineTool({
   name: "barrier_transmission",
   title: "1D barrier transmission",
@@ -32,7 +70,6 @@ var barrier_transmission_default = defineTool({
 // src/lib/mcp/tools/double-slit-intensity.ts
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.24.0";
 import { z as z2 } from "npm:zod@^4.4.3";
-import { doubleSlitIntensity } from "npm:@/lib/physics";
 var double_slit_intensity_default = defineTool2({
   name: "double_slit_intensity",
   title: "Double-slit intensity",
@@ -56,7 +93,6 @@ var double_slit_intensity_default = defineTool2({
 // src/lib/mcp/tools/born-probabilities.ts
 import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.24.0";
 import { z as z3 } from "npm:zod@^4.4.3";
-import { bornProbabilities } from "npm:@/lib/physics";
 var born_probabilities_default = defineTool3({
   name: "born_probabilities",
   title: "Born-rule probabilities",
@@ -77,7 +113,6 @@ var born_probabilities_default = defineTool3({
 // src/lib/mcp/tools/teleportation-fidelity.ts
 import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.24.0";
 import { z as z4 } from "npm:zod@^4.4.3";
-import { teleportationFidelity, wernerConcurrence } from "npm:@/lib/physics";
 var teleportation_fidelity_default = defineTool4({
   name: "teleportation_fidelity",
   title: "Teleportation fidelity",

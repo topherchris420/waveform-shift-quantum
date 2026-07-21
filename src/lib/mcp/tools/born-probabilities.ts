@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { bornProbabilities } from "@/lib/physics";
+import { bornProbabilities } from "../../physics";
 
 export default defineTool({
   name: "born_probabilities",

@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { barrierTransmission } from "@/lib/physics";
+import { barrierTransmission } from "../../physics";
 
 export default defineTool({
   name: "barrier_transmission",

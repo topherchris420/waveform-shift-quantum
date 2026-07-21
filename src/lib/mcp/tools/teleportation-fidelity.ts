@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { teleportationFidelity, wernerConcurrence } from "@/lib/physics";
+import { teleportationFidelity, wernerConcurrence } from "../../physics";
 
 export default defineTool({
   name: "teleportation_fidelity",
