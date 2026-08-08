@@ -31,6 +31,7 @@ import { TeleportationCircuit, type TeleportStep } from '@/components/lab/Telepo
 import { PauliCorrectionVisualizer } from '@/components/lab/PauliCorrectionVisualizer';
 import { TeleportTimeline } from '@/components/lab/TeleportTimeline';
 import { EquationBlock } from '@/components/lab/EquationBlock';
+import { InlineMath } from 'react-katex';
 import { ReferencesFooter } from '@/components/lab/ReferencesFooter';
 import { PhysicsToolRunner } from '@/components/lab/PhysicsToolRunner';
 import { CatalystRunPanel } from '@/components/lab/CatalystRunPanel';
