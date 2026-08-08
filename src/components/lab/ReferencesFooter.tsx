@@ -163,7 +163,7 @@ export const ReferencesFooter: React.FC = () => (
         ))}
       </ul>
       <p className="mt-5 text-[11px] leading-5 text-muted-foreground">
-        Theoretical Framework Assumptions: Effective matter-scalar coupling $g \phi(\mathbf{x},t)$; non-relativistic Schrödinger wavefunction $\psi(\mathbf{x},t)$; real auxiliary scalar field $\phi(\mathbf{x},t)$ with parameters $(c_\phi, m_\phi, \lambda)$; normalized localization response kernel $\chi(\mathbf{x},t;\omega_w) = \exp[\alpha \mathcal{L}(\mathbf{x},t;\omega_w)]$. Weak-coupling limit $g\phi_0 \ll \|V\|$ reproduces exact standard quantum mechanics.
+        {"Theoretical Framework Assumptions: Effective matter-scalar coupling $g \\phi(\\mathbf{x},t)$; non-relativistic Schrödinger wavefunction $\\psi(\\mathbf{x},t)$; real auxiliary scalar field $\\phi(\\mathbf{x},t)$ with parameters $(c_\\phi, m_\\phi, \\lambda)$; normalized localization response kernel $\\chi(\\mathbf{x},t;\\omega_w) = \\exp[\\alpha \\mathcal{L}(\\mathbf{x},t;\\omega_w)]$. Weak-coupling limit $g\\phi_0 \\ll \\|V\\|$ reproduces exact standard quantum mechanics."}
       </p>
     </div>
   </section>
