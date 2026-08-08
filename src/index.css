@@ -130,4 +130,22 @@
     border-color: hsl(var(--quantum-glow) / 0.24);
     background: hsl(var(--panel));
   }
+
+  /* Utility to hide scrollbars for clean horizontal tab navigation on mobile */
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .touch-none {
+    touch-action: none;
+  }
+
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
 }
+
