@@ -637,7 +637,7 @@ export const QuantumLab: React.FC = () => {
 
   return (
     <main className="experience-background min-h-screen overflow-hidden text-foreground">
-      <section className="relative min-h-screen px-4 py-4 sm:px-6 lg:px-8">
+      <section className="relative px-4 py-4 sm:px-6 lg:px-8">
         <nav className="topline-nav mx-auto flex max-w-[1700px] items-center justify-between gap-4 px-4 py-3">
           <div className="flex min-w-0 items-center gap-3">
             <BrandMark />
@@ -657,17 +657,17 @@ export const QuantumLab: React.FC = () => {
           </Button>
         </nav>
 
-        <div className="mx-auto grid min-h-[calc(100vh-92px)] max-w-[1700px] gap-8 py-6 lg:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.18fr)] lg:items-center xl:gap-12">
-          <div className="hero-copy max-w-4xl">
+        <div className="mx-auto grid max-w-[1500px] gap-8 py-8 lg:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.1fr)] lg:items-start xl:gap-12">
+          <div className="hero-copy max-w-xl lg:sticky lg:top-6">
             <div className="flex flex-wrap items-center gap-2">
               <span className="instrument-mark">Interactive theory lab</span>
               <Badge variant="outline" className="border-white/15 bg-white/[0.03] text-muted-foreground">{activeExperiment.eyebrow}</Badge>
             </div>
-            <h1 className="hero-title mt-6">A working textbook of quantum information.</h1>
-            <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg">
+            <h1 className="hero-title mt-5">A working textbook of quantum information.</h1>
+            <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">
               Analytical closed-form models for the Bennett 1993 teleportation protocol, Fraunhofer double-slit diffraction, rectangular-barrier tunneling, and Born-rule statistics on the Bloch sphere. Every readout maps back to the equation in the briefing panel.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-7 flex flex-wrap gap-3">
               <Button className="h-12 bg-primary px-5 text-primary-foreground hover:bg-primary/90" onClick={runExperiment}>
                 <Beaker className="h-4 w-4" />
                 Run {activeExperiment.label}
@@ -677,7 +677,7 @@ export const QuantumLab: React.FC = () => {
                 Add object
               </Button>
             </div>
-            <div className="hero-stat-strip mt-10 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="hero-stat-strip mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Metric label="Coherence" value={formatPercent(coherence)} icon={Activity} tone="primary" />
               <Metric label="Entangled" value={String(entangledCount)} icon={Radio} tone="violet" />
               <Metric label={activeExperiment.readoutLabel} value={formatPercent(activeReadout)} icon={Gauge} tone="lime" />
