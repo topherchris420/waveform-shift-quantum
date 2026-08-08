@@ -774,7 +774,7 @@ export const QuantumLab: React.FC = () => {
               Field-Modulated Spatial Localization as a Dynamical Variable
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
-              An effective matter-scalar model of continuous re-localization without discontinuous disappearance. Spatial position is not a fixed intrinsic property, but a dynamical state emerging from coupling to an underlying scalar field <InlineMath math="\phi(\mathbf{x}, t)" />.
+              An effective matter-scalar model of continuous re-localization without discontinuous disappearance. Spatial position is not a fixed intrinsic property, but a dynamical state emerging from coupling to an underlying scalar field <InlineMath math="\\phi(\\mathbf{x}, t)" />.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Button className="h-11 bg-cyan-500 px-5 text-slate-950 font-bold hover:bg-cyan-400" onClick={runExperiment}>

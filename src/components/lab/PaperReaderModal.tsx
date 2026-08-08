@@ -110,7 +110,7 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
                     '(iii) Normalized localization response kernel χ(x,t;ω_w)',
                     '(iv) Explicit two-site toy model of continuous localization transfer',
                     '(v) Recovery of standard quantum mechanics in the weak-coupling limit',
-                    '(vi) Classical Ehrenfest limit m ẍ_cl = -∇[V + gϕ]',
+                    '(vi) Classical Ehrenfest limit m d²x/dt² = -∇[V + gϕ]',
                     '(vii) 4 experimentally testable signatures in double-well, interferometry, & clocks',
                   ].map((c, i) => (
                     <li key={i} className="rounded-lg border border-white/10 bg-slate-900/60 p-3 text-slate-300">
@@ -118,15 +118,6 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
                     </li>
                   ))}
                 </ul>
-
-                {onSelectPreset && (
-                  <div className="pt-2">
-                    <Button onClick={() => { onSelectPreset('scalar_kernel'); onClose(); }} className="gap-2 bg-cyan-500 text-slate-950 hover:bg-cyan-400 font-semibold">
-                      Launch Field-Modulated Simulation Mode
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
               </div>
             )}
 
@@ -134,25 +125,25 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
               <div className="space-y-4">
                 <h3 className="text-lg font-bold text-white">2. Effective Matter–Field Model</h3>
                 <p>
-                  Matter wavefunction <InlineMath math="\psi(\mathbf{x}, t)" /> is coupled to a real auxiliary scalar field <InlineMath math="\phi(\mathbf{x}, t)" /> through the local density <InlineMath math="|\psi(\mathbf{x}, t)|^2" />:
+                  Matter wavefunction <InlineMath math="\\psi(\\mathbf{x}, t)" /> is coupled to a real auxiliary scalar field <InlineMath math="\\phi(\\mathbf{x}, t)" /> through the local density <InlineMath math="|\\psi(\\mathbf{x}, t)|^2" />:
                 </p>
 
                 <div className="rounded-xl border border-white/10 bg-slate-900/60 p-4">
                   <p className="text-xs font-mono text-cyan-400 mb-2">Total Action (Eq. 5):</p>
-                  <BlockMath math="S_{\text{tot}} = S_\psi + S_\phi + S_{\text{int}}" />
+                  <BlockMath math="S_{\\text{tot}} = S_\\psi + S_\\phi + S_{\\text{int}}" />
                   <p className="text-xs font-mono text-cyan-400 my-2">Matter-Scalar Coupling (Eq. 4):</p>
-                  <BlockMath math="S_{\text{int}} = -g \int dt\, d^3x\, \phi(\mathbf{x}, t)|\psi(\mathbf{x}, t)|^2" />
+                  <BlockMath math="S_{\\text{int}} = -g \\int dt\\, d^3x\\, \\phi(\\mathbf{x}, t)|\\psi(\\mathbf{x}, t)|^2" />
                 </div>
 
                 <h4 className="text-base font-semibold text-white">Equations of Motion (Eq. 6–7)</h4>
                 <div className="rounded-xl border border-white/10 bg-slate-900/60 p-4 space-y-3">
                   <div>
                     <p className="text-xs font-mono text-cyan-300">Field-Modified Schrödinger Equation:</p>
-                    <BlockMath math="i\hbar \partial_t \psi(\mathbf{x},t) = \left[ -\frac{\hbar^2}{2m}\nabla^2 + V(\mathbf{x}) + g \phi(\mathbf{x},t) \right] \psi(\mathbf{x},t)" />
+                    <BlockMath math="i\\hbar \\partial_t \\psi(\\mathbf{x},t) = \\left[ -\\frac{\\hbar^2}{2m}\\nabla^2 + V(\\mathbf{x}) + g \\phi(\\mathbf{x},t) \\right] \\psi(\\mathbf{x},t)" />
                   </div>
                   <div>
                     <p className="text-xs font-mono text-cyan-300">Auxiliary Scalar Field Equation:</p>
-                    <BlockMath math="\partial_t^2 \phi - c_\phi^2 \nabla^2 \phi + m_\phi^2 \phi + \frac{\lambda}{6}\phi^3 = J(\mathbf{x},t) - g|\psi(\mathbf{x},t)|^2" />
+                    <BlockMath math="\\partial_t^2 \\phi - c_\\phi^2 \\nabla^2 \\phi + m_\\phi^2 \\phi + \\frac{\\lambda}{6}\\phi^3 = J(\\mathbf{x},t) - g|\\psi(\\mathbf{x},t)|^2" />
                   </div>
                 </div>
               </div>
@@ -167,11 +158,11 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
 
                 <div className="rounded-xl border border-white/10 bg-slate-900/60 p-4">
                   <p className="text-xs font-mono text-cyan-400 mb-1">Local Resonance (Eq. 9):</p>
-                  <BlockMath math="\omega_{\text{loc}}(\mathbf{x},t) = \omega_0 + \beta \phi(\mathbf{x},t) + \kappa \nabla^2 \phi(\mathbf{x},t)" />
+                  <BlockMath math="\\omega_{\\text{loc}}(\\mathbf{x},t) = \\omega_0 + \\beta \\phi(\\mathbf{x},t) + \\kappa \\nabla^2 \\phi(\\mathbf{x},t)" />
                   <p className="text-xs font-mono text-cyan-400 my-1">Bounded Response Profile (Eq. 10):</p>
-                  <BlockMath math="\mathcal{L}(\mathbf{x},t;\omega_w) = \frac{(\Gamma/2)^2}{[\omega_w - \omega_{\text{loc}}(\mathbf{x},t)]^2 + (\Gamma/2)^2}" />
+                  <BlockMath math="\\mathcal{L}(\\mathbf{x},t;\\omega_w) = \\frac{(\\Gamma/2)^2}{[\\omega_w - \\omega_{\\text{loc}}(\\mathbf{x},t)]^2 + (\\Gamma/2)^2}" />
                   <p className="text-xs font-mono text-cyan-400 my-1">Observed Biased Localization Density (Eq. 12):</p>
-                  <BlockMath math="P_{\text{loc}}(\mathbf{x},t;\omega_w) = \frac{\exp[\alpha \mathcal{L}(\mathbf{x},t;\omega_w)] |\psi(\mathbf{x},t)|^2}{\int d^3x' \exp[\alpha \mathcal{L}(\mathbf{x}',t;\omega_w)] |\psi(\mathbf{x}',t)|^2}" />
+                  <BlockMath math="P_{\\text{loc}}(\\mathbf{x},t;\\omega_w) = \\frac{\\exp[\\alpha \\mathcal{L}(\\mathbf{x},t;\\omega_w)] |\\psi(\\mathbf{x},t)|^2}{\\int d^3x' \\exp[\\alpha \\mathcal{L}(\\mathbf{x}',t;\\omega_w)] |\\psi(\\mathbf{x}',t)|^2}" />
                 </div>
               </div>
             )}
@@ -180,15 +171,15 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
               <div className="space-y-4">
                 <h3 className="text-lg font-bold text-white">4. Two-Site Toy Model of Localization Transfer</h3>
                 <p>
-                  Consider a two-site reduction with localized basis states <InlineMath math="\{|A\rangle, |B\rangle\}" />. The Hamiltonian is:
+                  Consider a two-site reduction with localized basis states <InlineMath math="\\{|A\\rangle, |B\\rangle\\}" />. The Hamiltonian is:
                 </p>
 
                 <div className="rounded-xl border border-white/10 bg-slate-900/60 p-4">
-                  <BlockMath math="H_2(t) = \begin{pmatrix} E_A + g\phi_A(t) & \Delta \\ \Delta & E_B + g\phi_B(t) \end{pmatrix}" />
+                  <BlockMath math="H_2(t) = \\begin{pmatrix} E_A + g\\phi_A(t) & \\Delta \\\\ \\Delta & E_B + g\\phi_B(t) \\end{pmatrix}" />
                   <p className="text-xs font-mono text-cyan-400 my-2">Detuning & Mixing Angle (Eq. 16–17):</p>
-                  <BlockMath math="\delta(t) = (E_B - E_A) + g[\phi_B(t) - \phi_A(t)], \quad \tan(2\theta(t)) = \frac{2\Delta}{\delta(t)}" />
+                  <BlockMath math="\\delta(t) = (E_B - E_A) + g[\\phi_B(t) - \\phi_A(t)], \\quad \\tan(2\\theta(t)) = \\frac{2\\Delta}{\\delta(t)}" />
                   <p className="text-xs font-mono text-cyan-400 my-2">Site Occupation Imbalance (Eq. 28):</p>
-                  <BlockMath math="z(t) = P_A(t) - P_B(t) = \cos(2\theta(t)) = \frac{\delta(t)}{\sqrt{\delta(t)^2 + 4\Delta^2}}" />
+                  <BlockMath math="z(t) = P_A(t) - P_B(t) = \\cos(2\\theta(t)) = \\frac{\\delta(t)}{\\sqrt{\\delta(t)^2 + 4\\Delta^2}}" />
                 </div>
 
                 {onSelectPreset && (
@@ -210,13 +201,13 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
                   <div>
                     <h5 className="font-semibold text-cyan-300">5.1 Uniform Weak Field</h5>
                     <p className="text-xs text-slate-300 mt-1">
-                      If <InlineMath math="\phi(\mathbf{x},t) = \phi_0(t)" />, <InlineMath math="g\phi_0(t)" /> contributes only a global phase <InlineMath math="\exp\left(-\frac{i}{\hbar}\int_0^t g\phi_0(t')dt'\right)" />, yielding exact Schrödinger evolution for <InlineMath math="\tilde{\psi}" />.
+                      If <InlineMath math="\\phi(\\mathbf{x},t) = \\phi_0(t)" />, <InlineMath math="g\\phi_0(t)" /> contributes only a global phase <InlineMath math="\\exp\\left(-\\frac{i}{\\hbar}\\int_0^t g\\phi_0(t')dt'\\right)" />, yielding exact Schrödinger evolution for <InlineMath math="\\tilde{\\psi}" />.
                     </p>
                   </div>
                   <div>
                     <h5 className="font-semibold text-cyan-300">5.2 Weak Localization Response</h5>
                     <p className="text-xs text-slate-300 mt-1">
-                      If <InlineMath math="\alpha \to 0" />, <InlineMath math="\chi \to 1" /> and <InlineMath math="P_{\text{loc}}(\mathbf{x},t;\omega_w) \to |\psi(\mathbf{x},t)|^2" /> (standard Born rule).
+                      If <InlineMath math="\\alpha \\to 0" />, <InlineMath math="\\chi \\to 1" /> and <InlineMath math="P_{\\text{loc}}(\\mathbf{x},t;\\omega_w) \\to |\\psi(\\mathbf{x},t)|^2" /> (standard Born rule).
                     </p>
                   </div>
                 </div>
@@ -230,9 +221,9 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
                   Ehrenfest relations derived from the field-modified Schrödinger equation yield:
                 </p>
                 <div className="rounded-xl border border-white/10 bg-slate-900/60 p-4">
-                  <BlockMath math="m\mathbf{\ddot{x}}_{\text{cl}} = -\nabla \left[ V(\mathbf{x}_{\text{cl}}) + g\phi(\mathbf{x}_{\text{cl}},t) \right]" />
+                  <BlockMath math="m\\mathbf{\\ddot{x}}_{\\text{cl}} = -\\nabla \\left[ V(\\mathbf{x}_{\\text{cl}}) + g\\phi(\\mathbf{x}_{\\text{cl}},t) \\right]" />
                   <p className="text-xs font-mono text-cyan-400 my-2">Effective Potential Landscape (Eq. 27):</p>
-                  <BlockMath math="V_{\text{eff}}(\mathbf{x},t) = V(\mathbf{x}) + g\phi(\mathbf{x},t)" />
+                  <BlockMath math="V_{\\text{eff}}(\\mathbf{x},t) = V(\\mathbf{x}) + g\\phi(\\mathbf{x},t)" />
                 </div>
               </div>
             )}
@@ -243,22 +234,22 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-white/10 bg-slate-900/60 p-4">
                     <h5 className="font-semibold text-cyan-300">7.1 Double-Well Bias</h5>
-                    <BlockMath math="z(t) = \frac{\delta(t)}{\sqrt{\delta(t)^2 + 4\Delta^2}}" />
+                    <BlockMath math="z(t) = \\frac{\\delta(t)}{\\sqrt{\\delta(t)^2 + 4\\Delta^2}}" />
                     <p className="text-xs text-slate-400">Sign change in δ(t) reverses localization bias.</p>
                   </div>
                   <div className="rounded-xl border border-white/10 bg-slate-900/60 p-4">
                     <h5 className="font-semibold text-cyan-300">7.2 Matter-Wave Interferometry</h5>
-                    <BlockMath math="\Delta\varphi_\phi = \frac{g}{\hbar} \int_0^T [\phi(\mathbf{x}_1(t),t) - \phi(\mathbf{x}_2(t),t)] dt" />
+                    <BlockMath math="\\Delta\\varphi_\\phi = \\frac{g}{\\hbar} \\int_0^T [\\phi(\\mathbf{x}_1(t),t) - \\phi(\\mathbf{x}_2(t),t)] dt" />
                     <p className="text-xs text-slate-400">Interferometer phase shift correlated with field drive.</p>
                   </div>
                   <div className="rounded-xl border border-white/10 bg-slate-900/60 p-4">
                     <h5 className="font-semibold text-cyan-300">7.3 Clock Comparisons</h5>
-                    <BlockMath math="\Delta\Phi_{AB}(T) = \eta \int_0^T [\phi(\mathbf{x}_A,t) - \phi(\mathbf{x}_B,t)] dt" />
+                    <BlockMath math="\\Delta\\Phi_{AB}(T) = \\eta \\int_0^T [\\phi(\\mathbf{x}_A,t) - \\phi(\\mathbf{x}_B,t)] dt" />
                     <p className="text-xs text-slate-400">Differential clock phase offset under field drive.</p>
                   </div>
                   <div className="rounded-xl border border-white/10 bg-slate-900/60 p-4">
                     <h5 className="font-semibold text-cyan-300">7.4 Statistics Anomaly</h5>
-                    <BlockMath math="\delta P(\mathbf{x},t;\omega_w) = P_{\text{loc}}(\mathbf{x},t;\omega_w) - P_B(\mathbf{x},t)" />
+                    <BlockMath math="\\delta P(\\mathbf{x},t;\\omega_w) = P_{\\text{loc}}(\\mathbf{x},t;\\omega_w) - P_B(\\mathbf{x},t)" />
                     <p className="text-xs text-slate-400">Field-correlated statistical deviation from Born rule.</p>
                   </div>
                 </div>
