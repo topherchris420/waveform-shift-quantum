@@ -11,10 +11,23 @@ interface PaperReaderModalProps {
   onSelectPreset?: (mode: string) => void;
 }
 
+type SectionId = 'abstract' | 'model' | 'kernel' | 'twosite' | 'qm_limit' | 'classical' | 'signatures' | 'conclusions';
+
 export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onClose, onSelectPreset }) => {
-  const [activeSection, setActiveSection] = useState<'abstract' | 'model' | 'kernel' | 'twosite' | 'qm_limit' | 'classical' | 'signatures' | 'conclusions'>('abstract');
+  const [activeSection, setActiveSection] = useState<SectionId>('abstract');
 
   if (!isOpen) return null;
+
+  const sections: { id: SectionId; label: string; icon: React.ElementType }[] = [
+    { id: 'abstract', label: '1. Abstract & Introduction', icon: Sparkles },
+    { id: 'model', label: '2. Matter–Field Action & EOM', icon: Atom },
+    { id: 'kernel', label: '3. Response Kernel χ(x)', icon: Waves },
+    { id: 'twosite', label: '4. Two-Site Toy Model', icon: Zap },
+    { id: 'qm_limit', label: '5. Quantum Mechanics Limit', icon: Scale },
+    { id: 'classical', label: '6. Classical Ehrenfest Limit', icon: FileText },
+    { id: 'signatures', label: '7. Experimental Signatures', icon: Clock },
+    { id: 'conclusions', label: '8-10. Discussion & Conclusion', icon: CheckCircle2 },
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-in fade-in duration-200">
@@ -46,23 +59,13 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
         <div className="grid flex-1 grid-cols-1 overflow-hidden md:grid-cols-[240px_1fr]">
           {/* Sidebar Nav */}
           <aside className="border-r border-white/10 bg-slate-900/40 p-4 space-y-1 overflow-y-auto">
-            <p className="px-3 pb-2 text-[10px] font-mono uppercase tracking-widest text-slate-400">Paper Sections</p>
-            {[
-              { id: 'abstract', label: '1. Abstract & Introduction', icon: Sparkles },
-              { id: 'model', label: '2. Matter–Field Action & EOM', icon: Atom },
-              { id: 'kernel', label: '3. Response Kernel χ(x)', icon: Waves },
-              { id: 'twosite', label: '4. Two-Site Toy Model', icon: Zap },
-              { id: 'qm_limit', label: '5. Quantum Mechanics Limit', icon: Scale },
-              { id: 'classical', label: '6. Classical Ehrenfest Limit', icon: FileText },
-              { id: 'signatures', label: '7. Experimental Signatures', icon: Clock },
-              { id: 'conclusions', label: '8-10. Discussion & Conclusion', icon: CheckCircle2 },
-            ].map((item) => {
+            {sections.map((item) => {
               const Icon = item.icon;
               const active = activeSection === item.id;
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveSection(item.id as any)}
+                  onClick={() => setActiveSection(item.id)}
                   className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs transition ${
                     active
                       ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-400/40 font-semibold'

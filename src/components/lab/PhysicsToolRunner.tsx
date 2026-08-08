@@ -22,7 +22,7 @@ interface ToolDef {
   title: string;
   summary: string;
   fields: ToolField[];
-  visualize: (out: any) => React.ReactNode;
+  visualize: (out: Record<string, unknown>) => React.ReactNode;
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -215,7 +215,7 @@ export function PhysicsToolRunner() {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ structured: any; text: string } | null>(null);
+  const [result, setResult] = useState<{ structured: Record<string, unknown> | null; text: string } | null>(null);
 
   function pick(name: string) {
     const next = TOOLS.find((t) => t.name === name)!;
@@ -241,12 +241,17 @@ export function PhysicsToolRunner() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
       const data = await res.json();
+      type ContentItem = { type?: string; text?: string };
       const text = Array.isArray(data?.content)
-        ? data.content.filter((c: any) => c?.type === 'text').map((c: any) => c.text).join('\n')
+        ? (data.content as ContentItem[])
+            .filter((c) => c?.type === 'text')
+            .map((c) => c.text ?? '')
+            .join('\n')
         : '';
-      setResult({ structured: data?.structuredContent ?? null, text });
-    } catch (e: any) {
-      setError(e?.message ?? String(e));
+      setResult({ structured: (data?.structuredContent as Record<string, unknown>) ?? null, text });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      setError(message);
     } finally {
       setLoading(false);
     }
