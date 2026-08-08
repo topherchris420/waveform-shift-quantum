@@ -221,7 +221,7 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
                   Ehrenfest relations derived from the field-modified Schrödinger equation yield:
                 </p>
                 <div className="rounded-xl border border-white/10 bg-slate-900/60 p-4">
-                  <BlockMath math="m\\mathbf{\\ddot{x}}_{\\text{cl}} = -\\nabla \\left[ V(\\mathbf{x}_{\\text{cl}}) + g\\phi(\\mathbf{x}_{\\text{cl}},t) \\right]" />
+                  <BlockMath math="m\\ddot{\\mathbf{x}}_{\\text{cl}} = -\\nabla \\left[ V(\\mathbf{x}_{\\text{cl}}) + g\\phi(\\mathbf{x}_{\\text{cl}},t) \\right]" />
                   <p className="text-xs font-mono text-cyan-400 my-2">Effective Potential Landscape (Eq. 27):</p>
                   <BlockMath math="V_{\\text{eff}}(\\mathbf{x},t) = V(\\mathbf{x}) + g\\phi(\\mathbf{x},t)" />
                 </div>

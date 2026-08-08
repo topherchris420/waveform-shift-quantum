@@ -158,7 +158,7 @@ const experiments: Record<ExperimentMode, ExperimentDefinition> = {
       'Reposition scalar sources to deform V_eff(x, t). Watch the classical wavepacket center settle into the new energetic minimum.',
     readoutLabel: 'Min Potential V_eff',
     equation:
-      'm\\mathbf{\\ddot{x}}_{\\text{cl}} = -\\nabla \\left[\\, V(\\mathbf{x}_{\\text{cl}}) + g\\,\\phi(\\mathbf{x}_{\\text{cl}},t)\\,\\right],\\quad V_{\\text{eff}} = V + g\\phi',
+      'm\\ddot{\\mathbf{x}}_{\\text{cl}} = -\\nabla \\left[\\, V(\\mathbf{x}_{\\text{cl}}) + g\\,\\phi(\\mathbf{x}_{\\text{cl}},t)\\,\\right],\\quad V_{\\text{eff}} = V + g\\phi',
     equationNote:
       'Spatial location emerges dynamically as the equilibrium coordinate of matter coupled to the surrounding field landscape.',
   },
