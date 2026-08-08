@@ -637,7 +637,7 @@ export const QuantumLab: React.FC = () => {
 
   return (
     <main className="experience-background min-h-screen overflow-hidden text-foreground">
-      <section className="relative min-h-screen px-4 py-4 sm:px-6 lg:px-8">
+      <section className="relative px-4 py-4 sm:px-6 lg:px-8">
         <nav className="topline-nav mx-auto flex max-w-[1700px] items-center justify-between gap-4 px-4 py-3">
           <div className="flex min-w-0 items-center gap-3">
             <BrandMark />
