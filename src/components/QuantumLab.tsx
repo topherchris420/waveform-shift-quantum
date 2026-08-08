@@ -35,6 +35,10 @@ import { ReferencesFooter } from '@/components/lab/ReferencesFooter';
 import { PhysicsToolRunner } from '@/components/lab/PhysicsToolRunner';
 import { CatalystRunPanel } from '@/components/lab/CatalystRunPanel';
 import { PaperReaderModal } from '@/components/lab/PaperReaderModal';
+import { ComparisonPanel } from '@/quantum/components/ComparisonPanel';
+import { AnomalyEnginePanel } from '@/quantum/components/AnomalyEnginePanel';
+import { TwoSiteExperiment } from '@/quantum/experiments/TwoSiteExperiment';
+import { CatalystArtifact } from '@/lib/catalyst';
 import {
   barrierTransmission,
   bornProbabilities,
@@ -272,6 +276,7 @@ export const QuantumLab: React.FC = () => {
   const bellIdRef = useRef(0);
   const [scrubEventId, setScrubEventId] = useState<number | null>(null);
   const [scrubStep, setScrubStep] = useState<TeleportStep>(4);
+  const [customCatalystArtifact, setCustomCatalystArtifact] = useState<CatalystArtifact | undefined>(undefined);
 
   const activeExperiment = experiments[experimentMode];
   const selectedObj = objects.find((object) => object.id === selectedObject) ?? objects[0];
@@ -869,6 +874,60 @@ export const QuantumLab: React.FC = () => {
             </div>
           </section>
         </div>
+
+        {/* Numerical Two-Site Time Evolution Section */}
+        {experimentMode === 'two_site_transfer' && (
+          <div className="mx-auto max-w-[1700px] mt-6">
+            <TwoSiteExperiment
+              parameters={{
+                g: couplingG[0],
+                phiA: phiA[0],
+                phiB: phiB[0],
+                delta: mixingDelta[0],
+              }}
+            />
+          </div>
+        )}
+
+        {/* Standard QM vs Woodyard Model Comparison Section */}
+        <div className="mx-auto max-w-[1700px] mt-6">
+          <ComparisonPanel
+            experimentMode={experimentMode}
+            parameters={{
+              g: couplingG[0],
+              phiA: phiA[0],
+              phiB: phiB[0],
+              delta: mixingDelta[0],
+              alpha: responseAlpha[0],
+              gamma: linewidthGamma[0],
+              omega_w: driveOmegaW[0],
+              purity: bellPurity[0],
+              decoherence: 1 - fieldIntensity[0] * 0.7,
+            }}
+          />
+        </div>
+
+        {/* Anomaly Engine Feature Section */}
+        <div className="mx-auto max-w-[1700px] mt-6">
+          <AnomalyEnginePanel
+            onLoadParameters={(params) => {
+              if (params.g !== undefined) setCouplingG([params.g]);
+              if (params.phiA !== undefined) setPhiA([params.phiA]);
+              if (params.phiB !== undefined) setPhiB([params.phiB]);
+              if (params.delta !== undefined) setMixingDelta([params.delta]);
+              if (params.alpha !== undefined) setResponseAlpha([params.alpha]);
+              if (params.gamma !== undefined) setLinewidthGamma([params.gamma]);
+              if (params.omega_w !== undefined) setDriveOmegaW([params.omega_w]);
+              setStatusMessage('Anomaly parameters loaded into active simulation workspace.');
+            }}
+            onGenerateCatalyst={(artifact) => {
+              setCustomCatalystArtifact(artifact);
+              setStatusMessage(`Catalyst Research Artifact ${artifact.run_id} compiled for Anomaly Protocol.`);
+              const el = document.getElementById('catalyst-panel');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+          />
+        </div>
       </section>
 
       {/* Model Briefing & Control Studio Section */}
@@ -939,21 +998,33 @@ export const QuantumLab: React.FC = () => {
         <PhysicsToolRunner />
       </section>
 
-      <CatalystRunPanel
-        session={{
-          mode: experimentMode,
-          shots: bellHistory.length,
-          bits: bellHistory.map((r) => r.bits),
-          purity: bellPurity[0],
-          decoherence: 1 - fieldIntensity[0] * 0.7,
-          fidelity,
-          concurrence,
-          zz,
-          theta: inputTheta[0],
-          phi: inputPhi[0],
-          seed: 137,
-        }}
-      />
+      <div id="catalyst-panel">
+        <CatalystRunPanel
+          session={{
+            mode: experimentMode,
+            shots: bellHistory.length,
+            bits: bellHistory.map((r) => r.bits),
+            purity: bellPurity[0],
+            decoherence: 1 - fieldIntensity[0] * 0.7,
+            fidelity,
+            concurrence,
+            zz,
+            theta: inputTheta[0],
+            phi: inputPhi[0],
+            seed: 137,
+            parameters: {
+              g: couplingG[0],
+              phiA: phiA[0],
+              phiB: phiB[0],
+              delta: mixingDelta[0],
+              alpha: responseAlpha[0],
+              gamma: linewidthGamma[0],
+              omega_w: driveOmegaW[0],
+            },
+          }}
+          customArtifact={customCatalystArtifact}
+        />
+      </div>
 
       <ReferencesFooter />
 

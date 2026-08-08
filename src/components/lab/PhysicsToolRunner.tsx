@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Loader2, Play, Terminal, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { twoSiteModel, localizationKernel } from '@/lib/physics';
 
 type FieldType = 'number' | 'bit';
 
@@ -59,24 +60,28 @@ const TOOLS: ToolDef[] = [
       { name: 'coupling_g', label: 'Coupling g', type: 'number', default: 0.8, step: 0.1 },
       { name: 'mixing_delta', label: 'Mixing Δ', type: 'number', default: 0.2, min: 0.01, step: 0.05, unit: 'eV' },
     ],
+
     visualize: (o) => {
-      const detuning = (o.bare_EB - o.bare_EA) + o.coupling_g * (o.field_phiB - o.field_phiA);
-      const theta = 0.5 * Math.atan2(2 * o.mixing_delta, detuning);
-      const PA = Math.cos(theta) ** 2;
-      const PB = Math.sin(theta) ** 2;
-      const z = PA - PB;
+      const res = twoSiteModel({
+        EA: (o.bare_EA as number) ?? 1.0,
+        EB: (o.bare_EB as number) ?? 1.0,
+        phiA: (o.field_phiA as number) ?? -0.5,
+        phiB: (o.field_phiB as number) ?? 0.5,
+        g: (o.coupling_g as number) ?? 0.8,
+        delta: (o.mixing_delta as number) ?? 0.2,
+      });
       return (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="border-cyan-500/40 bg-cyan-500/10 text-cyan-200">
-              Detuning δ = {detuning.toFixed(3)} eV
+              Detuning δ = {res.detuning.toFixed(3)} eV
             </Badge>
-            <span className="font-mono text-xs text-slate-400">θ = {(theta * (180 / Math.PI)).toFixed(1)}°</span>
+            <span className="font-mono text-xs text-slate-400">θ = {(res.theta * (180 / Math.PI)).toFixed(1)}°</span>
           </div>
-          <Bar value={PA} label="Site A Occupation PA" tone="cyan" />
-          <Bar value={PB} label="Site B Occupation PB" tone="violet" />
+          <Bar value={res.PA} label="Site A Occupation PA" tone="cyan" />
+          <Bar value={res.PB} label="Site B Occupation PB" tone="violet" />
           <div className="font-mono text-xs text-slate-300">
-            Occupation Imbalance z(t) = <span className="text-amber-300 font-bold">{z.toFixed(4)}</span>
+            Occupation Imbalance z(t) = <span className="text-amber-300 font-bold">{res.z.toFixed(4)}</span>
           </div>
         </div>
       );
@@ -95,22 +100,27 @@ const TOOLS: ToolDef[] = [
       { name: 'alpha', label: 'Strength α', type: 'number', default: 1.0, step: 0.1 },
     ],
     visualize: (o) => {
-      const omega_loc = o.omega0 + o.beta * o.phi;
-      const halfG = o.gamma / 2;
-      const diff = o.drive_w - omega_loc;
-      const L = (halfG * halfG) / (diff * diff + halfG * halfG);
-      const chi = Math.exp(o.alpha * L);
+      const res = localizationKernel({
+        omega0: (o.omega0 as number) ?? 10.0,
+        beta: (o.beta as number) ?? 2.0,
+        kappa: 0,
+        phi: (o.phi as number) ?? 1.2,
+        d2phi: 0,
+        omega_w: (o.drive_w as number) ?? 12.4,
+        gamma: (o.gamma as number) ?? 1.5,
+        alpha: (o.alpha as number) ?? 1.0,
+      });
       return (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="border-violet-500/40 bg-violet-500/10 text-violet-200">
-              ω_loc = {omega_loc.toFixed(2)} GHz
+              ω_loc = {res.omega_loc.toFixed(2)} GHz
             </Badge>
-            <span className="font-mono text-xs text-slate-400">Response L(x) = {L.toFixed(4)}</span>
+            <span className="font-mono text-xs text-slate-400">Response L(x) = {res.L.toFixed(4)}</span>
           </div>
-          <Bar value={L} label="Response Profile L(x)" tone="amber" />
+          <Bar value={res.L} label="Response Profile L(x)" tone="amber" />
           <div className="font-mono text-xs text-cyan-200">
-            Kernel Factor χ(x) = exp(α L) = <span className="font-bold text-cyan-100">{chi.toFixed(4)}</span>
+            Kernel Factor χ(x) = exp(α L) = <span className="font-bold text-cyan-100">{res.chi.toFixed(4)}</span>
           </div>
         </div>
       );

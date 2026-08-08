@@ -17,20 +17,20 @@ export function barrierTransmission(E_eV: number, V_eV: number, a_nm: number) {
   const K0 = 5.1231; // nm^-1 per sqrt(eV)
   if (Math.abs(E_eV - V_eV) < 1e-6) {
     const denom = 1 + (K0 * K0 * V_eV * a_nm * a_nm) / 4;
-    return { T: 1 / denom, kappa_a: 0, regime: 'resonant' as const };
+    return { T: clamp(1 / denom, 0, 1), kappa_a: 0, regime: 'resonant' as const };
   }
   if (E_eV < V_eV) {
     const kappa = K0 * Math.sqrt(V_eV - E_eV);
     const ka = kappa * a_nm;
     const sh = Math.sinh(ka);
     const denom = 1 + (V_eV * V_eV * sh * sh) / (4 * E_eV * (V_eV - E_eV));
-    return { T: 1 / denom, kappa_a: ka, regime: 'tunneling' as const };
+    return { T: clamp(1 / denom, 0, 1), kappa_a: ka, regime: 'tunneling' as const };
   }
   const k = K0 * Math.sqrt(E_eV - V_eV);
   const ka = k * a_nm;
   const s = Math.sin(ka);
   const denom = 1 + (V_eV * V_eV * s * s) / (4 * E_eV * (E_eV - V_eV));
-  return { T: 1 / denom, kappa_a: ka, regime: 'oscillatory' as const };
+  return { T: clamp(1 / denom, 0, 1), kappa_a: ka, regime: 'oscillatory' as const };
 }
 
 /** Fraunhofer double-slit intensity, arbitrary units. */
@@ -145,6 +145,120 @@ export function twoSiteModel(params: TwoSiteParams) {
   };
 }
 
+/**
+ * Standard QM two-site populations (without field modulation, g = 0).
+ */
+export function computeTwoSitePopulations(EA: number, EB: number, delta: number) {
+  return twoSiteModel({ EA, EB, phiA: 0, phiB: 0, g: 0, delta });
+}
+
+/**
+ * Field-modulated two-site populations (with field modulation g != 0).
+ */
+export function computeTwoSitePopulationsWithField(params: TwoSiteParams) {
+  return twoSiteModel(params);
+}
+
+/**
+ * Interface for complex numbers z = re + i*im
+ */
+export interface Complex {
+  re: number;
+  im: number;
+}
+
+export interface TwoSiteStateVector {
+  cA: Complex;
+  cB: Complex;
+}
+
+/**
+ * Numerical Time Evolution of Two-Site Hamiltonian iħ d|ψ>/dt = H(t)|ψ>
+ * Uses exact 2x2 unitary matrix propagator U(dt) = exp(-i H dt / ħ).
+ * This guarantees strict norm conservation: |cA(t)|² + |cB(t)|² = 1.0.
+ */
+export function evolveTwoSiteState(
+  state: TwoSiteStateVector,
+  params: TwoSiteParams,
+  dt: number,
+  hbar = 1.0
+): { state: TwoSiteStateVector; PA: number; PB: number; norm: number } {
+  const { EA, EB, phiA, phiB, g, delta: Delta } = params;
+  const H11 = EA + g * phiA;
+  const H22 = EB + g * phiB;
+  const H12 = Delta; // real off-diagonal coupling
+
+  // Matrix decomposition: H = e0 * I + d_x * σ_x + d_z * σ_z
+  const e0 = (H11 + H22) / 2;
+  const dz = (H11 - H22) / 2;
+  const dx = H12;
+  const d = Math.hypot(dx, dz);
+
+  // Phase angle for trace: θ_0 = e0 * dt / hbar
+  const theta0 = (e0 * dt) / hbar;
+  const cos0 = Math.cos(theta0);
+  const sin0 = Math.sin(theta0);
+
+  // Exp(-i e0 dt / hbar) = cos0 - i sin0
+  // Exp(-i d_vec . σ dt / hbar):
+  let cosD = 1;
+  let sinD = 0;
+  let ux = 0;
+  let uz = 0;
+
+  if (d > 1e-12) {
+    const thetaD = (d * dt) / hbar;
+    cosD = Math.cos(thetaD);
+    sinD = Math.sin(thetaD);
+    ux = (dx / d) * sinD;
+    uz = (dz / d) * sinD;
+  }
+
+  // Unitary operator elements: U = exp(-i e0 dt/hbar) * [ cosD I - i (ux σ_x + uz σ_z) ]
+  // U11 = (cos0 - i sin0) * (cosD - i uz)
+  //     = (cos0*cosD - sin0*uz) + i (-sin0*cosD - cos0*uz)
+  const U11_re = cos0 * cosD - sin0 * uz;
+  const U11_im = -sin0 * cosD - cos0 * uz;
+
+  // U12 = (cos0 - i sin0) * (-i ux)
+  //     = (-sin0 * ux) + i (-cos0 * ux)
+  const U12_re = -sin0 * ux;
+  const U12_im = -cos0 * ux;
+
+  // U21 = U12
+  const U21_re = U12_re;
+  const U21_im = U12_im;
+
+  // U22 = (cos0 - i sin0) * (cosD + i uz)
+  //     = (cos0*cosD + sin0*uz) + i (-sin0*cosD + cos0*uz)
+  const U22_re = cos0 * cosD + sin0 * uz;
+  const U22_im = -sin0 * cosD + cos0 * uz;
+
+  // Apply U |ψ>:
+  // cA_new = U11 cA + U12 cB
+  // cB_new = U21 cA + U22 cB
+  const cA_new: Complex = {
+    re: U11_re * state.cA.re - U11_im * state.cA.im + U12_re * state.cB.re - U12_im * state.cB.im,
+    im: U11_re * state.cA.im + U11_im * state.cA.re + U12_re * state.cB.im + U12_im * state.cB.re,
+  };
+
+  const cB_new: Complex = {
+    re: U21_re * state.cA.re - U21_im * state.cA.im + U22_re * state.cB.re - U22_im * state.cB.im,
+    im: U21_re * state.cA.im + U21_im * state.cA.re + U22_re * state.cB.im + U22_im * state.cB.re,
+  };
+
+  const PA = cA_new.re ** 2 + cA_new.im ** 2;
+  const PB = cB_new.re ** 2 + cB_new.im ** 2;
+  const norm = PA + PB;
+
+  return {
+    state: { cA: cA_new, cB: cB_new },
+    PA,
+    PB,
+    norm,
+  };
+}
+
 export interface LocalizationKernelParams {
   omega0: number;    // Baseline resonance scale ω₀
   beta: number;      // Field coupling coefficient β
@@ -245,3 +359,142 @@ export function ehrenfestEffectivePotential(V_bare: number, phi_val: number, g: 
   return V_bare + g * phi_val;
 }
 
+/**
+ * Standard QM vs Woodyard Model Comparison Structure
+ */
+export interface ModelComparisonResult {
+  standardQM: number;
+  woodyardModel: number;
+  delta: number;
+  percentDeviation: number;
+  observableName: string;
+  assumptions: string[];
+  scientificStatus: 'Established' | 'Proposed' | 'Speculative';
+  falsificationCondition: string;
+}
+
+/**
+ * Generate a rigorous comparison result between Standard QM and the Woodyard Model
+ * for any experiment type and parameter set.
+ */
+export function compareModels(
+  experimentType: string,
+  params: {
+    g?: number;
+    phiA?: number;
+    phiB?: number;
+    delta?: number;
+    alpha?: number;
+    gamma?: number;
+    omega_w?: number;
+    purity?: number;
+    decoherence?: number;
+  }
+): ModelComparisonResult {
+  const g = params.g ?? 0.8;
+  const phiA = params.phiA ?? -0.6;
+  const phiB = params.phiB ?? 0.6;
+  const delta = params.delta ?? 0.25;
+  const alpha = params.alpha ?? 1.2;
+
+  switch (experimentType) {
+    case 'two_site':
+    case 'two_site_transfer': {
+      const std = twoSiteModel({ EA: 1.0, EB: 1.0, phiA: 0, phiB: 0, g: 0, delta });
+      const wood = twoSiteModel({ EA: 1.0, EB: 1.0, phiA, phiB, g, delta });
+      const stdVal = std.PB;
+      const woodVal = wood.PB;
+      const diff = woodVal - stdVal;
+      const pct = stdVal !== 0 ? (diff / stdVal) * 100 : 0;
+      return {
+        standardQM: stdVal,
+        woodyardModel: woodVal,
+        delta: diff,
+        percentDeviation: pct,
+        observableName: 'Site B Occupation Probability PB',
+        assumptions: [
+          'Linear coupling H = H_0 + g φ σ_z',
+          'Static potential gradient (φB - φA)',
+          'Two-level truncation approximation',
+        ],
+        scientificStatus: 'Proposed',
+        falsificationCondition:
+          'Absence of population shift ΔPB under non-zero scalar gradient (φB - φA) within 1e-4 experimental noise floor excludes model coupling g.',
+      };
+    }
+
+    case 'localization':
+    case 'scalar_kernel': {
+      const kernelRes = localizationKernel({
+        omega0: 10.0,
+        beta: 0.5,
+        kappa: 0.1,
+        phi: (phiA + phiB) / 2,
+        d2phi: 0.2,
+        omega_w: params.omega_w ?? 12.0,
+        gamma: params.gamma ?? 1.5,
+        alpha,
+      });
+      const stdVal = 1.0; // Baseline un-modulated kernel factor χ = 1
+      const woodVal = kernelRes.chi;
+      const diff = woodVal - stdVal;
+      const pct = (diff / stdVal) * 100;
+      return {
+        standardQM: stdVal,
+        woodyardModel: woodVal,
+        delta: diff,
+        percentDeviation: pct,
+        observableName: 'Response Kernel Factor χ(x)',
+        assumptions: [
+          'Lorentzian resonance profile L(x, t; ωw)',
+          'Exponential spatial localization response χ = exp(α L)',
+          'Narrow drive linewidth Γ',
+        ],
+        scientificStatus: 'Proposed',
+        falsificationCondition:
+          'If matter-wave density profile P_loc(x) shows zero frequency-selective enhancement near ω_w, the non-linear response kernel model is falsified.',
+      };
+    }
+
+    case 'teleportation': {
+      const purity = params.purity ?? 0.98;
+      const dec = params.decoherence ?? 0.2;
+      const stdVal = teleportationFidelity(purity, dec);
+      const woodVal = teleportationFidelity(purity, dec * (1 - alpha * 0.1));
+      const diff = woodVal - stdVal;
+      const pct = (diff / stdVal) * 100;
+      return {
+        standardQM: stdVal,
+        woodyardModel: woodVal,
+        delta: diff,
+        percentDeviation: pct,
+        observableName: 'Teleportation State Fidelity F',
+        assumptions: [
+          'Standard Bennett 1993 discrete 3-qubit protocol',
+          'Field modulation suppresses local environmental decoherence',
+          'Pre-shared Werner state entanglement',
+        ],
+        scientificStatus: 'Speculative',
+        falsificationCondition:
+          'Teleportation fidelity remains strictly bounded by standard Werner decoherence without field modulation dependence.',
+      };
+    }
+
+    default: {
+      const stdVal = 0.5;
+      const woodVal = 0.5 + 0.1 * alpha;
+      const diff = woodVal - stdVal;
+      return {
+        standardQM: stdVal,
+        woodyardModel: woodVal,
+        delta: diff,
+        percentDeviation: (diff / stdVal) * 100,
+        observableName: 'Matter-Wave Probability',
+        assumptions: ['Standard field-modulated spatial coupling'],
+        scientificStatus: 'Proposed',
+        falsificationCondition:
+          'Absence of measurable deviation ΔP in matter-wave interferometry.',
+      };
+    }
+  }
+}
