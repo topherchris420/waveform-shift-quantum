@@ -28,6 +28,7 @@ import { TeleportTimeline } from '@/components/lab/TeleportTimeline';
 import { EquationBlock } from '@/components/lab/EquationBlock';
 import { ReferencesFooter } from '@/components/lab/ReferencesFooter';
 import { PhysicsToolRunner } from '@/components/lab/PhysicsToolRunner';
+import { CatalystRunPanel } from '@/components/lab/CatalystRunPanel';
 import { barrierTransmission, bornProbabilities, teleportationFidelity, toCSV, wernerConcurrence, zzCorrelation } from '@/lib/physics';
 import { EntanglementOverlay, type BellRecord } from '@/components/lab/EntanglementOverlay';
 
@@ -976,6 +977,22 @@ export const QuantumLab: React.FC = () => {
       </section>
 
       <PhysicsToolRunner />
+
+      <CatalystRunPanel
+        session={{
+          mode: experimentMode,
+          shots: bellHistory.length,
+          bits: bellHistory.map((r) => r.bits),
+          purity: bellPurity[0],
+          decoherence: 1 - fieldIntensity[0] * 0.7,
+          fidelity,
+          concurrence,
+          zz,
+          theta: inputTheta[0],
+          phi: inputPhi[0],
+          seed: 137,
+        }}
+      />
 
       <ReferencesFooter />
 
