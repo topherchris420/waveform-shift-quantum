@@ -1045,39 +1045,14 @@ export const QuantumLab: React.FC = () => {
           <ChevronRight className="h-4 w-4 ml-0.5" />
         </Button>
       </div>
-=======
-                <div className="absolute bottom-3 left-3 z-10 rounded-md border border-lime/35 bg-lime/[0.12] px-3 py-2 text-xs font-medium text-lime-foreground shadow-lg shadow-black/30 backdrop-blur-md">
-                  Measurement active
-                </div>
-              )}
-              {showEntanglementOverlay && (
-                <div className="absolute right-3 bottom-3 z-10 hidden w-[300px] sm:block">
-                  <EntanglementOverlay history={bellHistory} concurrence={concurrence} purity={bellPurity[0]} zz={zz} />
-                </div>
-              )}
-              {showEntanglementOverlay && (
-                <div className="absolute inset-x-3 bottom-16 z-10 sm:hidden">
-                  <EntanglementOverlay history={bellHistory} concurrence={concurrence} purity={bellPurity[0]} zz={zz} compact />
-                </div>
-              )}
-              <div className="absolute bottom-3 right-3 z-10 lg:hidden">
-                <Button className="h-11 rounded-md bg-primary px-4 text-primary-foreground hover:bg-primary/90" onClick={() => setControlsOpen(true)}>
-                  <ChevronRight className="h-4 w-4" />
-                  Controls
-                </Button>
-              </div>
-            </div>
 
-            <div className="grid gap-4 border-t border-white/10 bg-white/[0.025] p-4 md:grid-cols-[minmax(0,1fr)_300px]">
-              <div className="min-w-0">
-                <p className="section-eyebrow">Observation log</p>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{statusMessage}</p>
-              </div>
-              <MeasurementSparkline measurements={measurements} />
-            </div>
-          </section>
+      <div className="grid gap-4 border-t border-white/10 bg-white/[0.025] p-4 md:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="min-w-0">
+          <p className="section-eyebrow">Observation log</p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">{statusMessage}</p>
         </div>
-      </section>
+        <MeasurementSparkline measurements={measurements} />
+      </div>
 
       <section id="protocols" className="px-4 pb-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-[1700px]">
@@ -1348,7 +1323,6 @@ export const QuantumLab: React.FC = () => {
           </section>
         </div>
       </aside>
->>>>>>> origin/main
     </main>
   );
 };
