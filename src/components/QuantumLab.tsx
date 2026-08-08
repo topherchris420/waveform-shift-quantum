@@ -37,7 +37,7 @@ import { PhysicsToolRunner } from '@/components/lab/PhysicsToolRunner';
 import { CatalystRunPanel } from '@/components/lab/CatalystRunPanel';
 import { PaperReaderModal } from '@/components/lab/PaperReaderModal';
 import { ComparisonPanel } from '@/quantum/components/ComparisonPanel';
-import { AnomalyEnginePanel } from '@/quantum/components/AnomalyEnginePanel';
+import { DiscoveryModePanel } from '@/quantum/components/DiscoveryModePanel';
 import { TwoSiteExperiment } from '@/quantum/experiments/TwoSiteExperiment';
 import { CatalystArtifact } from '@/lib/catalyst';
 import {
@@ -437,66 +437,94 @@ export const QuantumLab: React.FC = () => {
 
       const siteAX = 280;
       const siteBX = 680;
-      const siteY = 360;
+      
+      const standardY = 160;
+      const fieldY = 480;
+      const divY = 320;
 
-      // Potential Wells A and B
+      // Calculate Standard QM (g=0)
+      const standardRes = { PA: 0.5, PB: 0.5, detuning: 0, z: 0 };
+
+      const drawWells = (y: number, res: { PA: number; PB: number; detuning: number; z: number }, label: string, colorClass: string, isStandard: boolean) => {
+        ctx.save();
+        ctx.lineWidth = 3;
+
+        // Wells
+        ctx.strokeStyle = isStandard ? 'rgba(59, 130, 246, 0.8)' : 'rgba(245, 158, 11, 0.8)'; // blue standard, amber model
+        
+        ctx.beginPath();
+        ctx.arc(siteAX, y, 60, 0, Math.PI);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(siteBX, y, 60, 0, Math.PI);
+        ctx.stroke();
+
+        // Bridge
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.beginPath();
+        ctx.moveTo(siteAX + 60, y);
+        ctx.lineTo(siteBX - 60, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Wavepackets
+        const radiusA = Math.max(5, Math.sqrt(res.PA) * 55);
+        const radiusB = Math.max(5, Math.sqrt(res.PB) * 55);
+
+        const colorA = isStandard ? '59, 130, 246' : '245, 158, 11';
+        
+        const gradA = ctx.createRadialGradient(siteAX, y + 10, 0, siteAX, y + 10, radiusA);
+        gradA.addColorStop(0, `rgba(${colorA}, ${0.9 * res.PA})`);
+        gradA.addColorStop(1, `rgba(${colorA}, 0)`);
+        ctx.fillStyle = gradA;
+        ctx.beginPath();
+        ctx.arc(siteAX, y + 10, radiusA, 0, Math.PI * 2);
+        ctx.fill();
+
+        const gradB = ctx.createRadialGradient(siteBX, y + 10, 0, siteBX, y + 10, radiusB);
+        gradB.addColorStop(0, `rgba(${colorA}, ${0.9 * res.PB})`);
+        gradB.addColorStop(1, `rgba(${colorA}, 0)`);
+        ctx.fillStyle = gradB;
+        ctx.beginPath();
+        ctx.arc(siteBX, y + 10, radiusB, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Overlay text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '600 12px Inter, sans-serif';
+        ctx.fillText(`P_A = ${(res.PA * 100).toFixed(1)}%`, siteAX - 30, y + 85);
+        ctx.fillText(`P_B = ${(res.PB * 100).toFixed(1)}%`, siteBX - 30, y + 85);
+
+        ctx.fillStyle = isStandard ? '#60a5fa' : '#fbbf24';
+        ctx.font = '700 10px JetBrains Mono, monospace';
+        ctx.fillText(label, 40, y);
+        ctx.restore();
+      };
+
+      drawWells(standardY, standardRes, 'ESTABLISHED PHYSICS (QM)', 'blue', true);
+      drawWells(fieldY, twoSiteRes, 'PROPOSED MODEL (WOODYARD)', 'amber', false);
+
+      // Divergence Field (Middle)
       ctx.save();
-      ctx.lineWidth = 3;
-
-      // Site A Well
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
-      ctx.beginPath();
-      ctx.arc(siteAX, siteY, 90, 0, Math.PI);
-      ctx.stroke();
-
-      // Site B Well
-      ctx.strokeStyle = 'rgba(192, 132, 252, 0.8)';
-      ctx.beginPath();
-      ctx.arc(siteBX, siteY, 90, 0, Math.PI);
-      ctx.stroke();
-
-      // Tunneling Bridge Δ
-      ctx.setLineDash([6, 6]);
-      ctx.strokeStyle = 'rgba(250, 204, 21, 0.6)';
-      ctx.beginPath();
-      ctx.moveTo(siteAX + 90, siteY);
-      ctx.lineTo(siteBX - 90, siteY);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Wavepacket densities inside wells
-      const radiusA = Math.max(8, Math.sqrt(twoSiteRes.PA) * 75);
-      const radiusB = Math.max(8, Math.sqrt(twoSiteRes.PB) * 75);
-
-      // Wavepacket A
-      const gradA = ctx.createRadialGradient(siteAX, siteY + 20, 0, siteAX, siteY + 20, radiusA);
-      gradA.addColorStop(0, `rgba(56, 189, 248, ${0.9 * twoSiteRes.PA})`);
-      gradA.addColorStop(1, 'rgba(56, 189, 248, 0)');
-      ctx.fillStyle = gradA;
-      ctx.beginPath();
-      ctx.arc(siteAX, siteY + 20, radiusA, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Wavepacket B
-      const gradB = ctx.createRadialGradient(siteBX, siteY + 20, 0, siteBX, siteY + 20, radiusB);
-      gradB.addColorStop(0, `rgba(192, 132, 252, ${0.9 * twoSiteRes.PB})`);
-      gradB.addColorStop(1, 'rgba(192, 132, 252, 0)');
-      ctx.fillStyle = gradB;
-      ctx.beginPath();
-      ctx.arc(siteBX, siteY + 20, radiusB, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Labels and Readout overlays on Canvas
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '600 14px Inter, sans-serif';
-      ctx.fillText(`Site A |A⟩  [P_A = ${(twoSiteRes.PA * 100).toFixed(1)}%]`, siteAX - 80, siteY + 115);
-      ctx.fillText(`Site B |B⟩  [P_B = ${(twoSiteRes.PB * 100).toFixed(1)}%]`, siteBX - 80, siteY + 115);
-
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = '500 12px JetBrains Mono, monospace';
-      ctx.fillText(`detuning δ(t) = ${twoSiteRes.detuning.toFixed(3)} eV`, CANVAS_WIDTH / 2 - 110, siteY - 70);
-      ctx.fillText(`imbalance z(t) = ${twoSiteRes.z.toFixed(4)}`, CANVAS_WIDTH / 2 - 90, siteY - 45);
-
+      const divergence = Math.abs(twoSiteRes.PA - standardRes.PA);
+      const intensity = Math.min(1, divergence * 2);
+      
+      // Draw divergence heat bar
+      const grad = ctx.createLinearGradient(siteAX, divY, siteBX, divY);
+      grad.addColorStop(0, `rgba(16, 185, 129, ${intensity * 0.8})`); // Emerald
+      grad.addColorStop(0.5, `rgba(16, 185, 129, ${intensity * 0.2})`);
+      grad.addColorStop(1, `rgba(16, 185, 129, ${intensity * 0.8})`);
+      
+      ctx.fillStyle = grad;
+      ctx.fillRect(siteAX, divY - 20, siteBX - siteAX, 40);
+      
+      // Label
+      ctx.fillStyle = '#34d399';
+      ctx.font = '700 12px JetBrains Mono, monospace';
+      ctx.fillText(`LIVE DIVERGENCE FIELD ΔP = ${divergence.toFixed(4)}`, CANVAS_WIDTH / 2 - 110, divY + 4);
+      
       ctx.restore();
     },
     [experimentMode, twoSiteRes]
@@ -853,6 +881,35 @@ export const QuantumLab: React.FC = () => {
                 height={CANVAS_HEIGHT}
                 aria-label="Interactive quantum field simulation canvas"
                 className="absolute inset-0 h-full w-full cursor-crosshair object-contain touch-none select-none"
+                onPointerDown={(e) => {
+                  const rect = canvasRef.current?.getBoundingClientRect();
+                  if (!rect) return;
+                  const x = (e.clientX - rect.left) * (CANVAS_WIDTH / rect.width);
+                  const y = (e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height);
+                  setIsDragging(true);
+                  if (experimentMode === 'two_site_transfer') {
+                    if (Math.abs(x - 280) < 100) draggingObjId.current = 'phiA';
+                    else if (Math.abs(x - 680) < 100) draggingObjId.current = 'phiB';
+                  }
+                }}
+                onPointerMove={(e) => {
+                  if (!isDragging || !draggingObjId.current) return;
+                  const rect = canvasRef.current?.getBoundingClientRect();
+                  if (!rect) return;
+                  const y = (e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height);
+                  // Map y to -2.0 to 2.0 (center is 320)
+                  const val = ((320 - y) / 160);
+                  if (draggingObjId.current === 'phiA') setPhiA([Math.max(-2, Math.min(2, val))]);
+                  if (draggingObjId.current === 'phiB') setPhiB([Math.max(-2, Math.min(2, val))]);
+                }}
+                onPointerUp={() => {
+                  setIsDragging(false);
+                  draggingObjId.current = null;
+                }}
+                onPointerLeave={() => {
+                  setIsDragging(false);
+                  draggingObjId.current = null;
+                }}
               />
 
               <div className="pointer-events-none absolute left-3 top-3 z-10 space-y-2">
@@ -863,6 +920,27 @@ export const QuantumLab: React.FC = () => {
                 <ReadoutPill label="Coupling g" value={couplingG[0].toFixed(2)} />
                 <ReadoutPill label="Field φ" value={fieldIntensity[0].toFixed(2)} />
               </div>
+            </div>
+
+            {/* Timeline Scrubber */}
+            <div className="border-t border-white/10 bg-white/[0.025] px-4 py-3 flex items-center gap-3">
+              <RotateCcw className="h-4 w-4 text-slate-400 cursor-pointer hover:text-cyan-400" onClick={() => { timeRef.current = 0; setTime(0); }} />
+              <input 
+                type="range" 
+                min="0" 
+                max="100" 
+                step="0.1" 
+                value={time} 
+                onChange={(e) => {
+                  const t = parseFloat(e.target.value);
+                  timeRef.current = t;
+                  setTime(t);
+                  setIsRunning(false);
+                  drawScene(t);
+                }}
+                className="flex-1 accent-cyan-500 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer" 
+              />
+              <span className="font-mono text-xs text-slate-400 w-12 text-right">{time.toFixed(1)}s</span>
             </div>
 
             <div className="grid gap-3 border-t border-white/10 bg-white/[0.025] p-3 sm:p-4 md:grid-cols-[1.2fr_0.8fr]">
@@ -908,9 +986,9 @@ export const QuantumLab: React.FC = () => {
           />
         </div>
 
-        {/* Anomaly Engine Feature Section */}
-        <div className="mx-auto max-w-[1700px] mt-6">
-          <AnomalyEnginePanel
+        {/* Discovery Mode Engine Feature Section */}
+        <div className="mx-auto max-w-[1700px] mt-6" id="discovery-mode">
+          <DiscoveryModePanel
             onLoadParameters={(params) => {
               if (params.g !== undefined) setCouplingG([params.g]);
               if (params.phiA !== undefined) setPhiA([params.phiA]);
@@ -919,7 +997,9 @@ export const QuantumLab: React.FC = () => {
               if (params.alpha !== undefined) setResponseAlpha([params.alpha]);
               if (params.gamma !== undefined) setLinewidthGamma([params.gamma]);
               if (params.omega_w !== undefined) setDriveOmegaW([params.omega_w]);
-              setStatusMessage('Anomaly parameters loaded into active simulation workspace.');
+              setStatusMessage('Discovery parameters loaded into active simulation workspace.');
+              // Scroll to scene to watch the reality split
+              document.getElementById('scene')?.scrollIntoView({ behavior: 'smooth' });
             }}
             onGenerateCatalyst={(artifact) => {
               setCustomCatalystArtifact(artifact);

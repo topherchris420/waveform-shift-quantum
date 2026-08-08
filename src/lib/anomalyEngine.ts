@@ -39,6 +39,8 @@ export interface SearchOptions {
   seed?: number;
   iterations?: number;
   experimentType?: 'two_site' | 'scalar_kernel' | 'teleportation';
+  targetPlatform?: string;
+  sensitivityLimit?: number;
 }
 
 /**
@@ -126,6 +128,19 @@ export function searchAnomalies(options: SearchOptions = {}): CandidateAnomaly[]
   // Rank candidate anomalies by score descending
   candidates.sort((a, b) => b.score - a.score);
 
+  // Apply Target Lock constraints if specified
+  let filteredCandidates = candidates;
+  if (options.targetPlatform && options.targetPlatform !== 'Any') {
+    filteredCandidates = filteredCandidates.filter(
+      (c) => c.candidatePlatform === options.targetPlatform
+    );
+  }
+  if (options.sensitivityLimit) {
+    filteredCandidates = filteredCandidates.filter(
+      (c) => Math.abs(c.deltaP) >= options.sensitivityLimit!
+    );
+  }
+
   // Return top candidates
-  return candidates.slice(0, 10);
+  return filteredCandidates.slice(0, 10);
 }
