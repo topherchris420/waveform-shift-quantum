@@ -48,6 +48,75 @@ function Bar({ value, label, tone = 'cyan' }: { value: number; label: string; to
 
 const TOOLS: ToolDef[] = [
   {
+    name: 'two_site_transfer',
+    title: 'Two-Site Localization Transfer (Woodyard 2026)',
+    summary: 'Continuous localization transfer between site A & B via detuning δ(t) = (EB - EA) + g(φB - φA).',
+    fields: [
+      { name: 'bare_EA', label: 'Site EA', type: 'number', default: 1.0, step: 0.1, unit: 'eV' },
+      { name: 'bare_EB', label: 'Site EB', type: 'number', default: 1.0, step: 0.1, unit: 'eV' },
+      { name: 'field_phiA', label: 'Field φA', type: 'number', default: -0.5, step: 0.1 },
+      { name: 'field_phiB', label: 'Field φB', type: 'number', default: 0.5, step: 0.1 },
+      { name: 'coupling_g', label: 'Coupling g', type: 'number', default: 0.8, step: 0.1 },
+      { name: 'mixing_delta', label: 'Mixing Δ', type: 'number', default: 0.2, min: 0.01, step: 0.05, unit: 'eV' },
+    ],
+    visualize: (o) => {
+      const detuning = (o.bare_EB - o.bare_EA) + o.coupling_g * (o.field_phiB - o.field_phiA);
+      const theta = 0.5 * Math.atan2(2 * o.mixing_delta, detuning);
+      const PA = Math.cos(theta) ** 2;
+      const PB = Math.sin(theta) ** 2;
+      const z = PA - PB;
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="border-cyan-500/40 bg-cyan-500/10 text-cyan-200">
+              Detuning δ = {detuning.toFixed(3)} eV
+            </Badge>
+            <span className="font-mono text-xs text-slate-400">θ = {(theta * (180 / Math.PI)).toFixed(1)}°</span>
+          </div>
+          <Bar value={PA} label="Site A Occupation PA" tone="cyan" />
+          <Bar value={PB} label="Site B Occupation PB" tone="violet" />
+          <div className="font-mono text-xs text-slate-300">
+            Occupation Imbalance z(t) = <span className="text-amber-300 font-bold">{z.toFixed(4)}</span>
+          </div>
+        </div>
+      );
+    },
+  },
+  {
+    name: 'field_localization_kernel',
+    title: 'Localization Kernel χ(x) (Woodyard 2026)',
+    summary: 'Biased spatial localization response profile L(x) and kernel χ(x) = exp[α L(x)].',
+    fields: [
+      { name: 'omega0', label: 'Baseline ω₀', type: 'number', default: 10.0, step: 0.5, unit: 'GHz' },
+      { name: 'beta', label: 'Field coeff β', type: 'number', default: 2.0, step: 0.2 },
+      { name: 'phi', label: 'Scalar φ(x)', type: 'number', default: 1.2, step: 0.1 },
+      { name: 'drive_w', label: 'Drive ω_w', type: 'number', default: 12.4, step: 0.2, unit: 'GHz' },
+      { name: 'gamma', label: 'Linewidth Γ', type: 'number', default: 1.5, min: 0.1, step: 0.1 },
+      { name: 'alpha', label: 'Strength α', type: 'number', default: 1.0, step: 0.1 },
+    ],
+    visualize: (o) => {
+      const omega_loc = o.omega0 + o.beta * o.phi;
+      const halfG = o.gamma / 2;
+      const diff = o.drive_w - omega_loc;
+      const L = (halfG * halfG) / (diff * diff + halfG * halfG);
+      const chi = Math.exp(o.alpha * L);
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="border-violet-500/40 bg-violet-500/10 text-violet-200">
+              ω_loc = {omega_loc.toFixed(2)} GHz
+            </Badge>
+            <span className="font-mono text-xs text-slate-400">Response L(x) = {L.toFixed(4)}</span>
+          </div>
+          <Bar value={L} label="Response Profile L(x)" tone="amber" />
+          <div className="font-mono text-xs text-cyan-200">
+            Kernel Factor χ(x) = exp(α L) = <span className="font-bold text-cyan-100">{chi.toFixed(4)}</span>
+          </div>
+        </div>
+      );
+    },
+  },
+  {
     name: 'barrier_transmission',
     title: '1D barrier transmission',
     summary: 'Rectangular potential barrier T(E, V, a). Tunneling, resonant, or oscillatory.',
@@ -119,7 +188,7 @@ const TOOLS: ToolDef[] = [
   {
     name: 'pauli_correction',
     title: 'Pauli correction (m₁ m₂)',
-    summary: 'Bell-basis bits → Bob\u2019s Pauli operator.',
+    summary: 'Bell-basis bits → Bob’s Pauli operator.',
     fields: [
       { name: 'm1', label: 'm₁', type: 'bit', default: 0 },
       { name: 'm2', label: 'm₂', type: 'bit', default: 1 },

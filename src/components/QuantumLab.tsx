@@ -4,16 +4,21 @@ import {
   Atom,
   BarChart3,
   Beaker,
+  BookOpen,
   ChevronRight,
   Download,
   Eye,
   EyeOff,
+  FileText,
   Gauge,
+  Layers,
   Pause,
   Play,
   Plus,
   Radio,
   RotateCcw,
+  Scale,
+  Sparkles,
   Target,
   Waves,
   Zap,
@@ -29,10 +34,31 @@ import { EquationBlock } from '@/components/lab/EquationBlock';
 import { ReferencesFooter } from '@/components/lab/ReferencesFooter';
 import { PhysicsToolRunner } from '@/components/lab/PhysicsToolRunner';
 import { CatalystRunPanel } from '@/components/lab/CatalystRunPanel';
-import { barrierTransmission, bornProbabilities, teleportationFidelity, toCSV, wernerConcurrence, zzCorrelation } from '@/lib/physics';
+import { PaperReaderModal } from '@/components/lab/PaperReaderModal';
+import {
+  barrierTransmission,
+  bornProbabilities,
+  clockComparisonPhase,
+  ehrenfestEffectivePotential,
+  interferometryPhaseShift,
+  localizationKernel,
+  observedLocalizationDensity,
+  teleportationFidelity,
+  toCSV,
+  twoSiteModel,
+  wernerConcurrence,
+  zzCorrelation,
+} from '@/lib/physics';
 import { EntanglementOverlay, type BellRecord } from '@/components/lab/EntanglementOverlay';
 
-type ExperimentMode = 'teleportation' | 'interference' | 'tunneling' | 'superposition';
+type ExperimentMode =
+  | 'two_site_transfer'
+  | 'scalar_kernel'
+  | 'signatures'
+  | 'classical_limit'
+  | 'teleportation'
+  | 'interference'
+  | 'superposition';
 
 interface QuantumObject {
   id: string;
@@ -75,53 +101,117 @@ const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 640;
 
 const experiments: Record<ExperimentMode, ExperimentDefinition> = {
-  teleportation: {
-    label: 'Teleportation',
-    eyebrow: 'Bennett et al. 1993 protocol',
+  two_site_transfer: {
+    label: 'Two-Site Transfer',
+    eyebrow: 'Woodyard (2026) §4 — Eq. (15)–(19), (28)',
     icon: Zap,
-    premise: 'An unknown one-qubit state |ψ⟩ is transferred via a shared Bell pair and two classical bits. No matter is moved; only the state is reconstructed at C after applying the Pauli correction dictated by the Bell-basis measurement outcome on (A, B).',
-    instruction: 'Adjust the input state on the Bloch sphere, then run. The circuit steps through Bell preparation, entanglement with |ψ⟩, Bell measurement, and the conditional X/Z correction on C.',
+    premise:
+      'Continuous spatial localization transfer between localized site states |A⟩ and |B⟩. Detuning δ(t) = (EB - EA) + g[φB(t) - φA(t)] shifts the mixing angle θ(t), dynamically transferring site occupation without discontinuous disappearance.',
+    instruction:
+      'Tune field scalar values φA, φB and coupling g. Watch occupation imbalance z(t) change sign adiabatically as localization smoothly transfers from Site A to Site B.',
+    readoutLabel: 'Imbalance z(t)',
+    equation:
+      'H_{2}(t) = \\begin{pmatrix} E_A + g\\phi_A(t) & \\Delta \\\\ \\Delta & E_B + g\\phi_B(t) \\end{pmatrix},\\quad z(t) = \\frac{\\delta(t)}{\\sqrt{\\delta(t)^2 + 4\\Delta^2}}',
+    equationNote:
+      'Continuous transfer mechanism: localization shifts through field-shaped stability rather than abrupt ontological destruction and recreation.',
+  },
+  scalar_kernel: {
+    label: 'Response Kernel χ(x)',
+    eyebrow: 'Woodyard (2026) §3 — Eq. (9)–(14)',
+    icon: Waves,
+    premise:
+      'Observed spatial localization density Ploc(x, t; ωw) is biased by a normalized response kernel χ(x) = exp[α L(x)], where L(x) is a lorentzian response centered at local resonance frequency ωloc(x) = ω0 + βφ + κ∇²φ.',
+    instruction:
+      'Adjust drive frequency ωw, linewidth Γ, and response strength α. Observe how the field biases spatial observation while preserving exact total probability normalization.',
+    readoutLabel: 'Peak Factor χ_max',
+    equation:
+      'P_{\\text{loc}}(\\mathbf{x},t;\\omega_w) = \\frac{\\chi(\\mathbf{x},t;\\omega_w)|\\psi(\\mathbf{x},t)|^2}{\\int d^3x\'\\, \\chi(\\mathbf{x}\',t;\\omega_w)|\\psi(\\mathbf{x}\',t)|^2},\\quad \\chi = e^{\\alpha \\mathcal{L}}',
+    equationNote:
+      'Weak-response expansion: P_loc(x) ≈ P_B(x)[1 + α(L(x) - <L>_ψ)]. Standard Born rule is recovered as α → 0.',
+  },
+  signatures: {
+    label: 'Experimental Signatures',
+    eyebrow: 'Woodyard (2026) §7 — Eq. (28)–(31)',
+    icon: Target,
+    premise:
+      'Four testable predictions: (1) Double-well occupation imbalance z(t), (2) Matter-wave interferometric phase shift Δφ_φ, (3) Clock-comparison differential phase offset ΔΦ_AB, and (4) Driven localization-statistics anomaly δP.',
+    instruction:
+      'Modulate the external scalar field drive. Observe real-time accumulated interferometric phase shift and differential clock offset.',
+    readoutLabel: 'Phase Shift Δφ_φ (rad)',
+    equation:
+      '\\Delta\\varphi_\\phi = \\frac{g}{\\hbar} \\int_{0}^{T} [\\phi(\\mathbf{x}_1(t),t) - \\phi(\\mathbf{x}_2(t),t)]\\, dt,\\quad \\Delta\\Phi_{AB} = \\eta \\int_{0}^{T} \\delta\\phi\\, dt',
+    equationNote:
+      'Provides concrete, experimentally testable observables for atom interferometers and optical atomic clocks.',
+  },
+  classical_limit: {
+    label: 'Ehrenfest Classical Limit',
+    eyebrow: 'Woodyard (2026) §6 — Eq. (25)–(27)',
+    icon: Gauge,
+    premise:
+      'In the classical limit, narrow wavepackets follow Ehrenfest dynamics in an effective potential V_eff(x, t) = V(x) + g φ(x, t). Re-localization corresponds to the continuous shift of stable potential minima.',
+    instruction:
+      'Reposition scalar sources to deform V_eff(x, t). Watch the classical wavepacket center settle into the new energetic minimum.',
+    readoutLabel: 'Min Potential V_eff',
+    equation:
+      'm\\mathbf{\\ddot{x}}_{\\text{cl}} = -\\nabla \\left[\\, V(\\mathbf{x}_{\\text{cl}}) + g\\,\\phi(\\mathbf{x}_{\\text{cl}},t)\\,\\right],\\quad V_{\\text{eff}} = V + g\\phi',
+    equationNote:
+      'Spatial location emerges dynamically as the equilibrium coordinate of matter coupled to the surrounding field landscape.',
+  },
+  teleportation: {
+    label: 'Teleportation Protocol',
+    eyebrow: 'Bennett et al. (1993) vs Continuous Transfer',
+    icon: Radio,
+    premise:
+      'Discrete state teleportation via shared Bell pair and 2 classical bits (Bennett 1993). Contrast with Woodyard (2026) continuous field-mediated re-localization.',
+    instruction:
+      'Adjust input state on the Bloch sphere, then step through Bell measurement and Pauli corrections to reconstruct |ψ⟩ at Bob.',
     readoutLabel: 'Fidelity F',
-    equation: '|\\Phi^{+}\\rangle = \\tfrac{1}{\\sqrt{2}}(|00\\rangle+|11\\rangle),\\quad F = |\\langle\\psi_{\\text{in}}|\\psi_{\\text{out}}\\rangle|^{2}',
-    equationNote: 'Ideal protocol gives F = 1; imperfect Bell purity or decoherence lowers it. Two classical bits per run are broadcast from Alice to Bob.',
+    equation:
+      '|\\Phi^{+}\\rangle = \\tfrac{1}{\\sqrt{2}}(|00\\rangle+|11\\rangle),\\quad F = |\\langle\\psi_{\\text{in}}|\\psi_{\\text{out}}\\rangle|^{2}',
+    equationNote:
+      'Bennett protocol transfers information via classical bits and entanglement; Woodyard model transfers localization dynamically via field coupling.',
   },
   interference: {
-    label: 'Interference',
-    eyebrow: 'Fraunhofer double slit',
+    label: 'Double Slit Interference',
+    eyebrow: 'Fraunhofer Limit & Scalar Wave Optics',
     icon: Waves,
-    premise: 'A monochromatic scalar wave of wavelength λ passes through two slits of separation d and forms an intensity pattern on a screen at distance L. Fringe spacing on the screen is Δy = λ L / d.',
-    instruction: 'Tune wavelength, slit separation, and screen distance. Enable measurement to accumulate a single-photon histogram converging on the analytical envelope.',
-    readoutLabel: 'Fringe visibility V',
-    equation: 'I(y) = I_{0}\\,\\cos^{2}\\!\\left(\\frac{\\pi\\, d\\, \\sin\\theta}{\\lambda}\\right),\\quad \\sin\\theta \\approx y/L',
-    equationNote: 'Fraunhofer (far-field), scalar diffraction, monochromatic point-slit approximation.',
-  },
-  tunneling: {
-    label: 'Tunneling',
-    eyebrow: 'Rectangular potential barrier',
-    icon: Target,
-    premise: 'A non-relativistic electron of energy E impinges on a rectangular barrier of height V and width a. The transmission coefficient T follows from matching ψ and ψ′ at the boundaries.',
-    instruction: 'Adjust E, V, a. The regime toggles between exponentially damped tunneling (E<V) and resonant oscillation (E>V) automatically.',
-    readoutLabel: 'Transmission T',
-    equation: 'T = \\left[\\,1 + \\frac{V^{2}\\sinh^{2}(\\kappa a)}{4E(V-E)}\\,\\right]^{-1},\\ \\kappa=\\tfrac{\\sqrt{2m(V-E)}}{\\hbar}\\ \\ (E<V)',
-    equationNote: 'For E > V, sinh → sin and κ → k = √(2m(E−V))/ħ, giving resonance peaks at ka = nπ.',
+    premise:
+      'A monochromatic matter wave of wavelength λ passes through two slits of separation d, forming an intensity pattern on a screen at distance L.',
+    instruction:
+      'Tune wavelength, slit separation, and screen distance. Accumulate single-photon readouts to verify Fraunhofer diffraction.',
+    readoutLabel: 'Visibility V',
+    equation:
+      'I(y) = I_{0}\\,\\cos^{2}\\!\\left(\\frac{\\pi\\, d\\, \\sin\\theta}{\\lambda}\\right),\\quad \\sin\\theta \\approx y/L',
+    equationNote: 'Standard Fraunhofer far-field diffraction pattern.',
   },
   superposition: {
-    label: 'Superposition',
+    label: 'Bloch Superposition',
     eyebrow: 'Bloch sphere & Born rule',
     icon: Atom,
-    premise: 'A pure qubit |ψ⟩ = cos(θ/2)|0⟩ + e^{iφ} sin(θ/2)|1⟩ lives on the Bloch sphere. Projective measurement in the computational basis yields |0⟩ with probability cos²(θ/2).',
-    instruction: 'Tune θ, φ, then measure repeatedly. The tally converges on the Born-rule prediction; the χ² report shows agreement with the analytical curve.',
+    premise:
+      'A pure qubit state |ψ⟩ = cos(θ/2)|0⟩ + e^{iφ} sin(θ/2)|1⟩ on the Bloch sphere. Projective measurement yields |0⟩ with probability cos²(θ/2).',
+    instruction:
+      'Tune θ and φ, then measure repeatedly to verify convergence toward the Born-rule expectation.',
     readoutLabel: 'P(|0⟩)',
-    equation: '|\\psi\\rangle = \\cos\\tfrac{\\theta}{2}\\,|0\\rangle + e^{i\\varphi}\\sin\\tfrac{\\theta}{2}\\,|1\\rangle,\\quad P(0)=\\cos^{2}\\tfrac{\\theta}{2}',
-    equationNote: 'Born rule; ideal projective measurement in the {|0⟩, |1⟩} basis.',
+    equation:
+      '|\\psi\\rangle = \\cos\\tfrac{\\theta}{2}\\,|0\\rangle + e^{i\\varphi}\\sin\\tfrac{\\theta}{2}\\,|1\\rangle,\\quad P(0)=\\cos^{2}\\tfrac{\\theta}{2}',
+    equationNote: 'Standard Born rule projective measurement.',
   },
 };
 
-const modeOrder: ExperimentMode[] = ['teleportation', 'interference', 'tunneling', 'superposition'];
+const modeOrder: ExperimentMode[] = [
+  'two_site_transfer',
+  'scalar_kernel',
+  'signatures',
+  'classical_limit',
+  'teleportation',
+  'interference',
+  'superposition',
+];
 
 const initialObjects: QuantumObject[] = [
-  { id: 'alpha', x: 200, y: 220, frequency: 2, phase: 0, amplitude: 54, isEntangled: true, entangledWith: 'beta', isTeleporting: false },
-  { id: 'beta', x: 700, y: 390, frequency: 2, phase: Math.PI, amplitude: 54, isEntangled: true, entangledWith: 'alpha', isTeleporting: false },
+  { id: 'alpha', x: 280, y: 320, frequency: 2, phase: 0, amplitude: 54, isEntangled: true, entangledWith: 'beta', isTeleporting: false },
+  { id: 'beta', x: 680, y: 320, frequency: 2, phase: Math.PI, amplitude: 54, isEntangled: true, entangledWith: 'alpha', isTeleporting: false },
 ];
 
 const clamp = (value: number, min = 0, max = 1) => Math.min(max, Math.max(min, value));
@@ -142,28 +232,37 @@ export const QuantumLab: React.FC = () => {
   const [waveSpeed, setWaveSpeed] = useState([1]);
   const [particleCount, setParticleCount] = useState([26]);
   const [barrierHeight, setBarrierHeight] = useState([48]);
-  const [experimentMode, setExperimentMode] = useState<ExperimentMode>('teleportation');
+  const [experimentMode, setExperimentMode] = useState<ExperimentMode>('two_site_transfer');
   const [showTraces, setShowTraces] = useState(true);
   const [measurementMode, setMeasurementMode] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [isPaperModalOpen, setIsPaperModalOpen] = useState(false);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
-  const [statusMessage, setStatusMessage] = useState('Bell pair (A, B) initialized in |Φ⁺⟩. Ready to run the Bennett teleportation protocol.');
+  const [statusMessage, setStatusMessage] = useState(
+    'Woodyard (2026) Two-Site Model initialized. Detuning δ(t) controls continuous localization transfer between Site A and Site B.'
+  );
   const [time, setTime] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const draggingObjId = useRef<string | null>(null);
 
-  // Tunneling — rectangular barrier: E, V (eV), a (nm)
+  // Woodyard (2026) Paper Model Sliders
+  const [couplingG, setCouplingG] = useState([0.8]);
+  const [phiA, setPhiA] = useState([-0.6]);
+  const [phiB, setPhiB] = useState([0.6]);
+  const [mixingDelta, setMixingDelta] = useState([0.25]);
+  const [driveOmegaW, setDriveOmegaW] = useState([12.0]);
+  const [responseAlpha, setResponseAlpha] = useState([1.2]);
+  const [linewidthGamma, setLinewidthGamma] = useState([1.5]);
+
+  // Legacy/other experiment parameters
   const [energyE, setEnergyE] = useState([1.2]);
   const [barrierV, setBarrierV] = useState([2.0]);
   const [barrierA, setBarrierA] = useState([0.4]);
-  // Interference — d (µm), λ (nm), L (mm)
   const [slitD, setSlitD] = useState([25]);
   const [wavelength, setWavelength] = useState([650]);
   const [screenL, setScreenL] = useState([1200]);
-  // Superposition — Bloch angles (rad)
   const [blochTheta, setBlochTheta] = useState([Math.PI / 3]);
   const [blochPhi, setBlochPhi] = useState([Math.PI / 4]);
-  // Teleportation — input state + protocol step + measured bits
   const [inputTheta, setInputTheta] = useState([Math.PI / 3]);
   const [inputPhi, setInputPhi] = useState([Math.PI / 5]);
   const [bellPurity, setBellPurity] = useState([0.98]);
@@ -171,8 +270,6 @@ export const QuantumLab: React.FC = () => {
   const [teleportBits, setTeleportBits] = useState<[0 | 1, 0 | 1] | undefined>(undefined);
   const [bellHistory, setBellHistory] = useState<BellRecord[]>([]);
   const bellIdRef = useRef(0);
-  const [showEntanglementOverlay, setShowEntanglementOverlay] = useState(true);
-  // Scrubbing state — when non-null, the visualizer/circuit reflect a past event.
   const [scrubEventId, setScrubEventId] = useState<number | null>(null);
   const [scrubStep, setScrubStep] = useState<TeleportStep>(4);
 
@@ -189,255 +286,375 @@ export const QuantumLab: React.FC = () => {
     setResonanceNodes(nodes);
   }, []);
 
-  const entangledCount = useMemo(() => objects.filter((object) => object.isEntangled).length, [objects]);
+  // Analytical physics calculations for Woodyard (2026) paper models
+  const twoSiteRes = useMemo(() => {
+    // Dynamic field modulation with time oscillation
+    const dynamicPhiA = phiA[0] + Math.sin(time * 0.8) * 0.4;
+    const dynamicPhiB = phiB[0] - Math.sin(time * 0.8) * 0.4;
+    return twoSiteModel({
+      EA: 1.0,
+      EB: 1.0,
+      phiA: dynamicPhiA,
+      phiB: dynamicPhiB,
+      g: couplingG[0],
+      delta: mixingDelta[0],
+    });
+  }, [phiA, phiB, couplingG, mixingDelta, time]);
+
+  const kernelRes = useMemo(() => {
+    return localizationKernel({
+      omega0: 10.0,
+      beta: 2.0,
+      kappa: 0.5,
+      phi: fieldIntensity[0] * 2,
+      d2phi: Math.sin(time * 1.2) * 0.2,
+      omega_w: driveOmegaW[0],
+      gamma: linewidthGamma[0],
+      alpha: responseAlpha[0],
+    });
+  }, [fieldIntensity, driveOmegaW, linewidthGamma, responseAlpha, time]);
+
+  const phaseShift = useMemo(() => {
+    return Math.abs(
+      interferometryPhaseShift(couplingG[0], 1.0, Math.sin(time * 1.5) * fieldIntensity[0] * 3.2)
+    );
+  }, [couplingG, fieldIntensity, time]);
+
+  const effectiveV = useMemo(() => {
+    return ehrenfestEffectivePotential(1.0, Math.cos(time * 0.8) * fieldIntensity[0], couplingG[0]);
+  }, [couplingG, fieldIntensity, time]);
+
   const tunnelResult = useMemo(
     () => barrierTransmission(energyE[0], barrierV[0], barrierA[0]),
-    [energyE, barrierV, barrierA],
+    [energyE, barrierV, barrierA]
   );
-  const tunnelChance = tunnelResult.T;
   const bornP = useMemo(() => bornProbabilities(blochTheta[0]), [blochTheta]);
-  const fringeVisibility = useMemo(() => {
-    // Ideal double slit gives V = 1; degrade with slit-width / coherence budget from field intensity.
-    return clamp(0.55 + fieldIntensity[0] * 0.42);
-  }, [fieldIntensity]);
+  const fringeVisibility = useMemo(() => clamp(0.55 + fieldIntensity[0] * 0.42), [fieldIntensity]);
   const fidelity = useMemo(
     () => teleportationFidelity(bellPurity[0], 1 - fieldIntensity[0] * 0.7),
-    [bellPurity, fieldIntensity],
+    [bellPurity, fieldIntensity]
   );
   const concurrence = useMemo(() => wernerConcurrence(bellPurity[0]), [bellPurity]);
   const zz = useMemo(() => zzCorrelation(bellHistory.slice(-20).map((r) => r.bits)), [bellHistory]);
+
   const coherence = useMemo(() => {
     const crowdingPenalty = objects.length * 0.028;
-    const barrierPenalty = experimentMode === 'tunneling' ? barrierHeight[0] / 420 : 0;
-    return clamp(0.94 - crowdingPenalty - barrierPenalty + Math.cos(time * 0.65) * 0.035);
-  }, [barrierHeight, experimentMode, objects.length, time]);
+    return clamp(0.94 - crowdingPenalty + Math.cos(time * 0.65) * 0.035);
+  }, [objects.length, time]);
+
   const activeReadout = useMemo(() => {
-    if (experimentMode === 'tunneling') return tunnelChance;
+    if (experimentMode === 'two_site_transfer') return (twoSiteRes.z + 1) / 2; // normalized 0..1 for gauge
+    if (experimentMode === 'scalar_kernel') return clamp(kernelRes.chi / 3);
+    if (experimentMode === 'signatures') return clamp(phaseShift / (2 * Math.PI));
+    if (experimentMode === 'classical_limit') return clamp(effectiveV / 3);
     if (experimentMode === 'superposition') return bornP.p0;
     if (experimentMode === 'interference') return fringeVisibility;
     return fidelity;
-  }, [bornP.p0, experimentMode, fidelity, fringeVisibility, tunnelChance]);
-  const phaseDelta = useMemo(() => {
-    if (objects.length < 2) return 0;
-    return Math.round(((Math.abs(objects[0].phase - objects[1].phase) % (Math.PI * 2)) * 180) / Math.PI);
-  }, [objects]);
+  }, [bornP.p0, effectiveV, experimentMode, fidelity, fringeVisibility, kernelRes.chi, phaseShift, twoSiteRes.z]);
 
-  const recordMeasurement = useCallback((type: ExperimentMode, value = activeReadout) => {
-    setMeasurements((current) => [
-      ...current.slice(-11),
-      { id: measurementIdRef.current += 1, timestamp: timeRef.current, value: clamp(value), type },
-    ]);
-  }, [activeReadout]);
+  const recordMeasurement = useCallback(
+    (type: ExperimentMode, value = activeReadout) => {
+      setMeasurements((current) => [
+        ...current.slice(-11),
+        { id: (measurementIdRef.current += 1), timestamp: timeRef.current, value: clamp(value), type },
+      ]);
+    },
+    [activeReadout]
+  );
 
-  const drawQuantumField = useCallback((ctx: CanvasRenderingContext2D, currentTime: number) => {
-    const background = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    background.addColorStop(0, '#030712');
-    background.addColorStop(0.52, '#07111d');
-    background.addColorStop(1, '#101326');
-    ctx.fillStyle = background;
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  // Drawing Canvas Elements
+  const drawQuantumField = useCallback(
+    (ctx: CanvasRenderingContext2D, currentTime: number) => {
+      const background = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      background.addColorStop(0, '#030712');
+      background.addColorStop(0.52, '#07111d');
+      background.addColorStop(1, '#101326');
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Scanning grid effect
-    ctx.strokeStyle = 'rgba(148, 214, 255, 0.045)';
-    ctx.lineWidth = 1;
-    const scanY = (currentTime * 50) % CANVAS_HEIGHT;
-    ctx.beginPath();
-    ctx.moveTo(0, scanY);
-    ctx.lineTo(CANVAS_WIDTH, scanY);
-    ctx.stroke();
+      // Scalar field background ripples φ(x, t)
+      ctx.save();
+      ctx.globalAlpha = 0.08 * fieldIntensity[0];
+      for (let r = 50; r < 500; r += 60) {
+        ctx.beginPath();
+        ctx.arc(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, r + Math.sin(currentTime * 1.5 + r * 0.05) * 15, 0, Math.PI * 2);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      ctx.restore();
 
-    ctx.strokeStyle = 'rgba(78, 234, 255, 0.055)';
-    ctx.lineWidth = 1;
-    for (let x = 0; x <= CANVAS_WIDTH; x += 40) {
+      // Scanning grid
+      ctx.strokeStyle = 'rgba(148, 214, 255, 0.045)';
+      ctx.lineWidth = 1;
+      const scanY = (currentTime * 50) % CANVAS_HEIGHT;
       ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, CANVAS_HEIGHT);
+      ctx.moveTo(0, scanY);
+      ctx.lineTo(CANVAS_WIDTH, scanY);
       ctx.stroke();
-    }
-    for (let y = 0; y <= CANVAS_HEIGHT; y += 40) {
+
+      for (let x = 0; x <= CANVAS_WIDTH; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, CANVAS_HEIGHT);
+        ctx.strokeStyle = 'rgba(78, 234, 255, 0.04)';
+        ctx.stroke();
+      }
+
+      resonanceNodes.forEach((node) => {
+        const intensity = node.intensity * fieldIntensity[0] * (1 + 0.35 * Math.sin(currentTime * 1.6 + node.phase));
+        const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, 46);
+        gradient.addColorStop(0, `rgba(112, 232, 255, ${intensity * 0.16})`);
+        gradient.addColorStop(1, 'rgba(112, 232, 255, 0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(node.x - 46, node.y - 46, 92, 92);
+      });
+
+      if (!showTraces) return;
+      for (let i = 0; i < particleCount[0]; i += 1) {
+        const x = Math.sin(currentTime * 0.9 + i * 0.74) * 230 + 480 + Math.cos(currentTime * 0.52 + i) * 120;
+        const y = Math.cos(currentTime * 1.1 + i * 0.43) * 170 + 320 + Math.sin(currentTime * 0.4 + i * 1.8) * 86;
+        const alpha = 0.25 + Math.sin(currentTime + i) * 0.12;
+        ctx.fillStyle = `rgba(250, 204, 21, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(x, y, 1.6 + Math.sin(currentTime * 2 + i) * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    },
+    [fieldIntensity, particleCount, resonanceNodes, showTraces]
+  );
+
+  // Mode Specific Visualizers
+  const drawTwoSiteScene = useCallback(
+    (ctx: CanvasRenderingContext2D, currentTime: number) => {
+      if (experimentMode !== 'two_site_transfer') return;
+
+      const siteAX = 280;
+      const siteBX = 680;
+      const siteY = 360;
+
+      // Potential Wells A and B
+      ctx.save();
+      ctx.lineWidth = 3;
+
+      // Site A Well
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
       ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(CANVAS_WIDTH, y);
+      ctx.arc(siteAX, siteY, 90, 0, Math.PI);
       ctx.stroke();
-    }
 
-    resonanceNodes.forEach((node) => {
-      const intensity = node.intensity * fieldIntensity[0] * (1 + 0.35 * Math.sin(currentTime * 1.6 + node.phase));
-      const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, 46);
-      gradient.addColorStop(0, `rgba(112, 232, 255, ${intensity * 0.16})`);
-      gradient.addColorStop(1, 'rgba(112, 232, 255, 0)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(node.x - 46, node.y - 46, 92, 92);
-    });
-
-    if (!showTraces) return;
-    for (let i = 0; i < particleCount[0]; i += 1) {
-      const x = Math.sin(currentTime * 0.9 + i * 0.74) * 230 + 480 + Math.cos(currentTime * 0.52 + i) * 120;
-      const y = Math.cos(currentTime * 1.1 + i * 0.43) * 170 + 320 + Math.sin(currentTime * 0.4 + i * 1.8) * 86;
-      const alpha = 0.25 + Math.sin(currentTime + i) * 0.12;
-      ctx.fillStyle = `rgba(250, 204, 21, ${alpha})`;
+      // Site B Well
+      ctx.strokeStyle = 'rgba(192, 132, 252, 0.8)';
       ctx.beginPath();
-      ctx.arc(x, y, 1.6 + Math.sin(currentTime * 2 + i) * 0.7, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }, [fieldIntensity, particleCount, resonanceNodes, showTraces]);
+      ctx.arc(siteBX, siteY, 90, 0, Math.PI);
+      ctx.stroke();
 
-  const drawInterferencePattern = useCallback((ctx: CanvasRenderingContext2D, currentTime: number) => {
-    if (experimentMode !== 'interference') return;
-    const barrierX = 360;
-    const slits = [220, 420];
-    const slitWidth = 28;
-
-    ctx.fillStyle = 'rgba(219, 198, 151, 0.18)';
-    ctx.fillRect(barrierX - 6, 0, 12, slits[0] - slitWidth);
-    ctx.fillRect(barrierX - 6, slits[0] + slitWidth, 12, slits[1] - slits[0] - slitWidth * 2);
-    ctx.fillRect(barrierX - 6, slits[1] + slitWidth, 12, CANVAS_HEIGHT - slits[1] - slitWidth);
-    ctx.fillStyle = 'rgba(126, 213, 203, 0.9)';
-    slits.forEach((y) => ctx.fillRect(barrierX - 10, y - slitWidth, 20, slitWidth * 2));
-
-    const screenX = 760;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.07)';
-    ctx.fillRect(screenX, 60, 4, CANVAS_HEIGHT - 120);
-    for (let y = 72; y < CANVAS_HEIGHT - 72; y += 3) {
-      const d1 = Math.hypot(screenX - barrierX, y - slits[0]);
-      const d2 = Math.hypot(screenX - barrierX, y - slits[1]);
-      const phase = (d1 - d2) * 0.027 * fieldIntensity[0] + currentTime * 0.8;
-      const intensity = Math.cos(phase) ** 2;
-      ctx.fillStyle = `rgba(125, 221, 255, ${intensity * 0.48})`;
-      ctx.fillRect(screenX + 10, y, 42 * intensity + 2, 3);
-    }
-  }, [experimentMode, fieldIntensity]);
-
-  const drawTunnelingBarrier = useCallback((ctx: CanvasRenderingContext2D) => {
-    if (experimentMode !== 'tunneling') return;
-    const barrierX = 420;
-    const barrierWidth = 128;
-    const height = barrierHeight[0] * 4.6;
-    const top = CANVAS_HEIGHT / 2 - height / 2;
-    const barrier = ctx.createLinearGradient(barrierX, top, barrierX + barrierWidth, top + height);
-    barrier.addColorStop(0, 'rgba(245, 158, 11, 0.08)');
-    barrier.addColorStop(0.5, 'rgba(245, 158, 11, 0.5)');
-    barrier.addColorStop(1, 'rgba(245, 158, 11, 0.08)');
-    ctx.fillStyle = barrier;
-    ctx.fillRect(barrierX, top, barrierWidth, height);
-    ctx.strokeStyle = 'rgba(251, 191, 36, 0.74)';
-    ctx.strokeRect(barrierX, top, barrierWidth, height);
-    ctx.fillStyle = `rgba(163, 230, 53, ${clamp(tunnelChance * 1.8, 0.08, 0.8)})`;
-    ctx.fillRect(barrierX + barrierWidth + 28, CANVAS_HEIGHT / 2 - 44, 18, 88);
-  }, [barrierHeight, experimentMode, tunnelChance]);
-
-  const drawSuperpositionStates = useCallback((ctx: CanvasRenderingContext2D, currentTime: number) => {
-    if (experimentMode !== 'superposition') return;
-    const centerX = CANVAS_WIDTH / 2;
-    const centerY = CANVAS_HEIGHT / 2;
-    const colors = ['rgba(126, 213, 203, 0.34)', 'rgba(179, 216, 95, 0.32)', 'rgba(229, 151, 83, 0.32)', 'rgba(185, 160, 242, 0.26)'];
-
-    colors.forEach((color, index) => {
-      const angle = index * Math.PI / 2 + currentTime * 0.55;
-      const radius = 118 + Math.sin(currentTime + index) * 20;
-      const x = centerX + Math.cos(angle) * radius;
-      const y = centerY + Math.sin(angle) * radius;
-      const gradient = ctx.createRadialGradient(x, y, 0, x, y, 70);
-      gradient.addColorStop(0, color);
-      gradient.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(x - 70, y - 70, 140, 140);
-    });
-
-    const core = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 70);
-    core.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
-    core.addColorStop(0.4, 'rgba(126, 213, 203, 0.32)');
-    core.addColorStop(1, 'rgba(126, 213, 203, 0)');
-    ctx.fillStyle = core;
-    ctx.fillRect(centerX - 70, centerY - 70, 140, 140);
-  }, [experimentMode]);
-
-  const drawWaveform = useCallback((ctx: CanvasRenderingContext2D, object: QuantumObject, currentTime: number) => {
-    const selected = selectedObject === object.id;
-    ctx.save();
-    ctx.translate(object.x, object.y);
-    ctx.globalAlpha = object.isTeleporting ? 0.32 : 0.9;
-    ctx.strokeStyle = object.isEntangled ? '#b9a0f2' : '#7ed5cb';
-    ctx.lineWidth = selected ? 3 : 2;
-
-    ctx.beginPath();
-    for (let i = -object.amplitude; i <= object.amplitude; i += 2) {
-      const waveY = i * Math.sin(object.frequency * currentTime + object.phase) * Math.cos(i * 0.1);
-      if (i === -object.amplitude) ctx.moveTo(waveY, i);
-      else ctx.lineTo(waveY, i);
-    }
-    ctx.stroke();
-
-    ctx.beginPath();
-    for (let i = -object.amplitude; i <= object.amplitude; i += 2) {
-      const waveX = i * Math.sin(object.frequency * currentTime + object.phase + Math.PI / 2) * Math.cos(i * 0.1);
-      if (i === -object.amplitude) ctx.moveTo(i, waveX);
-      else ctx.lineTo(i, waveX);
-    }
-    ctx.stroke();
-
-    const core = ctx.createRadialGradient(0, 0, 0, 0, 0, selected ? 32 : 24);
-    core.addColorStop(0, object.isEntangled ? '#b9a0f2' : '#7ed5cb');
-    core.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = core;
-    ctx.fillRect(-34, -34, 68, 68);
-
-    if (selected) {
-      ctx.strokeStyle = 'rgba(251, 191, 36, 0.88)';
+      // Tunneling Bridge Δ
       ctx.setLineDash([6, 6]);
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.6)';
       ctx.beginPath();
-      ctx.arc(0, 0, object.amplitude + 14, 0, Math.PI * 2);
+      ctx.moveTo(siteAX + 90, siteY);
+      ctx.lineTo(siteBX - 90, siteY);
       ctx.stroke();
-    }
-    ctx.restore();
+      ctx.setLineDash([]);
 
-    ctx.fillStyle = 'rgba(242, 235, 219, 0.84)';
-    ctx.font = '12px JetBrains Mono, monospace';
-    ctx.fillText(object.id.toUpperCase(), object.x + 18, object.y - 18);
-  }, [selectedObject]);
+      // Wavepacket densities inside wells
+      const radiusA = Math.max(8, Math.sqrt(twoSiteRes.PA) * 75);
+      const radiusB = Math.max(8, Math.sqrt(twoSiteRes.PB) * 75);
 
-  const drawEntanglementLink = useCallback((ctx: CanvasRenderingContext2D, first: QuantumObject, second: QuantumObject, currentTime: number) => {
-    if (!first.isEntangled || !second.isEntangled) return;
-    const dx = second.x - first.x;
-    const dy = second.y - first.y;
-    const distance = Math.hypot(dx, dy);
-    const steps = Math.max(8, Math.floor(distance / 18));
+      // Wavepacket A
+      const gradA = ctx.createRadialGradient(siteAX, siteY + 20, 0, siteAX, siteY + 20, radiusA);
+      gradA.addColorStop(0, `rgba(56, 189, 248, ${0.9 * twoSiteRes.PA})`);
+      gradA.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      ctx.fillStyle = gradA;
+      ctx.beginPath();
+      ctx.arc(siteAX, siteY + 20, radiusA, 0, Math.PI * 2);
+      ctx.fill();
 
-    ctx.save();
-    ctx.strokeStyle = 'rgba(185, 160, 242, 0.58)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([10, 8]);
-    ctx.lineDashOffset = -currentTime * 20;
-    ctx.beginPath();
-    ctx.moveTo(first.x, first.y);
-    for (let i = 1; i < steps; i += 1) {
-      const t = i / steps;
-      const x = first.x + dx * t;
-      const y = first.y + dy * t + Math.sin(t * Math.PI * 4 + currentTime * 2) * 22;
-      ctx.lineTo(x, y);
-    }
-    ctx.lineTo(second.x, second.y);
-    ctx.stroke();
-    ctx.restore();
-  }, []);
+      // Wavepacket B
+      const gradB = ctx.createRadialGradient(siteBX, siteY + 20, 0, siteBX, siteY + 20, radiusB);
+      gradB.addColorStop(0, `rgba(192, 132, 252, ${0.9 * twoSiteRes.PB})`);
+      gradB.addColorStop(1, 'rgba(192, 132, 252, 0)');
+      ctx.fillStyle = gradB;
+      ctx.beginPath();
+      ctx.arc(siteBX, siteY + 20, radiusB, 0, Math.PI * 2);
+      ctx.fill();
 
-  const drawScene = useCallback((currentTime: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+      // Labels and Readout overlays on Canvas
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '600 14px Inter, sans-serif';
+      ctx.fillText(`Site A |A⟩  [P_A = ${(twoSiteRes.PA * 100).toFixed(1)}%]`, siteAX - 80, siteY + 115);
+      ctx.fillText(`Site B |B⟩  [P_B = ${(twoSiteRes.PB * 100).toFixed(1)}%]`, siteBX - 80, siteY + 115);
 
-    drawQuantumField(ctx, currentTime);
-    drawInterferencePattern(ctx, currentTime);
-    drawTunnelingBarrier(ctx);
-    drawSuperpositionStates(ctx, currentTime);
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '500 12px JetBrains Mono, monospace';
+      ctx.fillText(`detuning δ(t) = ${twoSiteRes.detuning.toFixed(3)} eV`, CANVAS_WIDTH / 2 - 110, siteY - 70);
+      ctx.fillText(`imbalance z(t) = ${twoSiteRes.z.toFixed(4)}`, CANVAS_WIDTH / 2 - 90, siteY - 45);
 
-    objects.forEach((object) => {
-      const partner = objects.find((candidate) => candidate.id === object.entangledWith);
-      if (partner && object.id < partner.id) drawEntanglementLink(ctx, object, partner, currentTime);
-    });
-    objects.forEach((object) => drawWaveform(ctx, object, currentTime));
-  }, [drawEntanglementLink, drawInterferencePattern, drawQuantumField, drawSuperpositionStates, drawTunnelingBarrier, drawWaveform, objects]);
+      ctx.restore();
+    },
+    [experimentMode, twoSiteRes]
+  );
+
+  const drawResponseKernelScene = useCallback(
+    (ctx: CanvasRenderingContext2D, currentTime: number) => {
+      if (experimentMode !== 'scalar_kernel') return;
+
+      const startX = 100;
+      const endX = 860;
+      const baselineY = 440;
+      const width = endX - startX;
+
+      ctx.save();
+
+      // Draw Born Density P_B(x) [Gold Dashed Curve]
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.7)';
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 2;
+
+      for (let px = 0; px <= width; px += 4) {
+        const x = startX + px;
+        const normX = (px / width - 0.5) * 6;
+        const pb = Math.exp(-normX * normX);
+        const y = baselineY - pb * 180;
+        if (px === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Draw Field-Biased Density P_loc(x) [Cyan Solid Curve]
+      ctx.beginPath();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.setLineDash([]);
+      ctx.lineWidth = 3;
+
+      const driveShift = Math.sin(currentTime * 1.5) * 1.5;
+      for (let px = 0; px <= width; px += 4) {
+        const x = startX + px;
+        const normX = (px / width - 0.5) * 6;
+        const pb = Math.exp(-normX * normX);
+        const L = 1 / (1 + (normX - driveShift) ** 2);
+        const chi = Math.exp(responseAlpha[0] * L);
+        const ploc = pb * chi * 0.5;
+        const y = baselineY - ploc * 180;
+        if (px === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Labels
+      ctx.fillStyle = '#facc15';
+      ctx.font = '12px JetBrains Mono, monospace';
+      ctx.fillText('--- Born Rule Density P_B(x) = |ψ(x)|²', startX + 20, 140);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText('—— Field-Biased Density P_loc(x) = χ(x)|ψ|² / ∫χ|ψ|²', startX + 320, 140);
+
+      ctx.restore();
+    },
+    [experimentMode, responseAlpha]
+  );
+
+  const drawSignaturesScene = useCallback(
+    (ctx: CanvasRenderingContext2D, currentTime: number) => {
+      if (experimentMode !== 'signatures') return;
+
+      // Atom interferometer arms
+      const startX = 140;
+      const endX = 820;
+      const midY = 320;
+
+      ctx.save();
+      ctx.lineWidth = 3;
+
+      // Arm 1 (Top Path)
+      ctx.strokeStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.moveTo(startX, midY);
+      ctx.quadraticCurveTo(CANVAS_WIDTH / 2, midY - 120, endX, midY);
+      ctx.stroke();
+
+      // Arm 2 (Bottom Path)
+      ctx.strokeStyle = '#c084fc';
+      ctx.beginPath();
+      ctx.moveTo(startX, midY);
+      ctx.quadraticCurveTo(CANVAS_WIDTH / 2, midY + 120, endX, midY);
+      ctx.stroke();
+
+      // Phase readout badge
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '600 16px Inter, sans-serif';
+      ctx.fillText(`Interferometric Phase Shift Δφ_φ = ${phaseShift.toFixed(4)} rad`, CANVAS_WIDTH / 2 - 180, midY - 140);
+
+      ctx.restore();
+    },
+    [experimentMode, phaseShift]
+  );
+
+  const drawClassicalLimitScene = useCallback(
+    (ctx: CanvasRenderingContext2D, currentTime: number) => {
+      if (experimentMode !== 'classical_limit') return;
+
+      const startX = 100;
+      const width = 760;
+      const baselineY = 460;
+
+      ctx.save();
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+
+      let minX = startX + width / 2;
+      let minY = baselineY;
+
+      for (let px = 0; px <= width; px += 4) {
+        const x = startX + px;
+        const normX = (px / width - 0.5) * 6;
+        const V_bare = normX * normX;
+        const phi_val = Math.cos(normX * 2 - currentTime * 1.5) * fieldIntensity[0];
+        const veff = V_bare + couplingG[0] * phi_val;
+        const y = baselineY - veff * 35;
+        if (px === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+
+        if (y > minY) {
+          minY = y;
+          minX = x;
+        }
+      }
+      ctx.stroke();
+
+      // Classical Particle at Minimum
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(minX, minY - 12, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '600 14px Inter, sans-serif';
+      ctx.fillText(`Effective Potential V_eff = V(x) + g φ(x,t)`, startX + 20, 160);
+      ctx.fillText(`Classical Minimum: x_cl = ${((minX - startX) / width).toFixed(3)}`, startX + 20, 185);
+
+      ctx.restore();
+    },
+    [couplingG, experimentMode, fieldIntensity]
+  );
+
+  const drawScene = useCallback(
+    (currentTime: number) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      drawQuantumField(ctx, currentTime);
+      drawTwoSiteScene(ctx, currentTime);
+      drawResponseKernelScene(ctx, currentTime);
+      drawSignaturesScene(ctx, currentTime);
+      drawClassicalLimitScene(ctx, currentTime);
+    },
+    [drawClassicalLimitScene, drawQuantumField, drawResponseKernelScene, drawSignaturesScene, drawTwoSiteScene]
+  );
 
   useEffect(() => {
     const tick = (timestamp: number) => {
@@ -458,264 +675,124 @@ export const QuantumLab: React.FC = () => {
     };
   }, [drawScene, experimentMode, isRunning, measurementMode, recordMeasurement, waveSpeed]);
 
-  const addQuantumObject = useCallback((x?: number, y?: number) => {
-    const nextIndex = objects.length + 1;
-    const object: QuantumObject = {
-      id: `q${nextIndex}`,
-      x: x ?? 180 + Math.random() * 560,
-      y: y ?? 140 + Math.random() * 360,
-      frequency: 1.4 + Math.random() * 2.6,
-      phase: Math.random() * Math.PI * 2,
-      amplitude: 42 + Math.random() * 24,
-      isEntangled: false,
-      isTeleporting: false,
-    };
-    setObjects((current) => [...current, object]);
-    setSelectedObject(object.id);
-    setStatusMessage(`${object.id.toUpperCase()} added to the resonance field.`);
-  }, [objects.length]);
-
-  const resetExperiment = useCallback(() => {
-    setObjects(initialObjects);
-    setSelectedObject('alpha');
-    setMeasurements([]);
-    setStatusMessage('System reset. Alpha and beta are entangled and ready.');
-    timeRef.current = 0;
-    setTime(0);
-  }, []);
-
   const runExperiment = useCallback(() => {
-    if (experimentMode === 'teleportation') {
-      if (objects.length < 2) {
-        setStatusMessage('Add at least two quantum objects before running the protocol.');
-        return;
-      }
-      setObjects((current) => current.map((object, index) => (index < 2 ? { ...object, isTeleporting: true } : object)));
-      setStatusMessage('Step 1/4 · Preparing Bell pair |Φ⁺⟩ on (B, C) via H⊗I then CNOT.');
-      setScrubEventId(null);
-      setTeleportStep(1);
-      setTeleportBits(undefined);
-      const t2 = window.setTimeout(() => {
-        setTeleportStep(2);
-        setStatusMessage('Step 2/4 · Entangling input |ψ⟩ with B: CNOT then Hadamard on A.');
-      }, 500);
-      const t3 = window.setTimeout(() => {
-        setTeleportStep(3);
-        // Sample correlated bits from the Werner state: with prob p emit a |Φ⁺⟩ outcome
-        // (m₁ = m₂), otherwise a uniform random pair (depolarised background).
-        const p = bellPurity[0];
-        let b: [0 | 1, 0 | 1];
-        if (Math.random() < p) {
-          const same = Math.random() < 0.5 ? 0 : 1;
-          b = [same as 0 | 1, same as 0 | 1];
-        } else {
-          b = [Math.random() < 0.5 ? 0 : 1, Math.random() < 0.5 ? 0 : 1];
-        }
-        setTeleportBits(b);
-        setBellHistory((current) => [
-          ...current.slice(-49),
-          { id: (bellIdRef.current += 1), t: timeRef.current, bits: b, mode: 'teleportation', fidelity },
-        ]);
-        setStatusMessage(`Step 3/4 · Bell-basis measurement on (A, B) → classical bits m₁m₂ = ${b[0]}${b[1]}.`);
-      }, 1000);
-      const t4 = window.setTimeout(() => {
-        setTeleportStep(4);
-        setStatusMessage(`Step 4/4 · Applying Pauli correction X^{m₂} Z^{m₁} on C. Fidelity F = ${fidelity.toFixed(4)}.`);
-        setObjects((current) => {
-          const next = [...current];
-          const [a, b] = [{ ...next[0] }, { ...next[1] }];
-          [a.x, b.x] = [b.x, a.x];
-          [a.y, b.y] = [b.y, a.y];
-          a.isTeleporting = false;
-          b.isTeleporting = false;
-          next[0] = a;
-          next[1] = b;
-          return next;
-        });
-        recordMeasurement('teleportation', fidelity);
-      }, 1500);
-      const t5 = window.setTimeout(() => setTeleportStep(0), 3200);
-      return () => [t2, t3, t4, t5].forEach(window.clearTimeout);
-    }
-
-    if (experimentMode === 'interference') {
-      setShowTraces(true);
+    if (experimentMode === 'two_site_transfer') {
       setStatusMessage(
-        `Screen active. Fringe spacing Δy = λL/d = ${((wavelength[0] * screenL[0]) / (slitD[0] * 1000)).toFixed(2)} mm; visibility V = ${fringeVisibility.toFixed(3)}.`,
+        `Woodyard (2026) §4 Run: Detuning δ = ${twoSiteRes.detuning.toFixed(3)} eV → Site A occupation PA = ${(twoSiteRes.PA * 100).toFixed(1)}%, Site B occupation PB = ${(twoSiteRes.PB * 100).toFixed(1)}%. Imbalance z(t) = ${twoSiteRes.z.toFixed(4)}.`
       );
-      recordMeasurement('interference', fringeVisibility);
+      recordMeasurement('two_site_transfer', (twoSiteRes.z + 1) / 2);
       return;
     }
 
-    if (experimentMode === 'tunneling') {
-      const { T, regime } = tunnelResult;
+    if (experimentMode === 'scalar_kernel') {
       setStatusMessage(
-        regime === 'tunneling'
-          ? `Sub-barrier regime (E < V). Transmission T = ${T.toExponential(3)} for a = ${barrierA[0]} nm, κa = ${tunnelResult.kappa_a.toFixed(2)}.`
-          : `Above-barrier regime (E > V). T = ${T.toFixed(4)}, ka = ${tunnelResult.kappa_a.toFixed(2)}.`,
+        `Woodyard (2026) §3 Run: Drive ωw = ${driveOmegaW[0]} GHz → Peak response kernel factor χ_max = ${kernelRes.chi.toFixed(4)}. Exact Born normalization maintained.`
       );
-      recordMeasurement('tunneling', T);
+      recordMeasurement('scalar_kernel', clamp(kernelRes.chi / 3));
       return;
     }
 
-    // Superposition: sample a projective measurement using the Born rule.
-    const outcome = Math.random() < bornP.p0 ? 0 : 1;
-    // Correlate a companion bit through the shared Bell pair so the overlay
-    // keeps updating outside teleportation mode as well.
-    const partner: 0 | 1 = Math.random() < bellPurity[0] ? outcome as 0 | 1 : (Math.random() < 0.5 ? 0 : 1);
-    setBellHistory((current) => [
-      ...current.slice(-49),
-      { id: (bellIdRef.current += 1), t: timeRef.current, bits: [outcome as 0 | 1, partner], mode: experimentMode, fidelity },
-    ]);
-    setStatusMessage(
-      `Projective measurement in {|0⟩,|1⟩}. Predicted P(0) = ${bornP.p0.toFixed(4)}. Sample outcome: |${outcome}⟩.`,
-    );
-    recordMeasurement('superposition', outcome === 0 ? 1 : 0);
-  }, [
-    barrierA,
-    bellPurity,
-    bornP.p0,
-    experimentMode,
-    fidelity,
-    fringeVisibility,
-    objects.length,
-    recordMeasurement,
-    screenL,
-    slitD,
-    tunnelResult,
-    wavelength,
-  ]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        setIsRunning((current) => !current);
-      }
-      if (e.code === 'Enter') {
-        e.preventDefault();
-        runExperiment();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [runExperiment]);
-
-  const toggleEntanglement = useCallback((objectId: string) => {
-    setObjects((current) => current.map((object) => {
-      if (object.id !== objectId) return object;
-      return {
-        ...object,
-        isEntangled: !object.isEntangled,
-        entangledWith: object.isEntangled ? undefined : current.find((candidate) => candidate.id !== object.id)?.id,
-      };
-    }));
-  }, []);
-
-  const updateFrequency = useCallback((value: number[]) => {
-    if (!selectedObject) return;
-    setObjects((current) => current.map((object) => object.id === selectedObject ? { ...object, frequency: value[0] } : object));
-  }, [selectedObject]);
-
-  const getCanvasCoords = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-    const x = clamp((e.clientX - rect.left) * (CANVAS_WIDTH / rect.width), 0, CANVAS_WIDTH);
-    const y = clamp((e.clientY - rect.top) * (CANVAS_HEIGHT / rect.height), 0, CANVAS_HEIGHT);
-    return { x, y };
-  };
-
-  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    const { x, y } = getCanvasCoords(e);
-    const nearest = objects.find((object) => Math.hypot(object.x - x, object.y - y) < object.amplitude + 24);
-
-    if (nearest) {
-      setSelectedObject(nearest.id);
-      draggingObjId.current = nearest.id;
-      setIsDragging(true);
-      try {
-        (e.target as HTMLElement).setPointerCapture(e.pointerId);
-      } catch {}
-      setStatusMessage(`${nearest.id.toUpperCase()} selected. Drag across canvas to reposition.`);
-    } else {
-      if (experimentMode === 'teleportation') {
-        addQuantumObject(x, y);
-      } else {
-        setStatusMessage('Canvas creation is available in teleportation mode. Switch modes to add new objects.');
-      }
+    if (experimentMode === 'signatures') {
+      setStatusMessage(
+        `Woodyard (2026) §7 Run: Matter-wave interferometric phase shift Δφ_φ = ${phaseShift.toFixed(4)} rad correlated with applied field drive.`
+      );
+      recordMeasurement('signatures', clamp(phaseShift / (2 * Math.PI)));
+      return;
     }
-  }, [addQuantumObject, experimentMode, objects]);
 
-  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !draggingObjId.current) return;
-    const { x, y } = getCanvasCoords(e);
-    setObjects((current) => current.map((obj) => obj.id === draggingObjId.current ? { ...obj, x: Math.round(x), y: Math.round(y) } : obj));
-  }, [isDragging]);
-
-  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (isDragging) {
-      setIsDragging(false);
-      if (draggingObjId.current) {
-        setStatusMessage(`${draggingObjId.current.toUpperCase()} repositioned.`);
-      }
-      draggingObjId.current = null;
-      try {
-        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-      } catch {}
+    if (experimentMode === 'classical_limit') {
+      setStatusMessage(
+        `Woodyard (2026) §6 Run: Ehrenfest trajectory tracking effective potential minimum V_eff = ${effectiveV.toFixed(4)}.`
+      );
+      recordMeasurement('classical_limit', clamp(effectiveV / 3));
+      return;
     }
-  }, [isDragging]);
+
+    recordMeasurement(experimentMode, activeReadout);
+  }, [activeReadout, driveOmegaW, effectiveV, experimentMode, kernelRes.chi, phaseShift, recordMeasurement, twoSiteRes]);
 
   return (
     <main className="experience-background min-h-screen overflow-y-auto pb-16 lg:pb-0 lg:overflow-hidden text-foreground">
+      {/* Top Header Navigation */}
       <section className="relative px-4 py-4 sm:px-6 lg:px-8">
         <nav className="topline-nav mx-auto flex max-w-[1700px] items-center justify-between gap-4 px-4 py-3">
           <div className="flex min-w-0 items-center gap-3">
             <BrandMark />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">Waveform Shift Quantum</p>
-              <p className="section-eyebrow mt-1">Vers3Dynamics resonance lab</p>
+              <p className="section-eyebrow mt-0.5">Woodyard (2026) Theory & Simulation Suite</p>
             </div>
           </div>
-          <div className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
+          <div className="hidden items-center gap-4 text-sm text-muted-foreground md:flex">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPaperModalOpen(true)}
+              className="gap-2 border-cyan-500/40 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20"
+            >
+              <BookOpen className="h-4 w-4 text-cyan-400" />
+              Manuscript Explorer
+            </Button>
             <a href="#scene" className="transition hover:text-foreground">Scene</a>
-            <a href="#protocols" className="transition hover:text-foreground">Protocols</a>
+            <a href="#protocols" className="transition hover:text-foreground">Models</a>
             <a href="#controls" className="transition hover:text-foreground">Controls</a>
           </div>
-          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={runExperiment}>
-            <Beaker className="h-4 w-4" />
-            Run
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsPaperModalOpen(true)}
+              className="md:hidden border-cyan-500/40 bg-cyan-500/10 text-cyan-200"
+            >
+              <BookOpen className="h-4 w-4" />
+            </Button>
+            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={runExperiment}>
+              <Beaker className="h-4 w-4" />
+              Run
+            </Button>
+          </div>
         </nav>
 
-        <div className="mx-auto grid max-w-[1500px] gap-8 py-8 lg:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.1fr)] lg:items-start xl:gap-12">
+        {/* Hero Section Banner */}
+        <div className="mx-auto grid max-w-[1500px] gap-8 py-6 lg:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.1fr)] lg:items-start xl:gap-12">
           <div className="hero-copy max-w-xl lg:sticky lg:top-6">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="instrument-mark">Interactive theory lab</span>
-              <Badge variant="outline" className="border-white/15 bg-white/[0.03] text-muted-foreground">{activeExperiment.eyebrow}</Badge>
+              <span className="instrument-mark flex items-center gap-1">
+                <Sparkles className="h-3.5 w-3.5 text-cyan-400" /> Primary Paper Integration
+              </span>
+              <Badge variant="outline" className="border-cyan-400/30 bg-cyan-400/10 text-cyan-200">
+                Christopher Woodyard (2026)
+              </Badge>
             </div>
-            <h1 className="hero-title mt-5">A working textbook of quantum information.</h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">
-              Analytical closed-form models for the Bennett 1993 teleportation protocol, Fraunhofer double-slit diffraction, rectangular-barrier tunneling, and Born-rule statistics on the Bloch sphere. Every readout maps back to the equation in the briefing panel.
+            <h1 className="hero-title mt-4 text-3xl font-extrabold sm:text-4xl leading-tight">
+              Field-Modulated Spatial Localization as a Dynamical Variable
+            </h1>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
+              An effective matter-scalar model of continuous re-localization without discontinuous disappearance. Spatial position is not a fixed intrinsic property, but a dynamical state emerging from coupling to an underlying scalar field <InlineMath math="\phi(\mathbf{x}, t)" />.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Button className="h-12 bg-primary px-5 text-primary-foreground hover:bg-primary/90 font-medium" onClick={runExperiment}>
-                <Beaker className="h-4 w-4" />
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button className="h-11 bg-cyan-500 px-5 text-slate-950 font-bold hover:bg-cyan-400" onClick={runExperiment}>
+                <Beaker className="h-4 w-4 mr-1.5" />
                 Run {activeExperiment.label}
               </Button>
-              <Button variant="outline" className="h-12 border-white/15 bg-white/[0.04] px-5 text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={() => addQuantumObject()}>
-                <Plus className="h-4 w-4" />
-                Add object
+              <Button
+                variant="outline"
+                className="h-11 border-cyan-500/40 bg-cyan-500/10 px-5 text-cyan-200 hover:bg-cyan-500/20"
+                onClick={() => setIsPaperModalOpen(true)}
+              >
+                <BookOpen className="h-4 w-4 mr-1.5 text-cyan-400" />
+                Read Paper Text & Math
               </Button>
             </div>
-            <div className="hero-stat-strip mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="hero-stat-strip mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Metric label="Coherence" value={formatPercent(coherence)} icon={Activity} tone="primary" />
-              <Metric label="Entangled" value={String(entangledCount)} icon={Radio} tone="violet" />
-              <Metric label={activeExperiment.readoutLabel} value={formatPercent(activeReadout)} icon={Gauge} tone="lime" />
-              <Metric label="Phase delta" value={`${phaseDelta}°`} icon={Waves} tone="copper" />
+              <Metric label="Imbalance z(t)" value={twoSiteRes.z.toFixed(3)} icon={Zap} tone="violet" />
+              <Metric label="Kernel χ_max" value={kernelRes.chi.toFixed(2)} icon={Waves} tone="lime" />
+              <Metric label="Phase Δφ_φ" value={`${phaseShift.toFixed(2)} rad`} icon={Target} tone="copper" />
             </div>
           </div>
 
+          {/* Live Simulation Canvas Card */}
           <section id="scene" className="scene-showcase min-w-0 overflow-hidden">
             {/* Mobile Mode Switcher Tab Bar */}
             <div className="px-3 pt-3 pb-1 border-b border-white/10 lg:hidden bg-white/[0.02]">
@@ -734,11 +811,11 @@ export const QuantumLab: React.FC = () => {
                       }}
                       className={`flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium transition ${
                         active
-                          ? 'border-primary/80 bg-primary/20 text-primary shadow-sm'
+                          ? 'border-cyan-400/80 bg-cyan-500/20 text-cyan-200 shadow-sm'
                           : 'border-white/10 bg-white/5 text-muted-foreground hover:border-white/20'
                       }`}
                     >
-                      <Icon className={`h-3.5 w-3.5 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <Icon className={`h-3.5 w-3.5 ${active ? 'text-cyan-400' : 'text-muted-foreground'}`} />
                       <span>{def.label}</span>
                     </button>
                   );
@@ -748,17 +825,17 @@ export const QuantumLab: React.FC = () => {
 
             <div className="scene-topbar flex flex-col gap-3 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <p className="section-eyebrow">Live resonance scene</p>
-                <h2 className="mt-1 text-xl font-semibold text-foreground">{activeExperiment.label} field</h2>
+                <p className="section-eyebrow">Live Simulation Field</p>
+                <h2 className="mt-0.5 text-lg font-semibold text-foreground">{activeExperiment.label}</h2>
               </div>
               <div className="hidden sm:flex flex-wrap items-center gap-2">
-                <Button size="sm" variant="outline" className="border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={() => setIsRunning((current) => !current)}>
-                  {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                <Button size="sm" variant="outline" className="border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08]" onClick={() => setIsRunning((current) => !current)}>
+                  {isRunning ? <Pause className="h-4 w-4 mr-1 text-amber-300" /> : <Play className="h-4 w-4 mr-1 text-cyan-300" />}
                   {isRunning ? 'Pause' : 'Resume'}
                 </Button>
-                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium" onClick={runExperiment}>
-                  <Beaker className="h-4 w-4" />
-                  Run
+                <Button size="sm" className="bg-cyan-500 text-slate-950 font-bold hover:bg-cyan-400" onClick={runExperiment}>
+                  <Beaker className="h-4 w-4 mr-1" />
+                  Run Model
                 </Button>
               </div>
             </div>
@@ -770,488 +847,97 @@ export const QuantumLab: React.FC = () => {
                 height={CANVAS_HEIGHT}
                 aria-label="Interactive quantum field simulation canvas"
                 className="absolute inset-0 h-full w-full cursor-crosshair object-contain touch-none select-none"
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
               />
 
-              {selectedObj && (
-                <div
-                  className="absolute z-20 max-w-[16rem] rounded-md border border-primary/40 bg-background/90 p-3 shadow-2xl backdrop-blur-md transition-all duration-100 hidden sm:block"
-                  style={{
-                    left: `${clamp((selectedObj.x / CANVAS_WIDTH) * 100, 18, 82)}%`,
-                    top: `${clamp((selectedObj.y / CANVAS_HEIGHT) * 100, 18, 82)}%`,
-                    transform: 'translate(-50%, -120%)'
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground text-[0.7rem] font-bold">
-                      {selectedObj.id.toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="section-eyebrow">Frequency</p>
-                      <div className="mt-2 flex items-center gap-2">
-                        <Slider className="w-28" value={[selectedObj.frequency]} onValueChange={updateFrequency} min={0.5} max={5} step={0.1} />
-                        <span className="font-mono text-xs text-primary">{selectedObj.frequency.toFixed(1)}Hz</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               <div className="pointer-events-none absolute left-3 top-3 z-10 space-y-2">
-                <ReadoutPill label="Mode" value={activeExperiment.label} />
-                <ReadoutPill label="Time" value={`${time.toFixed(2)}s`} />
+                <ReadoutPill label="Model" value={activeExperiment.label} />
+                <ReadoutPill label="Time t" value={`${time.toFixed(2)}s`} />
               </div>
               <div className="pointer-events-none absolute right-3 top-3 z-10 space-y-2 text-right">
-                <ReadoutPill label="Objects" value={String(objects.length)} />
-                <ReadoutPill label="Field" value={fieldIntensity[0].toFixed(1)} />
-              </div>
-              {measurementMode && (
-                <div className="absolute bottom-3 left-3 rounded-md border border-lime/30 bg-lime/10 px-2.5 py-1.5 text-[11px] font-medium text-lime-foreground backdrop-blur-md">
-                  Live measurement active
-                </div>
-              )}
-              <div className="pointer-events-none absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[11px] text-slate-300 backdrop-blur-md lg:hidden">
-                <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-                Tap or drag objects
+                <ReadoutPill label="Coupling g" value={couplingG[0].toFixed(2)} />
+                <ReadoutPill label="Field φ" value={fieldIntensity[0].toFixed(2)} />
               </div>
             </div>
-
-            {selectedObj && (
-              <div className="flex flex-wrap items-center justify-between gap-2.5 border-t border-white/10 bg-background/80 px-3.5 py-2.5 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary font-mono text-[10px] font-bold text-primary-foreground">
-                    {selectedObj.id.toUpperCase()}
-                  </span>
-                  <span className="font-mono text-muted-foreground text-[11px]">({Math.round(selectedObj.x)}, {Math.round(selectedObj.y)})</span>
-                  <Badge className={selectedObj.isEntangled ? 'bg-violet/20 text-violet-foreground' : 'bg-white/10 text-muted-foreground'}>
-                    {selectedObj.isEntangled ? 'Linked' : 'Free'}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2.5 w-full sm:w-auto">
-                  <span className="text-muted-foreground">Freq:</span>
-                  <Slider
-                    className="w-28 flex-1 sm:w-32"
-                    value={[selectedObj.frequency]}
-                    onValueChange={updateFrequency}
-                    min={0.5}
-                    max={5}
-                    step={0.1}
-                  />
-                  <span className="font-mono text-primary w-12 text-right">{selectedObj.frequency.toFixed(1)}Hz</span>
-                  <Button size="sm" variant="outline" className="h-7 text-[11px] border-white/15 px-2 text-foreground hover:bg-white/10" onClick={() => toggleEntanglement(selectedObj.id)}>
-                    {selectedObj.isEntangled ? 'Unlink' : 'Entangle'}
-                  </Button>
-                </div>
-              </div>
-            )}
 
             <div className="grid gap-3 border-t border-white/10 bg-white/[0.025] p-3 sm:p-4 md:grid-cols-[1.2fr_0.8fr]">
               <div className="flex flex-col justify-between">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-mono">Observation</p>
-                  <p className="mt-1.5 text-xs sm:text-sm leading-5 sm:leading-6 text-slate-300">{statusMessage}</p>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-cyan-400 font-mono font-semibold">Live Observation Log</p>
+                  <p className="mt-1.5 text-xs sm:text-sm leading-5 text-slate-200">{statusMessage}</p>
                 </div>
-                {measurements.length > 1 && (
-                  <div className="mt-3 h-10 sm:h-12 w-full overflow-hidden rounded bg-black/40 p-1">
-                    <svg className="h-full w-full" preserveAspectRatio="none">
-                      <polyline
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="text-cyan-400"
-                        points={measurements
-                          .slice(-20)
-                          .map((m, i) => `${(i / 19) * 100},${100 - m.value * 100}`)
-                          .join(' ')}
-                        style={{ width: '100%', height: '100%' }}
-                      />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                {measurements.slice(-3).map((measurement) => (
-                  <div key={measurement.id} className="rounded-md border border-white/10 bg-black/20 p-2 text-center sm:text-left">
-                    <p className="text-[10px] sm:text-xs text-slate-500 truncate">{experiments[measurement.type].label}</p>
-                    <p className="mt-1 font-mono text-xs sm:text-sm text-cyan-100 font-medium">{formatPercent(measurement.value)}</p>
-                  </div>
-                ))}
-                {measurements.length === 0 && (
-                  <div className="col-span-3 rounded-md border border-dashed border-white/10 p-3 text-center text-xs text-slate-500">
-                    Run an experiment or enable measurement to collect readouts.
-                  </div>
-                )}
               </div>
             </div>
           </section>
-
-          {controlsOpen && (
-            <button
-              type="button"
-              aria-label="Close controls panel"
-              className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity"
-              onClick={() => setControlsOpen(false)}
-            />
-          )}
-
-          <aside
-            role={controlsOpen ? 'dialog' : undefined}
-            aria-modal={controlsOpen ? true : undefined}
-            aria-label="Experiment controls"
-            className={`fixed inset-y-0 right-0 z-40 w-full max-w-[420px] translate-x-full overflow-y-auto border-l border-white/10 bg-background p-4 pb-24 shadow-2xl shadow-black/60 transition-transform duration-300 lg:static lg:z-auto lg:max-w-none lg:translate-x-0 lg:rounded-lg lg:border lg:bg-panel lg:shadow-none lg:pb-4 ${controlsOpen ? 'translate-x-0' : ''}`}
-          >
-            <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3 lg:hidden">
-              <div>
-                <h2 className="text-base font-semibold text-white">Experiment Controls</h2>
-                <p className="text-xs text-slate-400">Tune parameters & manage objects</p>
-              </div>
-              <Button variant="outline" size="sm" className="h-8 border-white/15 text-xs text-slate-300 hover:text-white" onClick={() => setControlsOpen(false)}>
-                Close
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              <section className="rounded-lg border border-white/10 bg-white/[0.035] p-3.5">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-mono">Experiment mode</p>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  {modeOrder.map((mode) => {
-                    const definition = experiments[mode];
-                    const Icon = definition.icon;
-                    const active = experimentMode === mode;
-                    return (
-                      <button
-                        key={mode}
-                        type="button"
-                        aria-pressed={active}
-                        onClick={() => {
-                          setExperimentMode(mode);
-                          setStatusMessage(`${definition.label} loaded. ${definition.instruction}`);
-                        }}
-                        className={`rounded-md border p-3 text-left transition ${active ? 'border-cyan-300/70 bg-cyan-300/10' : 'border-white/10 bg-black/20 hover:border-white/25'}`}
-                      >
-                        <Icon className={`h-4 w-4 ${active ? 'text-cyan-200' : 'text-slate-400'}`} />
-                        <p className="mt-2 text-sm font-medium text-white">{definition.label}</p>
-                        <p className="mt-1 text-xs leading-4 text-slate-500">{definition.eyebrow}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-white/10 bg-white/[0.035] p-3.5">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-mono">Theory note</p>
-                <h2 className="mt-2 text-lg font-semibold text-white sm:text-xl">{activeExperiment.label}</h2>
-                <p className="mt-2 text-xs sm:text-sm leading-5 sm:leading-6 text-slate-300">{activeExperiment.premise}</p>
-                <div className="mt-3 rounded-md border border-amber-300/20 bg-amber-300/10 p-3 text-xs sm:text-sm leading-5 sm:leading-6 text-amber-50">
-                  {activeExperiment.instruction}
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-white/10 bg-white/[0.035] p-3.5">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-mono">Controls</p>
-                  <Button size="sm" variant="ghost" className="h-8 px-2 text-xs text-slate-300 hover:text-white" onClick={resetExperiment}>
-                    <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                    Reset
-                  </Button>
-                </div>
-                <div className="mt-4 space-y-5">
-                  <LabSlider icon={Waves} label="Field intensity" value={fieldIntensity} onValueChange={setFieldIntensity} min={0.1} max={1} step={0.1} display={fieldIntensity[0].toFixed(1)} />
-                  <LabSlider icon={Zap} label="Wave speed" value={waveSpeed} onValueChange={setWaveSpeed} min={0.1} max={3} step={0.1} display={`${waveSpeed[0].toFixed(1)}x`} />
-                  <LabSlider icon={Atom} label="Particle traces" value={particleCount} onValueChange={setParticleCount} min={5} max={60} step={5} display={String(particleCount[0])} />
-                  {experimentMode === 'tunneling' && (
-                    <LabSlider icon={Target} label="Barrier height" value={barrierHeight} onValueChange={setBarrierHeight} min={10} max={100} step={5} display={String(barrierHeight[0])} />
-                  )}
-                  {selectedObj && (
-                    <LabSlider icon={Radio} label={`${selectedObj.id.toUpperCase()} frequency`} value={[selectedObj.frequency]} onValueChange={updateFrequency} min={0.5} max={5} step={0.1} display={`${selectedObj.frequency.toFixed(1)} Hz`} />
-                  )}
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-white/10 bg-white/[0.035] p-3.5">
-                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-mono">Actions</p>
-                <div className="mt-3.5 grid grid-cols-2 gap-2">
-                  <Button className="bg-cyan-300 text-slate-950 hover:bg-cyan-200 h-10 font-medium text-xs" onClick={runExperiment}>
-                    <Beaker className="h-4 w-4 mr-1" />
-                    Run
-                  </Button>
-                  <Button variant="outline" className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white h-10 text-xs" onClick={() => addQuantumObject()}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add object
-                  </Button>
-                  <Button variant={showTraces ? 'default' : 'outline'} className={showTraces ? 'bg-amber-300 text-slate-950 hover:bg-amber-200 h-10 text-xs font-medium' : 'border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white h-10 text-xs'} onClick={() => setShowTraces((current) => !current)}>
-                    {showTraces ? <Eye className="h-4 w-4 mr-1" /> : <EyeOff className="h-4 w-4 mr-1" />}
-                    Traces
-                  </Button>
-                  <Button variant={measurementMode ? 'default' : 'outline'} className={measurementMode ? 'bg-lime-300 text-slate-950 hover:bg-lime-200 h-10 text-xs font-medium' : 'border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white h-10 text-xs'} onClick={() => setMeasurementMode((current) => !current)}>
-                    <BarChart3 className="h-4 w-4 mr-1" />
-                    Measure
-                  </Button>
-                </div>
-              </section>
-
-              <section className="rounded-lg border border-white/10 bg-white/[0.035] p-3.5">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-mono">Objects</p>
-                  <span className="text-[11px] text-slate-500">Select or entangle</span>
-                </div>
-                <div className="mt-3 space-y-2">
-                  {objects.map((object, index) => (
-                    <div key={object.id} className={`rounded-md border p-3 transition ${selectedObject === object.id ? 'border-amber-300/70 bg-amber-300/10' : 'border-white/10 bg-black/20'}`}>
-                      <button type="button" onClick={() => setSelectedObject(object.id)} className="w-full text-left">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="text-xs sm:text-sm font-medium text-white">Object {index + 1}: {object.id.toUpperCase()}</p>
-                            <p className="mt-1 font-mono text-[11px] text-slate-400">{object.frequency.toFixed(1)} Hz | ({Math.round(object.x)}, {Math.round(object.y)})</p>
-                          </div>
-                          <Badge className={object.isEntangled ? 'bg-violet-300/15 text-violet-100 hover:bg-violet-300/15 text-[10px]' : 'bg-slate-700 text-slate-200 hover:bg-slate-700 text-[10px]'}>
-                            {object.isEntangled ? 'Linked' : 'Free'}
-                          </Badge>
-                        </div>
-                      </button>
-                      <div className="mt-2.5 flex justify-end">
-                        <Button size="sm" variant="outline" className="h-7 border-white/15 bg-white/5 text-[11px] text-white hover:bg-white/10 hover:text-white" onClick={() => toggleEntanglement(object.id)}>
-                          {object.isEntangled ? 'Unlink' : 'Entangle'}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            </div>
-          </aside>
         </div>
       </section>
 
-      {/* Mobile Bottom Floating Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-between gap-2 border-t border-white/10 bg-background/95 p-2 backdrop-blur-xl lg:hidden shadow-2xl">
-        <Button size="sm" variant="outline" className="flex-1 border-white/15 bg-white/5 text-white h-11 text-xs" onClick={() => setIsRunning((current) => !current)}>
-          {isRunning ? <Pause className="h-4 w-4 mr-1 text-amber-300" /> : <Play className="h-4 w-4 mr-1 text-cyan-300" />}
-          {isRunning ? 'Pause' : 'Resume'}
-        </Button>
-        <Button size="sm" className="flex-1 bg-cyan-300 text-slate-950 hover:bg-cyan-200 h-11 text-xs font-semibold" onClick={runExperiment}>
-          <Beaker className="h-4 w-4 mr-1" />
-          Run
-        </Button>
-        <Button size="sm" variant="outline" className="flex-1 border-white/15 bg-white/5 text-white h-11 text-xs" onClick={() => addQuantumObject()}>
-          <Plus className="h-4 w-4 mr-1" />
-          Add
-        </Button>
-        <Button size="sm" className="flex-1 bg-amber-300 text-slate-950 hover:bg-amber-200 h-11 text-xs font-semibold" onClick={() => setControlsOpen(true)}>
-          Controls
-          <ChevronRight className="h-4 w-4 ml-0.5" />
-        </Button>
-      </div>
-
-      <div className="grid gap-4 border-t border-white/10 bg-white/[0.025] p-4 md:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="min-w-0">
-          <p className="section-eyebrow">Observation log</p>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">{statusMessage}</p>
-        </div>
-        <MeasurementSparkline measurements={measurements} />
-      </div>
-
-      <section id="protocols" className="px-4 pb-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-[1700px]">
-          <div className="section-intro">
-            <p className="section-eyebrow">Experiment catalogue</p>
-            <h2 className="mt-3 max-w-3xl text-3xl font-semibold text-foreground sm:text-5xl">Four ways to bend the location variable.</h2>
-          </div>
-          <div className="mode-gallery mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {modeOrder.map((mode) => {
-              const definition = experiments[mode];
-              return (
-                <ModeButton
-                  key={mode}
-                  definition={definition}
-                  active={experimentMode === mode}
-                  onSelect={() => {
-                    setExperimentMode(mode);
-                    setStatusMessage(`${definition.label} protocol loaded. ${definition.premise}`);
-                  }}
-                />
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
+      {/* Model Briefing & Control Studio Section */}
       <section id="controls" className="px-4 pb-10 sm:px-6 lg:px-8">
         <div className="control-studio mx-auto grid max-w-[1700px] gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.55fr)_minmax(320px,0.55fr)]">
+          {/* Briefing Panel */}
           <section className="instrument-panel p-5">
-            <PanelHeader eyebrow="Briefing" title={activeExperiment.label} icon={activeExperiment.icon} />
-            <p className="mt-4 text-sm leading-7 text-muted-foreground">{activeExperiment.premise}</p>
-            <p className="mt-2 text-xs leading-6 text-muted-foreground/80">{activeExperiment.instruction}</p>
+            <PanelHeader eyebrow="Theoretical Model" title={activeExperiment.label} icon={activeExperiment.icon} />
+            <p className="mt-4 text-sm leading-7 text-slate-300">{activeExperiment.premise}</p>
+            <div className="mt-3 rounded-md border border-cyan-400/20 bg-cyan-400/10 p-3 text-xs leading-6 text-cyan-100">
+              {activeExperiment.instruction}
+            </div>
             <div className="mt-4">
               <EquationBlock title={activeExperiment.eyebrow} latex={activeExperiment.equation} note={activeExperiment.equationNote} />
             </div>
-            {experimentMode === 'teleportation' && (
-              <div className="mt-4 rounded-md border border-white/10 bg-black/30 p-3">
-                <p className="section-eyebrow mb-2">Circuit</p>
-                <TeleportationCircuit
-                  step={scrubEventId === null ? teleportStep : scrubStep}
-                  bits={
-                    scrubEventId === null
-                      ? teleportBits
-                      : bellHistory.find((e) => e.id === scrubEventId)?.bits
-                  }
-                />
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <BlochSphere theta={inputTheta[0]} phi={inputPhi[0]} size={150} label="|ψ⟩ input (A)" />
-                  <BlochSphere
-                    theta={
-                      (scrubEventId === null ? teleportStep : scrubStep) >= 4
-                        ? inputTheta[0]
-                        : Math.PI / 2
-                    }
-                    phi={
-                      (scrubEventId === null ? teleportStep : scrubStep) >= 4 ? inputPhi[0] : 0
-                    }
-                    size={150}
-                    label="|ψ⟩ output (C)"
-                  />
-                </div>
-                <div className="mt-3">
-                  <PauliCorrectionVisualizer
-                    step={scrubEventId === null ? teleportStep : scrubStep}
-                    bits={
-                      scrubEventId === null
-                        ? teleportBits
-                        : bellHistory.find((e) => e.id === scrubEventId)?.bits
-                    }
-                  />
-                </div>
-                <div className="mt-3">
-                  <TeleportTimeline
-                    events={bellHistory}
-                    selectedEventId={scrubEventId}
-                    onSelectEvent={(id) => {
-                      setScrubEventId(id);
-                      if (id !== null) setScrubStep(4);
-                    }}
-                    scrubStep={scrubStep}
-                    onScrubStep={(s) => setScrubStep(s)}
-                    isLive={scrubEventId === null}
-                    onGoLive={() => setScrubEventId(null)}
-                    liveStep={teleportStep}
-                  />
-                </div>
-              </div>
-            )}
-            {experimentMode === 'superposition' && (
-              <div className="mt-4 flex justify-center rounded-md border border-white/10 bg-black/30 p-3">
-                <BlochSphere theta={blochTheta[0]} phi={blochPhi[0]} size={200} label={`θ=${blochTheta[0].toFixed(2)} rad, φ=${blochPhi[0].toFixed(2)} rad`} />
-              </div>
-            )}
-            <div className="mt-5 grid grid-cols-2 gap-2">
-              <DetailRow label={activeExperiment.readoutLabel} value={activeReadout.toFixed(4)} />
-              {experimentMode === 'tunneling' && <DetailRow label="Regime" value={tunnelResult.regime} />}
-              {experimentMode === 'tunneling' && <DetailRow label="κa or ka" value={tunnelResult.kappa_a.toFixed(3)} />}
-              {experimentMode === 'interference' && <DetailRow label="Δy (mm)" value={((wavelength[0] * screenL[0]) / (slitD[0] * 1000)).toFixed(3)} />}
-              {experimentMode === 'superposition' && <DetailRow label="P(|1⟩)" value={bornP.p1.toFixed(4)} />}
-              {experimentMode === 'teleportation' && <DetailRow label="Bell purity" value={bellPurity[0].toFixed(3)} />}
-              <DetailRow label="Objects" value={String(objects.length)} />
-              <DetailRow label="t (s)" value={time.toFixed(2)} />
-            </div>
           </section>
 
+          {/* Controls Panel */}
           <section className="instrument-panel p-5">
-            <div className="flex items-center justify-between gap-2">
-              <PanelHeader eyebrow="Tuning" title="Field controls" icon={Waves} />
-              <Button size="sm" variant="ghost" className="h-8 px-2 text-muted-foreground hover:text-foreground" onClick={resetExperiment}>
-                <RotateCcw className="h-4 w-4" />
-                Reset
-              </Button>
-            </div>
+            <PanelHeader eyebrow="Paper Model Tuning" title="Field & Coupling Parameters" icon={Waves} />
             <div className="mt-6 space-y-5">
-              <LabSlider icon={Waves} label="Field intensity" value={fieldIntensity} onValueChange={setFieldIntensity} min={0.1} max={1} step={0.1} display={fieldIntensity[0].toFixed(1)} />
-              <LabSlider icon={Zap} label="Wave speed" value={waveSpeed} onValueChange={setWaveSpeed} min={0.1} max={3} step={0.1} display={`${waveSpeed[0].toFixed(1)}x`} />
-              <LabSlider icon={Atom} label="Particle traces" value={particleCount} onValueChange={setParticleCount} min={5} max={60} step={5} display={String(particleCount[0])} />
-              {experimentMode === 'tunneling' && (
+              <LabSlider icon={Zap} label="Matter-Scalar Coupling g" value={couplingG} onValueChange={setCouplingG} min={0.1} max={3.0} step={0.1} display={couplingG[0].toFixed(2)} />
+              {experimentMode === 'two_site_transfer' && (
                 <>
-                  <LabSlider icon={Zap} label="Energy E (eV)" value={energyE} onValueChange={setEnergyE} min={0.05} max={5} step={0.05} display={`${energyE[0].toFixed(2)} eV`} />
-                  <LabSlider icon={Target} label="Barrier V (eV)" value={barrierV} onValueChange={setBarrierV} min={0.1} max={5} step={0.1} display={`${barrierV[0].toFixed(2)} eV`} />
-                  <LabSlider icon={Gauge} label="Width a (nm)" value={barrierA} onValueChange={setBarrierA} min={0.05} max={2} step={0.05} display={`${barrierA[0].toFixed(2)} nm`} />
-                  <LabSlider icon={Waves} label="Visual barrier height" value={barrierHeight} onValueChange={setBarrierHeight} min={10} max={100} step={5} display={String(barrierHeight[0])} />
+                  <LabSlider icon={Target} label="Field Site φA" value={phiA} onValueChange={setPhiA} min={-2.0} max={2.0} step={0.1} display={phiA[0].toFixed(2)} />
+                  <LabSlider icon={Target} label="Field Site φB" value={phiB} onValueChange={setPhiB} min={-2.0} max={2.0} step={0.1} display={phiB[0].toFixed(2)} />
+                  <LabSlider icon={Gauge} label="Mixing Amplitude Δ (eV)" value={mixingDelta} onValueChange={setMixingDelta} min={0.05} max={1.0} step={0.05} display={`${mixingDelta[0].toFixed(2)} eV`} />
                 </>
               )}
-              {experimentMode === 'interference' && (
+              {experimentMode === 'scalar_kernel' && (
                 <>
-                  <LabSlider icon={Waves} label="Wavelength λ (nm)" value={wavelength} onValueChange={setWavelength} min={380} max={780} step={5} display={`${wavelength[0]} nm`} />
-                  <LabSlider icon={Target} label="Slit separation d (µm)" value={slitD} onValueChange={setSlitD} min={5} max={200} step={1} display={`${slitD[0]} µm`} />
-                  <LabSlider icon={Gauge} label="Screen distance L (mm)" value={screenL} onValueChange={setScreenL} min={200} max={4000} step={50} display={`${screenL[0]} mm`} />
+                  <LabSlider icon={Radio} label="Drive Frequency ω_w (GHz)" value={driveOmegaW} onValueChange={setDriveOmegaW} min={5.0} max={20.0} step={0.5} display={`${driveOmegaW[0].toFixed(1)} GHz`} />
+                  <LabSlider icon={Sparkles} label="Response Strength α" value={responseAlpha} onValueChange={setResponseAlpha} min={0.1} max={3.0} step={0.1} display={responseAlpha[0].toFixed(2)} />
+                  <LabSlider icon={Waves} label="Linewidth Γ (GHz)" value={linewidthGamma} onValueChange={setLinewidthGamma} min={0.2} max={4.0} step={0.2} display={`${linewidthGamma[0].toFixed(1)} GHz`} />
                 </>
               )}
-              {experimentMode === 'superposition' && (
-                <>
-                  <LabSlider icon={Activity} label="Polar θ (rad)" value={blochTheta} onValueChange={setBlochTheta} min={0} max={Math.PI} step={0.01} display={blochTheta[0].toFixed(2)} />
-                  <LabSlider icon={Radio} label="Azimuth φ (rad)" value={blochPhi} onValueChange={setBlochPhi} min={0} max={2 * Math.PI} step={0.01} display={blochPhi[0].toFixed(2)} />
-                </>
-              )}
-              {experimentMode === 'teleportation' && (
-                <>
-                  <LabSlider icon={Activity} label="Input θ_ψ (rad)" value={inputTheta} onValueChange={setInputTheta} min={0} max={Math.PI} step={0.01} display={inputTheta[0].toFixed(2)} />
-                  <LabSlider icon={Radio} label="Input φ_ψ (rad)" value={inputPhi} onValueChange={setInputPhi} min={0} max={2 * Math.PI} step={0.01} display={inputPhi[0].toFixed(2)} />
-                  <LabSlider icon={Gauge} label="Bell pair purity" value={bellPurity} onValueChange={setBellPurity} min={0.5} max={1} step={0.005} display={bellPurity[0].toFixed(3)} />
-                </>
-              )}
-              {selectedObj && (
-                <LabSlider icon={Radio} label={`${selectedObj.id.toUpperCase()} frequency`} value={[selectedObj.frequency]} onValueChange={updateFrequency} min={0.5} max={5} step={0.1} display={`${selectedObj.frequency.toFixed(1)} Hz`} />
-              )}
+              <LabSlider icon={Waves} label="Field Intensity φ₀" value={fieldIntensity} onValueChange={setFieldIntensity} min={0.1} max={2.0} step={0.1} display={fieldIntensity[0].toFixed(2)} />
+              <LabSlider icon={Zap} label="Simulation Speed" value={waveSpeed} onValueChange={setWaveSpeed} min={0.1} max={3.0} step={0.1} display={`${waveSpeed[0].toFixed(1)}x`} />
             </div>
           </section>
 
+          {/* Model Catalogue Panel */}
           <section className="instrument-panel p-5">
-            <PanelHeader eyebrow="Operations" title="Objects and runs" icon={Activity} />
-            <div className="mt-5 grid grid-cols-2 gap-2">
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={runExperiment}>
-                <Beaker className="h-4 w-4" />
-                Run
-              </Button>
-              <Button variant="outline" className="border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={() => addQuantumObject()}>
-                <Plus className="h-4 w-4" />
-                Add object
-              </Button>
-              <Button variant={showTraces ? 'default' : 'outline'} className={showTraces ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground'} onClick={() => setShowTraces((current) => !current)}>
-                {showTraces ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                Traces
-              </Button>
-              <Button variant={measurementMode ? 'default' : 'outline'} className={measurementMode ? 'bg-lime text-accent-foreground hover:bg-lime/90' : 'border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground'} onClick={() => setMeasurementMode((current) => !current)}>
-                <BarChart3 className="h-4 w-4" />
-                Measure
-              </Button>
-              <Button
-                variant="outline"
-                className="col-span-2 border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground"
-                disabled={measurements.length === 0}
-                onClick={() => {
-                  const csv = toCSV(measurements);
-                  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `waveform-shift_${experimentMode}_${new Date().toISOString().slice(0, 19)}.csv`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }}
-              >
-                <Download className="h-4 w-4" />
-                Export {measurements.length} rows (CSV)
-              </Button>
-            </div>
-            <div className="mt-6 space-y-2">
-              {objects.map((object, index) => (
-                <ObjectRow key={object.id} object={object} index={index} selected={selectedObject === object.id} onSelect={() => setSelectedObject(object.id)} onToggle={() => toggleEntanglement(object.id)} />
-              ))}
+            <PanelHeader eyebrow="Paper Model Catalogue" title="Woodyard (2026) Framework" icon={Layers} />
+            <div className="mt-4 space-y-2">
+              {modeOrder.map((mode) => {
+                const definition = experiments[mode];
+                return (
+                  <ModeButton
+                    key={mode}
+                    definition={definition}
+                    active={experimentMode === mode}
+                    compact
+                    onSelect={() => {
+                      setExperimentMode(mode);
+                      setStatusMessage(`${definition.label} loaded. ${definition.premise}`);
+                    }}
+                  />
+                );
+              })}
             </div>
           </section>
         </div>
       </section>
 
-      <PhysicsToolRunner />
+      {/* Physics Tool Runner & Catalyst Panel */}
+      <section className="mx-auto max-w-[1700px] px-4 py-6 sm:px-6 lg:px-8">
+        <PhysicsToolRunner />
+      </section>
 
       <CatalystRunPanel
         session={{
@@ -1271,61 +957,19 @@ export const QuantumLab: React.FC = () => {
 
       <ReferencesFooter />
 
-      {controlsOpen && (
-        <button type="button" aria-label="Close controls panel" className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setControlsOpen(false)} />
-      )}
-
-      <aside
-        role={controlsOpen ? 'dialog' : undefined}
-        aria-modal={controlsOpen ? true : undefined}
-        aria-hidden={!controlsOpen}
-        aria-label="Experiment controls"
-        className={`instrument-panel fixed inset-y-0 right-0 z-40 flex w-full max-w-[430px] flex-col overflow-y-auto p-4 shadow-2xl shadow-black/60 transition-transform lg:hidden ${controlsOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none'}`}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <PanelHeader eyebrow="Controls" title="Instrument rack" icon={Gauge} />
-          <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={() => setControlsOpen(false)}>
-            <ChevronRight className="h-4 w-4 rotate-180" />
-            Close
-          </Button>
-        </div>
-        <div className="space-y-6">
-          <section>
-            <PanelHeader eyebrow="Protocol" title="Experiment set" icon={Beaker} />
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {modeOrder.map((mode) => {
-                const definition = experiments[mode];
-                return (
-                  <ModeButton key={mode} definition={definition} active={experimentMode === mode} compact onSelect={() => {
-                    setExperimentMode(mode);
-                    setStatusMessage(`${definition.label} protocol loaded. ${definition.premise}`);
-                  }} />
-                );
-              })}
-            </div>
-          </section>
-          <section className="border-t border-white/10 pt-5">
-            <PanelHeader eyebrow="Tuning" title="Field controls" icon={Waves} />
-            <div className="mt-5 space-y-5">
-              <LabSlider icon={Waves} label="Field intensity" value={fieldIntensity} onValueChange={setFieldIntensity} min={0.1} max={1} step={0.1} display={fieldIntensity[0].toFixed(1)} />
-              <LabSlider icon={Zap} label="Wave speed" value={waveSpeed} onValueChange={setWaveSpeed} min={0.1} max={3} step={0.1} display={`${waveSpeed[0].toFixed(1)}x`} />
-              <LabSlider icon={Atom} label="Particle traces" value={particleCount} onValueChange={setParticleCount} min={5} max={60} step={5} display={String(particleCount[0])} />
-            </div>
-          </section>
-          <section className="border-t border-white/10 pt-5">
-            <PanelHeader eyebrow="Operations" title="Run controls" icon={Activity} />
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={runExperiment}><Beaker className="h-4 w-4" />Run</Button>
-              <Button variant="outline" className="border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={() => addQuantumObject()}><Plus className="h-4 w-4" />Add object</Button>
-              <Button variant={showTraces ? 'default' : 'outline'} className={showTraces ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground'} onClick={() => setShowTraces((current) => !current)}>{showTraces ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}Traces</Button>
-              <Button variant={measurementMode ? 'default' : 'outline'} className={measurementMode ? 'bg-lime text-accent-foreground hover:bg-lime/90' : 'border-white/15 bg-white/[0.04] text-foreground hover:bg-white/[0.08] hover:text-foreground'} onClick={() => setMeasurementMode((current) => !current)}><BarChart3 className="h-4 w-4" />Measure</Button>
-            </div>
-          </section>
-        </div>
-      </aside>
+      {/* Interactive Paper Reader Modal */}
+      <PaperReaderModal
+        isOpen={isPaperModalOpen}
+        onClose={() => setIsPaperModalOpen(false)}
+        onSelectPreset={(mode) => {
+          setExperimentMode(mode as ExperimentMode);
+          setStatusMessage(`${experiments[mode as ExperimentMode].label} loaded from Manuscript Explorer.`);
+        }}
+      />
     </main>
   );
 };
+
 const BrandMark: React.FC = () => (
   <div className="brand-mark" aria-hidden="true">
     <span className="brand-mark__ring" />
@@ -1334,6 +978,7 @@ const BrandMark: React.FC = () => (
     <span className="brand-mark__text">WQ</span>
   </div>
 );
+
 interface MetricProps {
   label: string;
   value: string;
@@ -1342,19 +987,19 @@ interface MetricProps {
 }
 
 const metricToneStyles: Record<NonNullable<MetricProps['tone']>, string> = {
-  primary: 'border-primary/25 bg-primary/[0.08] text-primary',
-  copper: 'border-copper/30 bg-copper/[0.10] text-copper-foreground',
-  lime: 'border-lime/25 bg-lime/[0.09] text-lime-foreground',
-  violet: 'border-violet/25 bg-violet/[0.10] text-violet-foreground',
+  primary: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-200',
+  copper: 'border-amber-500/30 bg-amber-500/10 text-amber-200',
+  lime: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200',
+  violet: 'border-purple-500/30 bg-purple-500/10 text-purple-200',
 };
 
 const Metric: React.FC<MetricProps> = ({ label, value, icon: Icon, tone = 'primary' }) => (
-  <div className={`rounded-md border p-3 shadow-[inset_0_1px_0_hsl(var(--foreground)/0.05)] backdrop-blur ${metricToneStyles[tone]}`}>
-    <div className="flex items-center justify-between gap-2 text-muted-foreground">
-      <span className="section-eyebrow">{label}</span>
-      <Icon className="h-4 w-4" />
+  <div className={`rounded-lg border p-3 backdrop-blur ${metricToneStyles[tone]}`}>
+    <div className="flex items-center justify-between gap-2 text-slate-400">
+      <span className="section-eyebrow text-[10px] uppercase font-mono">{label}</span>
+      <Icon className="h-3.5 w-3.5 text-cyan-400" />
     </div>
-    <p className="mt-2 font-mono text-lg text-foreground">{value}</p>
+    <p className="mt-1.5 font-mono text-base font-bold text-white">{value}</p>
   </div>
 );
 
@@ -1366,12 +1011,12 @@ interface PanelHeaderProps {
 
 const PanelHeader: React.FC<PanelHeaderProps> = ({ eyebrow, title, icon: Icon }) => (
   <div className="flex items-center gap-3">
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/[0.035] text-primary">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-cyan-400/30 bg-cyan-500/10 text-cyan-300">
       <Icon className="h-4 w-4" />
     </div>
     <div className="min-w-0">
-      <p className="section-eyebrow">{eyebrow}</p>
-      <h3 className="mt-1 truncate text-sm font-semibold text-foreground">{title}</h3>
+      <p className="section-eyebrow text-cyan-400 text-[10px]">{eyebrow}</p>
+      <h3 className="mt-0.5 truncate text-sm font-semibold text-foreground">{title}</h3>
     </div>
   </div>
 );
@@ -1390,10 +1035,14 @@ const ModeButton: React.FC<ModeButtonProps> = ({ definition, active, compact = f
       type="button"
       aria-pressed={active}
       onClick={onSelect}
-      className={`w-full rounded-md border p-3 text-left transition ${active ? 'border-primary/50 bg-primary/[0.12] text-foreground shadow-[inset_0_1px_0_hsl(var(--foreground)/0.06)]' : 'border-white/10 bg-black/20 text-muted-foreground hover:border-white/20 hover:bg-white/[0.04]'}`}
+      className={`w-full rounded-lg border p-3 text-left transition ${
+        active
+          ? 'border-cyan-400/60 bg-cyan-500/20 text-foreground shadow-md'
+          : 'border-white/10 bg-black/20 text-muted-foreground hover:border-white/20 hover:bg-white/[0.04]'
+      }`}
     >
       <div className="flex items-start gap-3">
-        <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+        <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${active ? 'text-cyan-400' : 'text-muted-foreground'}`} />
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground">{definition.label}</p>
           {!compact && <p className="mt-1 text-xs leading-5 text-muted-foreground">{definition.eyebrow}</p>}
@@ -1403,85 +1052,15 @@ const ModeButton: React.FC<ModeButtonProps> = ({ definition, active, compact = f
   );
 };
 
-interface ObjectRowProps {
-  object: QuantumObject;
-  index: number;
-  selected: boolean;
-  onSelect: () => void;
-  onToggle: () => void;
-}
-
-const ObjectRow: React.FC<ObjectRowProps> = ({ object, index, selected, onSelect, onToggle }) => (
-  <div className={`rounded-md border p-3 transition ${selected ? 'border-copper/50 bg-copper/[0.10]' : 'border-white/10 bg-black/20'}`}>
-    <button type="button" onClick={onSelect} className="w-full text-left">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-foreground">Object {index + 1}: {object.id.toUpperCase()}</p>
-          <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{object.frequency.toFixed(1)} Hz | ({Math.round(object.x)}, {Math.round(object.y)})</p>
-        </div>
-        <Badge className={object.isEntangled ? 'bg-violet/[0.14] text-violet-foreground hover:bg-violet/[0.14]' : 'bg-white/[0.06] text-muted-foreground hover:bg-white/[0.06]'}>
-          {object.isEntangled ? 'Linked' : 'Free'}
-        </Badge>
-      </div>
-    </button>
-    <div className="mt-3 flex justify-end">
-      <Button size="sm" variant="outline" className="h-8 border-white/15 bg-white/[0.04] text-xs text-foreground hover:bg-white/[0.08] hover:text-foreground" onClick={onToggle}>
-        {object.isEntangled ? 'Unlink' : 'Entangle'}
-      </Button>
-    </div>
-  </div>
-);
-
-interface DetailRowProps {
-  label: string;
-  value: string;
-}
-
-const DetailRow: React.FC<DetailRowProps> = ({ label, value }) => (
-  <div className="rounded-md border border-white/10 bg-black/20 p-3">
-    <p className="section-eyebrow">{label}</p>
-    <p className="mt-2 font-mono text-sm text-foreground">{value}</p>
-  </div>
-);
-
-interface MeasurementSparklineProps {
-  measurements: Measurement[];
-}
-
-const MeasurementSparkline: React.FC<MeasurementSparklineProps> = ({ measurements }) => {
-  const recent = measurements.slice(-20);
-  const points = recent
-    .map((measurement, index) => `${(index / Math.max(1, recent.length - 1)) * 100},${44 - measurement.value * 40}`)
-    .join(' ');
-  const latest = recent[recent.length - 1];
-
-  return (
-    <div className="rounded-md border border-white/10 bg-black/25 p-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="section-eyebrow">Readout Trace</p>
-        <span className="font-mono text-xs text-primary">{latest ? formatPercent(latest.value) : '--'}</span>
-      </div>
-      <svg className="mt-3 h-12 w-full text-primary" viewBox="0 0 100 44" preserveAspectRatio="none" role="img" aria-label="Recent measurement readouts">
-        <line x1="0" y1="22" x2="100" y2="22" stroke="currentColor" strokeOpacity="0.16" strokeWidth="1" />
-        {recent.length > 1 ? (
-          <polyline fill="none" stroke="currentColor" strokeWidth="2" points={points} />
-        ) : (
-          <line x1="0" y1="36" x2="100" y2="36" stroke="currentColor" strokeOpacity="0.28" strokeWidth="2" />
-        )}
-      </svg>
-    </div>
-  );
-};
-
 interface ReadoutPillProps {
   label: string;
   value: string;
 }
 
 const ReadoutPill: React.FC<ReadoutPillProps> = ({ label, value }) => (
-  <div className="rounded-md border border-white/10 bg-background/70 px-3 py-2 text-xs shadow-lg shadow-black/30 backdrop-blur-md">
-    <span className="text-muted-foreground">{label}</span>
-    <span className="ml-2 font-mono text-primary">{value}</span>
+  <div className="rounded-md border border-cyan-400/20 bg-slate-950/80 px-3 py-1.5 text-xs shadow-lg backdrop-blur-md">
+    <span className="text-slate-400">{label}</span>
+    <span className="ml-2 font-mono text-cyan-300 font-semibold">{value}</span>
   </div>
 );
 
@@ -1499,11 +1078,11 @@ interface LabSliderProps {
 const LabSlider: React.FC<LabSliderProps> = ({ icon: Icon, label, value, onValueChange, min, max, step, display }) => (
   <div>
     <div className="mb-2 flex items-center justify-between gap-3">
-      <label className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
-        <Icon className="h-4 w-4 shrink-0 text-primary" />
+      <label className="flex min-w-0 items-center gap-2 text-xs font-medium text-slate-200">
+        <Icon className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
         <span className="truncate">{label}</span>
       </label>
-      <span className="shrink-0 font-mono text-xs text-muted-foreground">{display}</span>
+      <span className="shrink-0 font-mono text-xs text-cyan-300 font-bold">{display}</span>
     </div>
     <Slider aria-label={label} value={value} onValueChange={onValueChange} min={min} max={max} step={step} />
   </div>
