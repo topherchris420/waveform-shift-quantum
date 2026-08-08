@@ -1,4 +1,4 @@
-# Quantum Location Theory: Location as a Variable
+# Quantum Location Theory: Location as a Dynamic Variable
 
 ## Core Insight
 
