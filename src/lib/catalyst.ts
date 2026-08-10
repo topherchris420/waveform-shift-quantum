@@ -2,6 +2,10 @@
 // Upgraded with canonicalized data hashing, parameter-set digest calculation,
 // root artifact SHA-256 verification, and Anomaly Experiment Protocol generation.
 
+import { canonicalJson as canonicalizeJson, sha256Text as sha256 } from './passport/canonical';
+
+export { canonicalizeJson, sha256 };
+
 export type ScientificStatus = 'established' | 'experimental' | 'speculative';
 
 export interface Claim {
@@ -121,31 +125,6 @@ export interface CatalystArtifact {
 }
 
 const ZERO = '0'.repeat(64);
-
-/** Recursive canonicalization of JS object for deterministic hashing */
-export function canonicalizeJson(obj: unknown): string {
-  if (obj === null || typeof obj !== 'object') {
-    return JSON.stringify(obj);
-  }
-
-  if (Array.isArray(obj)) {
-    return '[' + obj.map((item) => canonicalizeJson(item)).join(',') + ']';
-  }
-
-  const keys = Object.keys(obj as Record<string, unknown>).sort();
-  const pairs = keys.map(
-    (key) => `${JSON.stringify(key)}:${canonicalizeJson((obj as Record<string, unknown>)[key])}`
-  );
-  return '{' + pairs.join(',') + '}';
-}
-
-/** Compute SHA-256 hash string */
-export async function sha256(text: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
 
 /** Compute canonical parameter hash */
 export async function computeParameterHash(params: unknown): Promise<string> {
@@ -333,7 +312,7 @@ export async function compileRun(session: CatalystSession): Promise<CatalystArti
   const run_id = `${created_at.replace(/[-:.]/g, '').slice(0, 15)}Z-${(ledger[0].hash || '').slice(0, 8)}`;
 
   const parameterHash = await computeParameterHash(session.parameters ?? { purity: session.purity, theta: session.theta, phi: session.phi });
-  const commitSha = 'main-9b4f2e1'; // Representative repo commit SHA
+  const commitSha = __SOURCE_COMMIT__;
 
   const artifactWithoutRootHash: Omit<CatalystArtifact, 'integrity'> & { integrity: Omit<CatalystIntegrityInfo, 'artifactRootHash'> } = {
     run_id,
