@@ -1,4 +1,5 @@
-import { twoSiteModel, localizationKernel, compareModels } from './physics';
+import { compareModels } from './physics';
+import { PLATFORMS } from './platforms';
 
 export interface AnomalyParameters {
   g: number;         // Matter-scalar coupling strength
@@ -26,12 +27,34 @@ export interface CandidateAnomaly {
 }
 
 /** Simple Mulberry32 deterministic pseudo-random generator */
-function pseudoRandom(seed: number) {
+export function pseudoRandom(seed: number) {
   return function () {
     let t = (seed += 0x6d2b79f5);
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Deterministically sample one point of parameter space.
+ *
+ * Indexed rather than sequential so that any consumer — the anomaly sweep or
+ * Target Lock — can reproduce the exact same point from (seed, index) alone.
+ */
+export function sampleParameters(seed: number, index: number): AnomalyParameters {
+  const rng = pseudoRandom(seed * 7919 + index * 104729);
+  // Discard the first draws so neighbouring indices decorrelate fully.
+  rng();
+  rng();
+  return {
+    g: Number((0.1 + rng() * 2.9).toFixed(3)),
+    delta: Number((0.05 + rng() * 0.95).toFixed(3)),
+    phiA: Number((-2.0 + rng() * 4.0).toFixed(3)),
+    phiB: Number((-2.0 + rng() * 4.0).toFixed(3)),
+    alpha: Number((0.1 + rng() * 2.9).toFixed(3)),
+    gamma: Number((0.3 + rng() * 2.7).toFixed(3)),
+    omega_w: Number((5.0 + rng() * 20.0).toFixed(2)),
   };
 }
 
@@ -43,33 +66,58 @@ export interface SearchOptions {
   sensitivityLimit?: number;
 }
 
+const platformLabelById = new Map(PLATFORMS.map((p) => [p.id, p.label]));
+
+/**
+ * Pick the apparatus best matched to a parameter regime.
+ * Kept as a label so exported artifacts stay human-readable.
+ */
+function assignPlatform(
+  mode: 'two_site' | 'scalar_kernel' | 'teleportation',
+  params: AnomalyParameters
+): { platform: string; observable: string } {
+  if (mode === 'scalar_kernel') {
+    return {
+      platform: platformLabelById.get('optical_lattice_clock') ?? 'Optical Lattice Clock (Sr)',
+      observable: 'Differential fractional frequency Δν/ν',
+    };
+  }
+  if (Math.abs(params.phiB - params.phiA) > 2.5) {
+    return {
+      platform: platformLabelById.get('transmon_circuit') ?? 'Superconducting Transmon Circuit',
+      observable: 'Avoided-crossing population P₁',
+    };
+  }
+  if (params.alpha > 2.0) {
+    return {
+      platform: platformLabelById.get('trapped_ion') ?? 'Trapped Ion (¹⁷¹Yb⁺)',
+      observable: 'Internal-state population P(bright)',
+    };
+  }
+  return {
+    platform: platformLabelById.get('atom_interferometer') ?? 'Atom Interferometer',
+    observable: 'Matter-wave interferometric phase Δφ',
+  };
+}
+
 /**
  * Numerically sweep parameter space to discover parameter combinations
- * that maximize measurable deviation between Standard QM and Woodyard Model.
+ * that maximize measurable deviation between Standard QM and the proposed model.
  */
 export function searchAnomalies(options: SearchOptions = {}): CandidateAnomaly[] {
   const seed = options.seed ?? 42;
   const iterations = options.iterations ?? 200;
-  const rng = pseudoRandom(seed);
 
   const candidates: CandidateAnomaly[] = [];
 
   for (let i = 0; i < iterations; i++) {
-    // Sample parameters deterministically within physical bounds
-    const g = Number((0.1 + rng() * 2.9).toFixed(3));
-    const delta = Number((0.05 + rng() * 0.95).toFixed(3));
-    const phiA = Number((-2.0 + rng() * 4.0).toFixed(3));
-    const phiB = Number((-2.0 + rng() * 4.0).toFixed(3));
-    const alpha = Number((0.1 + rng() * 2.9).toFixed(3));
-    const gamma = Number((0.3 + rng() * 2.7).toFixed(3));
-    const omega_w = Number((5.0 + rng() * 20.0).toFixed(2));
+    const params = sampleParameters(seed, i);
+    const { g, delta, phiA, phiB, alpha } = params;
 
     // Reject unphysical or degenerate states
     if (!Number.isFinite(g) || !Number.isFinite(delta) || Math.abs(phiA - phiB) < 1e-4) {
       continue;
     }
-
-    const params: AnomalyParameters = { g, delta, phiA, phiB, alpha, gamma, omega_w };
 
     // Select experiment mode to evaluate
     const mode = options.experimentType ?? (i % 2 === 0 ? 'two_site' : 'scalar_kernel');
@@ -93,20 +141,10 @@ export function searchAnomalies(options: SearchOptions = {}): CandidateAnomaly[]
     const stabilityWeight = stability === 'Stable' ? 1.0 : 0.7;
     const score = Number((absDelta * 100 * stabilityWeight * (1 / (1 + g * 0.1))).toFixed(2));
 
-    // Determine platform and observable based on parameter regime
-    let candidatePlatform = 'Atom Interferometer';
-    let sensitiveObservable = 'Matter-wave interferometric phase';
-
-    if (mode === 'scalar_kernel') {
-      candidatePlatform = 'Optical Lattice (Strontium Clock)';
-      sensitiveObservable = 'Differential frequency shift Δν';
-    } else if (Math.abs(phiB - phiA) > 2.5) {
-      candidatePlatform = 'Superconducting Transmon Circuit';
-      sensitiveObservable = 'Avoided crossing charge offset';
-    } else if (alpha > 2.0) {
-      candidatePlatform = 'Trapped Ion (171Yb+)';
-      sensitiveObservable = 'Phonon mode population imbalance';
-    }
+    const { platform: candidatePlatform, observable: sensitiveObservable } = assignPlatform(
+      mode,
+      params
+    );
 
     candidates.push({
       id: `ANM-${seed}-${i.toString().padStart(3, '0')}`,

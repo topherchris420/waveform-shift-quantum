@@ -73,6 +73,12 @@ export interface AnomalyProtocol {
   successThreshold: string;
   falsificationThreshold: string;
   uncertaintyNotes: string;
+  /** Combined 1σ uncertainty on the observable, when supplied by the card. */
+  totalUncertainty?: number;
+  /** 1σ precision the apparatus must reach for a 5σ result. */
+  requiredPrecision?: number;
+  /** Shots needed for that result; null when blocked by systematics. */
+  requiredShots?: number | null;
   reproducibilitySeed: number;
   scientificStatusLabels: {
     baselineStatus: string;
@@ -374,6 +380,16 @@ export async function compileAnomalyExperiment(anomaly: {
   sensitiveObservable: string;
   candidatePlatform: string;
   falsificationCondition: string;
+  /** Combined 1σ uncertainty from the experiment card's budget. */
+  uncertainty?: number;
+  /** 1σ precision required for a 5σ result. */
+  requiredPrecision?: number;
+  /** Shots required for that result; Infinity when systematics block it. */
+  requiredShots?: number;
+  /** Controls a credible null result must include. */
+  controls?: string[];
+  /** Systematics that could counterfeit a positive result. */
+  confounders?: string[];
 }): Promise<CatalystArtifact> {
   const seed = 137000 + Math.floor(Math.abs(anomaly.deltaP) * 10000);
   const session: CatalystSession = {
@@ -409,20 +425,34 @@ export async function compileAnomalyExperiment(anomaly: {
     measurableObservable: anomaly.sensitiveObservable,
     candidatePlatform: anomaly.candidatePlatform,
     parameterSet: anomaly.parameters,
-    controls: [
+    controls: anomaly.controls ?? [
       'Zero-field control run (g → 0)',
       'Un-modulated pulse baseline (α → 0)',
       'Detuned drive background measurement',
     ],
-    successThreshold: `Detection of spatial shift |ΔP| > ${(Math.abs(anomaly.deltaP) * 0.5).toFixed(4)} with 5-sigma statistical confidence`,
-    falsificationThreshold: `Absence of predicted shift within noise floor σ < 1e-4 disconfirms parameter region`,
-    uncertaintyNotes: 'Modeled uncertainty assumes shot-noise limit in atom interferometer.',
+    successThreshold:
+      anomaly.uncertainty !== undefined
+        ? `Measured separation |Δ| = ${Math.abs(anomaly.deltaP).toExponential(3)} resolved at ≥5σ against σ_total = ${anomaly.uncertainty.toExponential(3)}`
+        : `Detection of spatial shift |ΔP| > ${(Math.abs(anomaly.deltaP) * 0.5).toFixed(4)} with 5-sigma statistical confidence`,
+    falsificationThreshold: anomaly.falsificationCondition,
+    uncertaintyNotes:
+      anomaly.uncertainty !== undefined
+        ? `Combined 1σ uncertainty σ_total = ${anomaly.uncertainty.toExponential(3)} on ${anomaly.candidatePlatform}, from √(σ_shot²/N + σ_sys²). Systematics do not average down.`
+        : 'Modeled uncertainty assumes shot-noise limit in atom interferometer.',
+    totalUncertainty: anomaly.uncertainty,
+    requiredPrecision: anomaly.requiredPrecision,
+    requiredShots:
+      anomaly.requiredShots === undefined
+        ? undefined
+        : Number.isFinite(anomaly.requiredShots)
+          ? anomaly.requiredShots
+          : null,
     reproducibilitySeed: seed,
     scientificStatusLabels: {
       baselineStatus: 'ESTABLISHED PHYSICS',
       modelStatus: 'PROPOSED MODEL',
     },
-    risksAndLimitations: [
+    risksAndLimitations: anomaly.confounders ?? [
       'Thermal decoherence in atomic cloud may mask small phase shifts',
       'Stray magnetic field gradients could mimic scalar field response',
     ],
