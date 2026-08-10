@@ -48,8 +48,8 @@ The passport presents and serializes these sections in this order:
 7. **Candidate platform:** apparatus identifier, label, supported modes, readout channel, integration assumptions, and source basis.
 8. **Noise budget:** single-shot, statistical, systematic, and combined uncertainty with the formula and shot budget used.
 9. **Falsification rule:** machine-readable thresholds, explicit natural-language rule, required controls, and inconclusive cases.
-10. **Reproducibility:** scientific-specification digest, result digest, software commit, schema/algorithm versions, seed, replay state, artifact-member hashes, root manifest digest, and final bundle digest.
-11. **Artifacts:** deterministic filenames, media types, byte sizes, and download roles for every generated member.
+10. **Reproducibility:** scientific-specification digest, result digest, software commit, schema/algorithm versions, seed, and replay state. Member, manifest, and final bundle hashes are joined into the complete Passport view after packaging rather than embedded in `passport.json`, which prevents circular artifact identity.
+11. **Artifacts:** deterministic filenames, media types, byte sizes, download roles, and the associated `manifest.json` entry for every generated member.
 
 Equations are stored as structured records containing a stable identifier, LaTeX display form, plain-text form, symbol table, assumptions, and implementation version. Arbitrary uploaded code or equations are not executed.
 
@@ -61,7 +61,7 @@ Three identities are intentionally distinct:
 - **Result hash:** canonical, ordered, portable sweep rows plus the selected candidate. It answers, “Did the same computation produce the same scientific result?”
 - **Bundle hash:** SHA-256 over the final deterministic ZIP bytes. It answers, “Is this the exact same downloadable artifact?”
 
-Every ZIP member is hashed before the root manifest is created. `manifest.json` lists those member hashes and carries a root manifest digest calculated over its canonical payload without the root-digest field. `checksums.sha256` mirrors the member hashes for conventional tooling. The ZIP cannot contain its own final byte hash without a circular dependency, so the bundle hash is displayed after assembly and included in the downloaded filename.
+Every payload member is hashed before the root manifest is created. `manifest.json` lists those payload hashes and carries a root manifest digest calculated over its canonical payload without the root-digest field. `checksums.sha256` lists the payload hashes plus the hash of the final manifest bytes; like conventional checksum files, it omits itself to avoid self-reference. The final ZIP hash covers every member, including `checksums.sha256`. The ZIP cannot contain its own final byte hash without a circular dependency, so that hash is displayed after assembly and included in the downloaded filename.
 
 Portable scientific numbers use a versioned canonical decimal representation at a declared precision. Browser replay must match canonical rows and the result digest exactly. The generated Python notebook independently recomputes floating-point values, checks them against the recorded tolerance, converts them to the same canonical representation, and verifies the same result digest. This avoids treating irrelevant platform-specific last-bit differences as a failed scientific reproduction.
 
@@ -187,7 +187,7 @@ Implementation follows red-green-refactor cycles. Required automated coverage in
 
 - A TARGET LOCK winner can be compiled into a passport containing every approved hypothesis-to-artifact field.
 - The giant action performs a fresh replay before enabling a verified bundle.
-- Identical inputs and measurement bytes yield matching scientific, result, member, manifest, and ZIP hashes.
+- Identical inputs and measurement bytes yield matching scientific, result, payload-member, manifest, and ZIP hashes.
 - A changed seed, search input, model output, threshold, platform assumption, or measurement byte changes the appropriate digest.
 - Raw and summary measurements produce auditable normalized evidence and deterministic three-way verdicts.
 - Another person can extract the ZIP, run `notebook/reproduce.ipynb`, reproduce the recorded sweep within the declared numeric tolerance, and verify the result digest.
