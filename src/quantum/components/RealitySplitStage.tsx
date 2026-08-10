@@ -250,12 +250,12 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
         else ctx.lineTo(x, y);
       }
       ctx.setLineDash([5, 5]);
-      ctx.strokeStyle = 'rgba(226, 232, 240, 0.32)';
+      ctx.strokeStyle = 'rgba(13, 13, 13, 0.45)';
       ctx.lineWidth = 1.2;
       ctx.stroke();
       ctx.setLineDash([]);
 
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
+      ctx.strokeStyle = 'rgba(13, 13, 13, 0.22)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(PLOT_X0, baseline);
@@ -282,14 +282,14 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
 
       // Backdrop
       const bg = ctx.createLinearGradient(0, 0, 0, H);
-      bg.addColorStop(0, '#04070f');
-      bg.addColorStop(0.5, '#060d18');
-      bg.addColorStop(1, '#04070f');
+      bg.addColorStop(0, '#f5f3ee');
+      bg.addColorStop(0.5, '#efece4');
+      bg.addColorStop(1, '#f5f3ee');
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
 
       // Shared spatial gridlines tie all three bands to one x-axis.
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.07)';
+      ctx.strokeStyle = 'rgba(13, 13, 13, 0.07)';
       ctx.lineWidth = 1;
       for (let i = 0; i <= 8; i += 1) {
         const x = PLOT_X0 + (i / 8) * PLOT_W;
@@ -308,7 +308,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
       ctx.beginPath();
       ctx.rect(PLOT_X0, BAND_DIV.top, PLOT_W, BAND_DIV.height);
       ctx.clip();
-      ctx.fillStyle = 'rgba(2, 6, 14, 0.9)';
+      ctx.fillStyle = 'rgba(245, 243, 238, 0.92)';
       ctx.fillRect(PLOT_X0, BAND_DIV.top, PLOT_W, BAND_DIV.height);
       if (heat) {
         ctx.imageSmoothingEnabled = true;
@@ -318,7 +318,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
       // "NOW" line: scrubbing slides this through the precomputed history.
       const nowY =
         BAND_DIV.top + (Math.min(t, trajectory.duration) / trajectory.duration) * BAND_DIV.height;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.strokeStyle = 'rgba(13, 13, 13, 0.85)';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([7, 4]);
       ctx.beginPath();
@@ -328,11 +328,11 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
       ctx.setLineDash([]);
       ctx.restore();
 
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.28)';
+      ctx.strokeStyle = 'rgba(13, 13, 13, 0.3)';
       ctx.lineWidth = 1;
       ctx.strokeRect(PLOT_X0, BAND_DIV.top, PLOT_W, BAND_DIV.height);
 
-      ctx.fillStyle = 'rgba(226, 232, 240, 0.9)';
+      ctx.fillStyle = 'rgba(13, 13, 13, 0.9)';
       ctx.font = '600 10px ui-monospace, JetBrains Mono, monospace';
       ctx.fillText('NOW', PLOT_X1 - 34, nowY - 5);
 
@@ -352,9 +352,9 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.strokeStyle = 'rgba(13, 13, 13, 0.75)';
       ctx.lineWidth = 1.8;
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+      ctx.shadowColor = 'rgba(13, 13, 13, 0.25)';
       ctx.shadowBlur = 6;
       ctx.stroke();
       ctx.shadowBlur = 0;
@@ -365,7 +365,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
 
       // ---- Band 4: the scalar field, directly manipulable
       const fieldBase = BAND_FIELD.top + BAND_FIELD.height / 2;
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+      ctx.strokeStyle = 'rgba(13, 13, 13, 0.2)';
       ctx.setLineDash([3, 4]);
       ctx.beginPath();
       ctx.moveTo(PLOT_X0, fieldBase);
@@ -385,7 +385,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
       ctx.lineTo(handleAX, yA);
       ctx.lineTo(handleBX, yB);
       ctx.lineTo(PLOT_X1, yB);
-      ctx.strokeStyle = 'rgba(167, 139, 250, 0.85)';
+      ctx.strokeStyle = 'rgba(91, 33, 182, 0.85)';
       ctx.lineWidth = 2;
       ctx.stroke();
 
@@ -393,15 +393,15 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
         const active = dragTargetRef.current === key || hoverHandle === key;
         ctx.beginPath();
         ctx.arc(x, y, active ? 11 : 8, 0, Math.PI * 2);
-        ctx.fillStyle = active ? '#c4b5fd' : '#a78bfa';
-        ctx.shadowColor = '#a78bfa';
+        ctx.fillStyle = active ? '#7c3aed' : '#5b21b6';
+        ctx.shadowColor = '#5b21b6';
         ctx.shadowBlur = active ? 18 : 8;
         ctx.fill();
         ctx.shadowBlur = 0;
-        ctx.strokeStyle = '#0f172a';
+        ctx.strokeStyle = '#f5f3ee';
         ctx.lineWidth = 2;
         ctx.stroke();
-        ctx.fillStyle = 'rgba(226, 232, 240, 0.95)';
+        ctx.fillStyle = 'rgba(13, 13, 13, 0.95)';
         ctx.font = '600 10px ui-monospace, JetBrains Mono, monospace';
         ctx.fillText(label, x - 16, y - 16);
       };
@@ -409,7 +409,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
       drawHandle(handleBX, yB, 'phiB', `φB ${params.phiB.toFixed(2)}`);
 
       // ---- Axis furniture
-      ctx.fillStyle = 'rgba(148, 163, 184, 0.75)';
+      ctx.fillStyle = 'rgba(13, 13, 13, 0.7)';
       ctx.font = '500 10px ui-monospace, JetBrains Mono, monospace';
       ctx.fillText('t = 0', PLOT_X0 - 62, BAND_DIV.top + 10);
       ctx.fillText(`t = ${trajectory.duration.toFixed(0)}`, PLOT_X0 - 62, BAND_DIV.top + BAND_DIV.height);
@@ -418,7 +418,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
       ctx.fillText('φ(x)', PLOT_X0 - 62, BAND_FIELD.top + 16);
       ctx.fillText('drag ↕', PLOT_X0 - 62, BAND_FIELD.top + 30);
 
-      ctx.fillStyle = 'rgba(148, 163, 184, 0.55)';
+      ctx.fillStyle = 'rgba(13, 13, 13, 0.5)';
       ctx.fillText('SITE A', handleAX - 20, BAND_FIELD.top + BAND_FIELD.height + 18);
       ctx.fillText('SITE B', handleBX - 20, BAND_FIELD.top + BAND_FIELD.height + 18);
 
@@ -431,7 +431,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
           mode === 'scalar_kernel'
             ? 'PREDICTIONS IDENTICAL — RAISE THE RESPONSE STRENGTH α TO SPLIT REALITY'
             : 'PREDICTIONS IDENTICAL — RAISE THE COUPLING g TO SPLIT REALITY';
-        ctx.fillStyle = 'rgba(226, 232, 240, 0.5)';
+        ctx.fillStyle = 'rgba(13, 13, 13, 0.5)';
         ctx.font = '700 13px ui-monospace, JetBrains Mono, monospace';
         ctx.fillText(
           prompt,
@@ -596,7 +596,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
       </div>
 
       {/* Stage */}
-      <div className="relative bg-[#04070f]">
+      <div className="relative bg-[#f0ede6]">
         <canvas
           ref={canvasRef}
           width={W}

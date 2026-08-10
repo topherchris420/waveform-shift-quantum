@@ -41,7 +41,7 @@ export const EPISTEMIC_CLASSES: Record<EpistemicClass, EpistemicDescriptor> = {
       'Standard quantum mechanics. Derivable from textbook postulates and confirmed by existing experiment.',
     evidenceRule: 'Already supported by the experimental record; shown as the baseline against which everything else is judged.',
     className: 'border-sky-500/40 bg-sky-500/10 text-sky-200',
-    canvasColor: '#38bdf8',
+    canvasColor: '#0ea5b7',
   },
   proposed: {
     id: 'proposed',
@@ -52,7 +52,7 @@ export const EPISTEMIC_CLASSES: Record<EpistemicClass, EpistemicDescriptor> = {
     evidenceRule:
       'Requires a positive, controlled measurement of the predicted deviation at 5σ, with all listed confounders excluded.',
     className: 'border-amber-500/40 bg-amber-500/10 text-amber-200',
-    canvasColor: '#f59e0b',
+    canvasColor: '#c2410c',
   },
   interpretation: {
     id: 'interpretation',
@@ -63,7 +63,7 @@ export const EPISTEMIC_CLASSES: Record<EpistemicClass, EpistemicDescriptor> = {
     evidenceRule:
       'Cannot be confirmed or refuted by the observables on this page; carries no predictive weight and must not be scored.',
     className: 'border-violet-500/40 bg-violet-500/10 text-violet-200',
-    canvasColor: '#a78bfa',
+    canvasColor: '#5b21b6',
   },
   prediction: {
     id: 'prediction',
@@ -74,7 +74,7 @@ export const EPISTEMIC_CLASSES: Record<EpistemicClass, EpistemicDescriptor> = {
     evidenceRule:
       'Becomes a result only after measurement on hardware. Until then it is simulation output, never data.',
     className: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200',
-    canvasColor: '#34d399',
+    canvasColor: '#0f766e',
   },
 };
 

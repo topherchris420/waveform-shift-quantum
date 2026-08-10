@@ -26,6 +26,10 @@ interface ToolDef {
   visualize: (out: Record<string, unknown>) => React.ReactNode;
 }
 
+/** Structured MCP output is untyped JSON; these narrow it at the render edge. */
+const num = (v: unknown) => (typeof v === 'number' ? v : Number(v ?? 0));
+const str = (v: unknown) => (v == null ? '' : String(v));
+
 const SUPABASE_URL =
   (import.meta.env.VITE_SUPABASE_URL as string) || 'https://wpkvetwoxcrggyeaidfs.supabase.co';
 const SUPABASE_KEY =
@@ -141,11 +145,11 @@ const TOOLS: ToolDef[] = [
     visualize: (o) => (
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="border-cyan-500/40 bg-cyan-500/10 text-cyan-200">regime: {o.regime}</Badge>
-          <span className="font-mono text-xs text-slate-400">κa = {Number(o.kappa_a).toFixed(4)}</span>
+          <Badge variant="outline" className="border-cyan-500/40 bg-cyan-500/10 text-cyan-200">regime: {str(o.regime)}</Badge>
+          <span className="font-mono text-xs text-slate-400">κa = {num(o.kappa_a).toFixed(4)}</span>
         </div>
-        <Bar value={o.transmission} label="Transmission T" tone="cyan" />
-        <Bar value={o.reflection} label="Reflection R" tone="amber" />
+        <Bar value={num(o.transmission)} label="Transmission T" tone="cyan" />
+        <Bar value={num(o.reflection)} label="Reflection R" tone="amber" />
       </div>
     ),
   },
@@ -161,7 +165,7 @@ const TOOLS: ToolDef[] = [
     ],
     visualize: (o) => (
       <div className="space-y-2">
-        <Bar value={o.intensity} label="Normalized intensity I/I₀" tone="violet" />
+        <Bar value={num(o.intensity)} label="Normalized intensity I/I₀" tone="violet" />
         <p className="font-mono text-[11px] text-slate-500">cos²(πd sinθ / λ)</p>
       </div>
     ),
@@ -175,8 +179,8 @@ const TOOLS: ToolDef[] = [
     ],
     visualize: (o) => (
       <div className="space-y-3">
-        <Bar value={o.p0} label="p(0)" tone="cyan" />
-        <Bar value={o.p1} label="p(1)" tone="violet" />
+        <Bar value={num(o.p0)} label="p(0)" tone="cyan" />
+        <Bar value={num(o.p1)} label="p(1)" tone="violet" />
       </div>
     ),
   },
@@ -190,8 +194,8 @@ const TOOLS: ToolDef[] = [
     ],
     visualize: (o) => (
       <div className="space-y-3">
-        <Bar value={o.fidelity} label="Fidelity F" tone="cyan" />
-        <Bar value={o.concurrence} label="Concurrence C" tone="violet" />
+        <Bar value={num(o.fidelity)} label="Fidelity F" tone="cyan" />
+        <Bar value={num(o.concurrence)} label="Concurrence C" tone="violet" />
         <div className="font-mono text-[11px] text-slate-400">
           entangled: <span className={o.entangled ? 'text-emerald-300' : 'text-rose-300'}>{String(o.entangled)}</span>
         </div>
@@ -209,11 +213,11 @@ const TOOLS: ToolDef[] = [
     visualize: (o) => (
       <div className="flex items-center gap-3">
         <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-cyan-400/40 bg-cyan-500/10 font-mono text-2xl text-cyan-100">
-          {o.operator}
+          {str(o.operator)}
         </div>
         <div className="text-sm text-slate-300">
-          <div className="font-mono text-xs text-slate-500">bits {o.bits}</div>
-          {o.description}
+          <div className="font-mono text-xs text-slate-500">bits {str(o.bits)}</div>
+          {str(o.description)}
         </div>
       </div>
     ),
