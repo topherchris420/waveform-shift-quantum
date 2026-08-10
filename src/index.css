@@ -1,4 +1,5 @@
 @import 'katex/dist/katex.min.css';
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,70 +7,63 @@
 
 @layer base {
   :root {
-    --background: 222 28% 5%;
-    --foreground: 210 34% 96%;
+    /* Paper Lab — warm paper, ink, single cyan plot accent. */
+    --background: 43 26% 95%;
+    --foreground: 0 0% 5%;
 
-    --card: 220 22% 9%;
-    --card-foreground: 210 34% 96%;
+    --card: 40 20% 98%;
+    --card-foreground: 0 0% 5%;
 
-    --panel: 220 24% 8%;
+    --panel: 40 24% 92%;
 
-    --popover: 220 22% 9%;
-    --popover-foreground: 210 34% 96%;
+    --popover: 40 20% 98%;
+    --popover-foreground: 0 0% 5%;
 
-    --primary: 185 88% 62%;
-    --primary-foreground: 220 28% 7%;
+    --primary: 187 86% 38%;
+    --primary-foreground: 43 26% 96%;
 
-    --secondary: 220 16% 15%;
-    --secondary-foreground: 210 22% 88%;
+    --secondary: 40 20% 89%;
+    --secondary-foreground: 0 0% 12%;
 
-    --muted: 220 15% 14%;
-    --muted-foreground: 215 14% 68%;
+    --muted: 40 18% 90%;
+    --muted-foreground: 36 8% 38%;
 
-    --accent: 145 72% 55%;
-    --accent-foreground: 220 28% 7%;
+    --accent: 187 86% 38%;
+    --accent-foreground: 43 26% 96%;
 
-    --destructive: 3 78% 62%;
-    --destructive-foreground: 210 34% 96%;
+    --destructive: 3 68% 44%;
+    --destructive-foreground: 43 26% 96%;
 
-    --border: 218 16% 22%;
-    --input: 218 16% 18%;
-    --ring: 185 88% 62%;
+    --border: 38 14% 80%;
+    --input: 38 14% 80%;
+    --ring: 187 86% 38%;
 
-    --radius: 0.5rem;
+    --radius: 0rem;
 
-    --quantum-field: 222 28% 4%;
-    --quantum-glow: 185 88% 62%;
-    --quantum-wave: 145 72% 55%;
-    --quantum-entangle: 258 84% 74%;
-    --quantum-collapse: 42 92% 62%;
-    --copper: 42 92% 62%;
-    --copper-foreground: 42 96% 88%;
-    --lime: 145 72% 55%;
-    --lime-foreground: 145 78% 86%;
-    --violet: 258 84% 74%;
-    --violet-foreground: 258 88% 91%;
+    --ink: 0 0% 5%;
+    --paper: 43 26% 95%;
+    --paper-deep: 40 24% 89%;
 
-    --sidebar-background: 222 28% 5%;
-    --sidebar-foreground: 210 34% 96%;
-    --sidebar-primary: 185 88% 62%;
-    --sidebar-primary-foreground: 220 28% 7%;
-    --sidebar-accent: 220 16% 15%;
-    --sidebar-accent-foreground: 210 34% 96%;
-    --sidebar-border: 218 16% 22%;
-    --sidebar-ring: 185 88% 62%;
-  }
+    --quantum-field: 43 26% 95%;
+    --quantum-glow: 187 86% 38%;
+    --quantum-wave: 160 62% 30%;
+    --quantum-entangle: 258 52% 45%;
+    --quantum-collapse: 28 82% 42%;
+    --copper: 28 82% 42%;
+    --copper-foreground: 28 60% 18%;
+    --lime: 160 62% 30%;
+    --lime-foreground: 160 50% 16%;
+    --violet: 258 52% 45%;
+    --violet-foreground: 258 44% 22%;
 
-  .light {
-    --background: 210 22% 96%;
-    --foreground: 216 31% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 216 31% 10%;
-    --panel: 0 0% 100%;
-    --muted: 210 22% 91%;
-    --muted-foreground: 216 12% 42%;
-    --border: 214 18% 84%;
-    --input: 214 18% 84%;
+    --sidebar-background: 43 26% 95%;
+    --sidebar-foreground: 0 0% 5%;
+    --sidebar-primary: 187 86% 38%;
+    --sidebar-primary-foreground: 43 26% 96%;
+    --sidebar-accent: 40 20% 89%;
+    --sidebar-accent-foreground: 0 0% 5%;
+    --sidebar-border: 38 14% 80%;
+    --sidebar-ring: 187 86% 38%;
   }
 
   * {
@@ -90,11 +84,14 @@
   h1,
   h2,
   h3,
-  p,
-  button,
-  span,
-  label {
-    letter-spacing: 0;
+  h4 {
+    @apply font-display;
+    letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
   }
 
   @keyframes quantum-pulse {
@@ -156,45 +153,37 @@
     touch-action: manipulation;
   }
 
-  .lab-background {
-    background:
-      linear-gradient(90deg, hsl(var(--foreground) / 0.035) 1px, transparent 1px) 0 0 / 88px 88px,
-      linear-gradient(0deg, hsl(var(--foreground) / 0.026) 1px, transparent 1px) 0 0 / 88px 88px,
-      linear-gradient(135deg, hsl(226 34% 7%) 0%, hsl(220 30% 4%) 46%, hsl(216 34% 6%) 100%);
+  .lab-background,
+  .experience-background {
+    background-color: hsl(var(--paper));
+    background-image:
+      linear-gradient(90deg, hsl(var(--ink) / 0.045) 1px, transparent 1px),
+      linear-gradient(0deg, hsl(var(--ink) / 0.035) 1px, transparent 1px);
+    background-size: 96px 96px, 96px 96px;
   }
 
-  .command-bar {
-    border: 1px solid hsl(var(--border) / 0.82);
-    border-radius: var(--radius);
-    background:
-      linear-gradient(90deg, hsl(var(--primary) / 0.08), transparent 32%),
-      linear-gradient(180deg, hsl(220 24% 11% / 0.92), hsl(220 26% 7% / 0.94));
-    box-shadow: 0 26px 80px hsl(0 0% 0% / 0.38), inset 0 1px 0 hsl(var(--foreground) / 0.06);
+  .command-bar,
+  .topline-nav {
+    border: 1px solid hsl(var(--ink));
+    border-radius: 0;
+    background: hsl(var(--paper));
+    box-shadow: 4px 4px 0 hsl(var(--ink) / 0.9);
   }
 
-  .lab-surface {
-    border: 1px solid hsl(var(--border) / 0.86);
-    border-radius: var(--radius);
-    background:
-      linear-gradient(135deg, hsl(var(--primary) / 0.05), transparent 42%),
-      linear-gradient(135deg, hsl(var(--panel) / 0.98), hsl(220 24% 7% / 0.96));
-    box-shadow: 0 22px 70px hsl(0 0% 0% / 0.42), inset 0 1px 0 hsl(var(--foreground) / 0.05);
+  .lab-surface,
+  .instrument-panel,
+  .field-shell {
+    border: 1px solid hsl(var(--ink) / 0.9);
+    border-radius: 0;
+    background: hsl(var(--card));
+    box-shadow: none;
   }
 
   .lab-panel {
-    border: 1px solid hsl(var(--border) / 0.82);
-    border-radius: var(--radius);
-    background:
-      linear-gradient(180deg, hsl(220 22% 11% / 0.94), hsl(220 26% 7% / 0.96)),
-      linear-gradient(90deg, hsl(var(--foreground) / 0.026) 1px, transparent 1px) 0 0 / 28px 28px;
-    box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.045);
-  }
-
-  .field-shell {
-    border: 1px solid hsl(var(--border) / 0.9);
-    border-radius: var(--radius);
+    border: 1px solid hsl(var(--ink) / 0.18);
+    border-radius: 0;
     background: hsl(var(--panel));
-    box-shadow: 0 32px 100px hsl(0 0% 0% / 0.52), inset 0 1px 0 hsl(var(--foreground) / 0.05);
+    box-shadow: none;
   }
 
   .field-stage::after {
@@ -204,96 +193,81 @@
     pointer-events: none;
     border-radius: inherit;
     background:
-      linear-gradient(90deg, hsl(var(--primary) / 0.10) 1px, transparent 1px) 0 0 / 80px 80px,
-      linear-gradient(0deg, hsl(var(--primary) / 0.065) 1px, transparent 1px) 0 0 / 80px 80px,
-      linear-gradient(180deg, transparent 0%, hsl(0 0% 0% / 0.2) 100%);
-    mix-blend-mode: screen;
+      linear-gradient(90deg, hsl(var(--ink) / 0.05) 1px, transparent 1px) 0 0 / 80px 80px,
+      linear-gradient(0deg, hsl(var(--ink) / 0.04) 1px, transparent 1px) 0 0 / 80px 80px;
   }
 
   .brand-mark {
     position: relative;
     display: grid;
-    height: 3rem;
-    width: 3rem;
+    height: 2.75rem;
+    width: 2.75rem;
     flex-shrink: 0;
     place-items: center;
     overflow: hidden;
-    border: 1px solid hsl(var(--primary) / 0.42);
-    border-radius: var(--radius);
-    background: linear-gradient(145deg, hsl(220 26% 12%), hsl(220 32% 5%));
-    box-shadow: 0 0 34px hsl(var(--primary) / 0.18), inset 0 1px 0 hsl(var(--foreground) / 0.08);
+    border: 1px solid hsl(var(--ink));
+    border-radius: 0;
+    background: hsl(var(--ink));
+    box-shadow: none;
   }
 
   .brand-mark::before {
     content: "";
     position: absolute;
-    inset: 0.5rem;
-    border: 1px solid hsl(var(--primary) / 0.28);
+    inset: 0.45rem;
+    border: 1px solid hsl(var(--primary) / 0.7);
     transform: rotate(45deg);
   }
 
   .brand-mark__ring {
     position: absolute;
-    height: 2.1rem;
-    width: 2.1rem;
-    border: 1px solid hsl(var(--violet) / 0.6);
+    height: 1.85rem;
+    width: 1.85rem;
+    border: 1px solid hsl(var(--primary) / 0.55);
     border-radius: 999px;
   }
 
   .brand-mark__axis {
     position: absolute;
     display: block;
-    background: hsl(var(--primary) / 0.66);
+    background: hsl(var(--paper) / 0.35);
   }
 
-  .brand-mark__axis--x {
-    height: 1px;
-    width: 2.2rem;
-  }
-
-  .brand-mark__axis--y {
-    height: 2.2rem;
-    width: 1px;
-  }
+  .brand-mark__axis--x { height: 1px; width: 2rem; }
+  .brand-mark__axis--y { height: 2rem; width: 1px; }
 
   .brand-mark__text {
     position: relative;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-size: 0.68rem;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.64rem;
     font-weight: 700;
-    color: hsl(var(--foreground));
+    color: hsl(var(--paper));
   }
 
   .instrument-mark {
-    border: 1px solid hsl(var(--primary) / 0.22);
-    border-radius: calc(var(--radius) - 2px);
-    background: hsl(var(--primary) / 0.07);
-    color: hsl(var(--primary));
-    font-size: 0.72rem;
+    border: 1px solid hsl(var(--ink));
+    border-radius: 0;
+    background: transparent;
+    color: hsl(var(--ink));
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
     line-height: 1;
-    padding: 0.36rem 0.55rem;
+    padding: 0.4rem 0.6rem;
     text-transform: uppercase;
   }
 
   .section-eyebrow {
     color: hsl(var(--muted-foreground));
-    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
     line-height: 1;
     text-transform: uppercase;
   }
-  .experience-background {
-    background:
-      linear-gradient(90deg, hsl(var(--foreground) / 0.035) 1px, transparent 1px) 0 0 / 92px 92px,
-      linear-gradient(0deg, hsl(var(--foreground) / 0.025) 1px, transparent 1px) 0 0 / 92px 92px,
-      linear-gradient(135deg, hsl(225 46% 6%) 0%, hsl(220 40% 3%) 48%, hsl(202 34% 7%) 100%);
-  }
 
-  .topline-nav {
-    border: 1px solid hsl(var(--border) / 0.75);
-    border-radius: var(--radius);
-    background: hsl(220 24% 7% / 0.72);
-    box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.06), 0 24px 80px hsl(0 0% 0% / 0.32);
-    backdrop-filter: blur(18px);
+  .rule-top {
+    border-top: 1px solid hsl(var(--ink));
   }
 
   .hero-copy {
@@ -302,39 +276,35 @@
   }
 
   .hero-title {
-    max-width: 16ch;
-    color: hsl(var(--foreground));
-    font-size: clamp(2.4rem, 5.2vw, 4.4rem);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    line-height: 1.02;
+    color: hsl(var(--ink));
+    font-family: Syne, ui-sans-serif, system-ui, sans-serif;
+    font-size: clamp(2.6rem, 7vw, 5.75rem);
+    font-weight: 800;
+    letter-spacing: -0.045em;
+    line-height: 0.9;
+    text-transform: uppercase;
     text-wrap: balance;
   }
 
-  .hero-stat-strip > div {
-    background: hsl(220 24% 7% / 0.64);
+  .hero-rule {
+    border-left: 2px solid hsl(var(--ink));
+  }
+
+  .metric-cell {
+    transition: background-color 200ms ease;
+  }
+
+  .metric-cell:hover {
+    background: hsl(var(--paper-deep));
   }
 
   .scene-showcase {
     position: relative;
     min-height: 560px;
-    border: 1px solid hsl(var(--primary) / 0.24);
-    border-radius: var(--radius);
-    background:
-      linear-gradient(135deg, hsl(var(--primary) / 0.12), transparent 34%),
-      linear-gradient(180deg, hsl(220 28% 10% / 0.94), hsl(220 34% 4% / 0.98));
-    box-shadow: 0 38px 120px hsl(0 0% 0% / 0.62), inset 0 1px 0 hsl(var(--foreground) / 0.08);
-  }
-
-  .scene-showcase::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background:
-      linear-gradient(120deg, transparent 0 46%, hsl(var(--primary) / 0.13) 46% 47%, transparent 47% 100%),
-      linear-gradient(120deg, transparent 0 62%, hsl(var(--violet) / 0.10) 62% 63%, transparent 63% 100%);
-    mix-blend-mode: screen;
+    border: 2px solid hsl(var(--ink));
+    border-radius: 0;
+    background: hsl(var(--panel));
+    box-shadow: none;
   }
 
   .scene-topbar,
@@ -344,80 +314,30 @@
     z-index: 1;
   }
 
-  .scene-canvas {
-    min-height: 420px;
-  }
-
-  .scene-canvas canvas {
-    filter: saturate(1.18) contrast(1.08);
-  }
+  .scene-canvas { min-height: 420px; }
 
   .section-intro {
-    border-top: 1px solid hsl(var(--border) / 0.7);
+    border-top: 1px solid hsl(var(--ink));
     padding-top: 2rem;
   }
 
   .mode-gallery > button {
     min-height: 13rem;
-    border-color: hsl(var(--border) / 0.78);
-    background:
-      linear-gradient(145deg, hsl(var(--primary) / 0.08), transparent 44%),
-      hsl(220 24% 7% / 0.72);
-    box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.05);
+    border-color: hsl(var(--ink) / 0.25);
+    background: hsl(var(--card));
+    box-shadow: none;
   }
 
   .mode-gallery > button[aria-pressed="true"] {
-    border-color: hsl(var(--primary) / 0.55);
-    background:
-      linear-gradient(145deg, hsl(var(--primary) / 0.18), transparent 50%),
-      hsl(220 28% 9% / 0.92);
-    box-shadow: 0 24px 70px hsl(var(--primary) / 0.12), inset 0 1px 0 hsl(var(--foreground) / 0.08);
+    border-color: hsl(var(--ink));
+    background: hsl(var(--paper-deep));
+    box-shadow: 4px 4px 0 hsl(var(--ink));
   }
 
-  .instrument-panel {
-    border: 1px solid hsl(var(--border) / 0.8);
-    border-radius: var(--radius);
-    background:
-      linear-gradient(180deg, hsl(220 24% 10% / 0.92), hsl(220 28% 6% / 0.96)),
-      linear-gradient(90deg, hsl(var(--foreground) / 0.025) 1px, transparent 1px) 0 0 / 28px 28px;
-    box-shadow: 0 24px 80px hsl(0 0% 0% / 0.34), inset 0 1px 0 hsl(var(--foreground) / 0.05);
-    backdrop-filter: blur(16px);
-  }
-
-  .control-studio {
-    align-items: start;
-  }
-
-  @media (min-width: 640px) {
-    .hero-title {
-      font-size: clamp(2.8rem, 4.6vw, 4rem);
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .hero-title {
-      font-size: clamp(3rem, 3.6vw, 4.2rem);
-    }
-  }
-
-  @media (min-width: 1280px) {
-    .hero-title {
-      font-size: 4.4rem;
-    }
-  }
+  .control-studio { align-items: start; }
 
   @media (max-width: 767px) {
-    .hero-title {
-      font-size: clamp(2.1rem, 8vw, 2.9rem);
-    }
-
-    .scene-showcase {
-      min-height: 520px;
-    }
-
-    .scene-canvas {
-      min-height: 360px;
-    }
+    .scene-showcase { min-height: 520px; }
+    .scene-canvas { min-height: 360px; }
   }
 }
-

@@ -72,9 +72,9 @@ export const InstrumentScene: React.FC<InstrumentSceneProps> = ({
   const drawBackdrop = useCallback(
     (ctx: CanvasRenderingContext2D, t: number) => {
       const background = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      background.addColorStop(0, '#030712');
-      background.addColorStop(0.52, '#07111d');
-      background.addColorStop(1, '#101326');
+      background.addColorStop(0, '#f5f3ee');
+      background.addColorStop(0.52, '#f2efe8');
+      background.addColorStop(1, '#e8e4dd');
       ctx.fillStyle = background;
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
@@ -89,7 +89,7 @@ export const InstrumentScene: React.FC<InstrumentSceneProps> = ({
           0,
           Math.PI * 2
         );
-        ctx.strokeStyle = '#38bdf8';
+        ctx.strokeStyle = '#0ea5b7';
         ctx.lineWidth = 2;
         ctx.stroke();
       }
@@ -99,7 +99,7 @@ export const InstrumentScene: React.FC<InstrumentSceneProps> = ({
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, CANVAS_HEIGHT);
-        ctx.strokeStyle = 'rgba(78, 234, 255, 0.04)';
+        ctx.strokeStyle = 'rgba(13, 13, 13, 0.05)';
         ctx.stroke();
       }
 
@@ -107,8 +107,8 @@ export const InstrumentScene: React.FC<InstrumentSceneProps> = ({
         const intensity =
           node.intensity * fieldIntensity * (1 + 0.35 * Math.sin(t * 1.6 + node.phase));
         const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, 46);
-        gradient.addColorStop(0, `rgba(112, 232, 255, ${intensity * 0.16})`);
-        gradient.addColorStop(1, 'rgba(112, 232, 255, 0)');
+        gradient.addColorStop(0, `rgba(14, 165, 183, ${intensity * 0.18})`);
+        gradient.addColorStop(1, 'rgba(14, 165, 183, 0)');
         ctx.fillStyle = gradient;
         ctx.fillRect(node.x - 46, node.y - 46, 92, 92);
       });
@@ -134,7 +134,7 @@ export const InstrumentScene: React.FC<InstrumentSceneProps> = ({
         ctx.save();
         // Born density P_B(x) = |ψ|² — established physics.
         ctx.beginPath();
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+        ctx.strokeStyle = 'rgba(14, 165, 183, 0.9)';
         ctx.setLineDash([5, 5]);
         ctx.lineWidth = 2;
         for (let px = 0; px <= width; px += 4) {
@@ -149,7 +149,7 @@ export const InstrumentScene: React.FC<InstrumentSceneProps> = ({
 
         // Kernel-biased density P_loc(x) — proposed model.
         ctx.beginPath();
-        ctx.strokeStyle = '#f59e0b';
+        ctx.strokeStyle = '#c2410c';
         ctx.setLineDash([]);
         ctx.lineWidth = 3;
         const driveShift = Math.sin(t * 1.5) * 1.5;
@@ -167,9 +167,9 @@ export const InstrumentScene: React.FC<InstrumentSceneProps> = ({
         ctx.stroke();
 
         ctx.font = '12px ui-monospace, JetBrains Mono, monospace';
-        ctx.fillStyle = '#38bdf8';
+        ctx.fillStyle = '#0ea5b7';
         ctx.fillText('┄ Born density P_B(x) = |ψ(x)|²  [established]', startX + 10, 120);
-        ctx.fillStyle = '#f59e0b';
+        ctx.fillStyle = '#c2410c';
         ctx.fillText(
           '━ Kernel-biased P_loc(x) = χ(x)|ψ|² / ∫χ|ψ|²  [proposed]',
           startX + 10,
@@ -185,17 +185,17 @@ export const InstrumentScene: React.FC<InstrumentSceneProps> = ({
         const midY = 270;
         ctx.save();
         ctx.lineWidth = 3;
-        ctx.strokeStyle = '#38bdf8';
+        ctx.strokeStyle = '#0ea5b7';
         ctx.beginPath();
         ctx.moveTo(startX, midY);
         ctx.quadraticCurveTo(CANVAS_WIDTH / 2, midY - 110, endX, midY);
         ctx.stroke();
-        ctx.strokeStyle = '#c084fc';
+        ctx.strokeStyle = '#6d28d9';
         ctx.beginPath();
         ctx.moveTo(startX, midY);
         ctx.quadraticCurveTo(CANVAS_WIDTH / 2, midY + 110, endX, midY);
         ctx.stroke();
-        ctx.fillStyle = '#e2e8f0';
+        ctx.fillStyle = '#0d0d0d';
         ctx.font = '600 15px Inter, sans-serif';
         ctx.fillText(
           `Predicted interferometric phase shift Δφ_φ = ${phaseShift.toFixed(4)} rad`,
@@ -211,7 +211,7 @@ export const InstrumentScene: React.FC<InstrumentSceneProps> = ({
         const width = 760;
         const baselineY = 420;
         ctx.save();
-        ctx.strokeStyle = '#f59e0b';
+        ctx.strokeStyle = '#c2410c';
         ctx.lineWidth = 3;
         ctx.beginPath();
         let minX = startX + width / 2;
@@ -231,11 +231,11 @@ export const InstrumentScene: React.FC<InstrumentSceneProps> = ({
           }
         }
         ctx.stroke();
-        ctx.fillStyle = '#38bdf8';
+        ctx.fillStyle = '#0ea5b7';
         ctx.beginPath();
         ctx.arc(minX, minY - 12, 12, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#e2e8f0';
+        ctx.fillStyle = '#0d0d0d';
         ctx.font = '600 14px Inter, sans-serif';
         ctx.fillText('Effective potential V_eff(x,t) = V(x) + g φ(x,t)', startX + 10, 120);
         ctx.fillText(
@@ -248,7 +248,7 @@ export const InstrumentScene: React.FC<InstrumentSceneProps> = ({
       }
 
       // Remaining modes use the field backdrop with a labelled centre marker.
-      ctx.fillStyle = 'rgba(226, 232, 240, 0.6)';
+      ctx.fillStyle = 'rgba(13, 13, 13, 0.6)';
       ctx.font = '600 14px Inter, sans-serif';
       ctx.fillText(caption, 60, 80);
     },

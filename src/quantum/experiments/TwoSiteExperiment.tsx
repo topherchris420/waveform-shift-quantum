@@ -160,15 +160,15 @@ export const TwoSiteExperiment: React.FC<TwoSiteExperimentProps> = ({ parameters
 
         <svg className="h-full w-full overflow-visible" viewBox="0 0 400 120" preserveAspectRatio="none">
           {/* Grid lines */}
-          <line x1="0" y1="20" x2="400" y2="20" stroke="#334155" strokeDasharray="3 3" strokeWidth="0.5" />
-          <line x1="0" y1="70" x2="400" y2="70" stroke="#334155" strokeDasharray="3 3" strokeWidth="0.5" />
-          <line x1="0" y1="110" x2="400" y2="110" stroke="#334155" strokeDasharray="3 3" strokeWidth="0.5" />
+          <line x1="0" y1="20" x2="400" y2="20" stroke="rgba(13,13,13,0.18)" strokeDasharray="3 3" strokeWidth="0.5" />
+          <line x1="0" y1="70" x2="400" y2="70" stroke="rgba(13,13,13,0.18)" strokeDasharray="3 3" strokeWidth="0.5" />
+          <line x1="0" y1="110" x2="400" y2="110" stroke="rgba(13,13,13,0.18)" strokeDasharray="3 3" strokeWidth="0.5" />
 
           {/* PA line (Cyan) */}
           {history.length > 1 && (
             <polyline
               fill="none"
-              stroke="#22d3ee"
+              stroke="#0ea5b7"
               strokeWidth="2"
               points={history
                 .map((pt, i) => `${(i / (history.length - 1)) * 400},${110 - pt.PA * 90}`)
@@ -180,7 +180,7 @@ export const TwoSiteExperiment: React.FC<TwoSiteExperimentProps> = ({ parameters
           {history.length > 1 && (
             <polyline
               fill="none"
-              stroke="#c084fc"
+              stroke="#5b21b6"
               strokeWidth="2"
               points={history
                 .map((pt, i) => `${(i / (history.length - 1)) * 400},${110 - pt.PB * 90}`)

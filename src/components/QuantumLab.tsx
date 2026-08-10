@@ -368,34 +368,45 @@ export const QuantumLab: React.FC = () => {
         </nav>
       </section>
 
-      {/* Compact briefing above the stage */}
-      <section className="mx-auto max-w-[1700px] px-4 pt-6 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="instrument-mark flex items-center gap-1">
-            <Sparkles className="h-3.5 w-3.5 text-cyan-400" /> Falsification Engine
-          </span>
-          <Badge variant="outline" className="border-cyan-400/30 bg-cyan-400/10 text-cyan-200">
-            Christopher Woodyard (2026)
-          </Badge>
+      {/* Editorial masthead */}
+      <section className="mx-auto max-w-[1700px] px-4 pb-4 pt-16 sm:px-6 lg:px-8 lg:pt-24">
+        <div className="hero-rule pl-6 md:pl-12">
+          <p className="section-eyebrow mb-6 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span>Project Falsification // Woodyard 2026</span>
+            <span className="inline-block h-1.5 w-1.5 bg-primary" aria-hidden="true" />
+            <span>Vers3Dynamics</span>
+          </p>
+          <h1 className="hero-title max-w-5xl">
+            Two theories.
+            <br />
+            One initial condition.
+            <br />
+            <span className="text-primary">Find the experiment</span> that decides.
+          </h1>
+          <div className="mt-10 flex flex-col items-start gap-8 md:flex-row md:items-end">
+            <p className="max-w-xl text-base leading-relaxed text-muted-foreground">
+              Standard quantum mechanics and the proposed field-modulated localization model{' '}
+              <InlineMath math="\phi(\mathbf{x}, t)" /> are evolved side by side from identical
+              initial conditions. Change one physical parameter and watch where — and by how much —
+              their predictions separate.
+            </p>
+            <a
+              href="#reality-split"
+              className="shrink-0 border border-ink bg-foreground px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-background transition-colors duration-300 hover:bg-primary"
+            >
+              Initiate sequence
+            </a>
+          </div>
         </div>
-        <h1 className="hero-title mt-3 text-2xl font-extrabold leading-tight sm:text-3xl lg:text-4xl">
-          Two theories. One initial condition. Find the experiment that decides.
-        </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-          Standard quantum mechanics and the proposed field-modulated localization model{' '}
-          <InlineMath math="\phi(\mathbf{x}, t)" /> are evolved side by side from identical initial
-          conditions. Change one physical parameter and watch where — and by how much — their
-          predictions separate.
-        </p>
 
-        <div className="mt-4 rounded-lg border border-slate-800 bg-slate-950/60 p-3">
+        <div className="mt-14 border-t border-foreground pt-4">
           <EpistemicLegend />
-          <p className="mt-2 border-t border-slate-800 pt-2 text-[11px] leading-relaxed text-slate-500">
+          <p className="mt-3 border-t border-foreground/10 pt-3 text-[11px] leading-relaxed text-muted-foreground">
             {SIMULATION_DISCLAIMER}
           </p>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-8 grid grid-cols-1 border-y border-foreground divide-y divide-foreground md:grid-cols-4 md:divide-x md:divide-y-0">
           <Metric label="Imbalance z" value={eigenState.z.toFixed(3)} icon={Zap} tone="violet" kind="proposed" />
           <Metric label="Kernel χ" value={kernel.chi.toFixed(3)} icon={Waves} tone="lime" kind="proposed" />
           <Metric label="Phase Δφ_φ" value={`${phaseShift.toFixed(3)} rad`} icon={Target} tone="copper" kind="prediction" />
@@ -812,20 +823,27 @@ interface MetricProps {
 }
 
 const metricToneStyles: Record<NonNullable<MetricProps['tone']>, string> = {
-  primary: 'border-cyan-500/30 bg-cyan-500/10',
-  copper: 'border-amber-500/30 bg-amber-500/10',
-  lime: 'border-emerald-500/30 bg-emerald-500/10',
-  violet: 'border-purple-500/30 bg-purple-500/10',
+  primary: 'bg-primary',
+  copper: 'bg-copper',
+  lime: 'bg-lime',
+  violet: 'bg-violet',
 };
 
 const Metric: React.FC<MetricProps> = ({ label, value, icon: Icon, tone = 'primary', kind }) => (
-  <div className={`rounded-lg border p-3 backdrop-blur ${metricToneStyles[tone]}`}>
+  <div className="metric-cell p-6 lg:p-8">
     <div className="flex items-center justify-between gap-2">
-      <span className="font-mono text-[10px] uppercase tracking-wider text-slate-400">{label}</span>
-      <Icon className="h-3.5 w-3.5 text-cyan-400" />
+      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        {label}
+      </span>
+      <Icon className="h-3.5 w-3.5 text-foreground/50" />
     </div>
-    <p className="mt-1.5 font-mono text-base font-bold text-white">{value}</p>
-    <div className="mt-1.5">
+    <p className="mt-4 font-display text-3xl font-bold tracking-tight text-foreground lg:text-4xl">
+      {value}
+    </p>
+    <div className="mt-4 h-1 w-full bg-foreground/10">
+      <div className={`h-full w-2/3 ${metricToneStyles[tone]}`} />
+    </div>
+    <div className="mt-3">
       <EpistemicTag kind={kind} short hideIcon />
     </div>
   </div>
