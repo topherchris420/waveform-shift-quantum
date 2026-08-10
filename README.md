@@ -1,6 +1,6 @@
-# Waveform Shift Quantum Laboratory
+# R.A.I.N. Lab (experiment #9)
 
-A computational physics research laboratory for evaluating standard quantum mechanics alongside the proposed **Woodyard (2026)** field-modulated spatial localization model.
+Evaluating standard quantum mechanics alongside the proposed **Woodyard (2026)** field-modulated spatial localization model.
 
 > **Research Instrument Notice:** This application is designed as a rigorous scientific workstation. Established quantum mechanics and proposed physical extensions are strictly segregated, with explicit falsification conditions and cryptographically verifiable research artifacts.
 
