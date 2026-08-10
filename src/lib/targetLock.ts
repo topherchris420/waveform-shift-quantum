@@ -20,7 +20,7 @@ import {
   classifyTestability,
   DETECTION_SIGMA,
   modelValidity,
-  toObservableUnits,
+  resolvePredictions,
   type ExperimentCard,
   type ModelValidity,
   type Testability,
@@ -146,11 +146,9 @@ export function runTargetLock(request: TargetLockRequest): TargetLockResult {
     scanned += 1;
     const mode = modes[i % modes.length];
     const comparison = compareModels(mode, parameters);
-    // Compare in the units the apparatus reads out, not in the raw units of the
-    // model's internal quantity — see toObservableUnits.
-    const delta =
-      toObservableUnits(mode, comparison.woodyardModel) -
-      toObservableUnits(mode, comparison.standardQM);
+    // Same reduction the cards use, so ranking and card never disagree about
+    // how big the predicted separation is — see resolvePredictions.
+    const { delta } = resolvePredictions(mode, parameters, comparison);
     const absDelta = Math.abs(delta);
     const validity = modelValidity(mode, parameters);
 

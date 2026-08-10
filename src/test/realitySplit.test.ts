@@ -145,11 +145,41 @@ describe('Divergence field', () => {
     expect(integrate(field.divergence)).toBeCloseTo(0, 6);
   });
 
-  it.each(modes)('is identically zero in %s mode when g = 0', (mode) => {
-    const p = params({ g: 0, phiA: -1.5, phiB: 1.5 });
+  it.each(modes)('is identically zero in %s mode when its own coupling is off', (mode) => {
+    // Each sector has its own gating coupling: g for the two-site Hamiltonian,
+    // α for the response kernel. compareModels' kernel branch never reads g, so
+    // gating the kernel on g would contradict every number shown elsewhere.
+    const p =
+      mode === 'scalar_kernel'
+        ? params({ alpha: 0, phiA: -1.5, phiB: 1.5 })
+        : params({ g: 0, phiA: -1.5, phiB: 1.5 });
     const trajectory = simulateRealitySplit(p, { duration: 4, dt: 0.02 });
     const frame = sampleTrajectory(trajectory, 3);
     const field = computeDivergenceField(mode, p, frame, 160);
+
+    expect(field.maxAbs).toBeCloseTo(0, 12);
+    expect(field.l1).toBeCloseTo(0, 12);
+  });
+
+  it('produces a live kernel field whenever the scalar field actually varies', () => {
+    // Regression guard: the field profile was linear in x while the code passed
+    // a fabricated Laplacian −2(φB−φA)x. A linear field has ∇²φ ≡ 0, and for
+    // β = 2, κ = 0.5 the bogus term cancelled βφ exactly — pinning ω_loc at ω₀,
+    // making χ spatially constant, and leaving the scalar divergence field
+    // identically empty for every parameter choice.
+    const p = params({ alpha: 1.0, phiA: -1.5, phiB: 1.5 });
+    const frame = sampleTrajectory(simulateRealitySplit(p, { duration: 1, dt: 0.05 }), 0);
+    const field = computeDivergenceField('scalar_kernel', p, frame, 320);
+
+    expect(field.maxAbs).toBeGreaterThan(1e-3);
+    expect(field.l1).toBeGreaterThan(1e-3);
+  });
+
+  it('cancels the kernel effect exactly for a spatially flat field', () => {
+    // A constant χ cancels in P_loc = χP_B/∫χP_B however large it is.
+    const p = params({ alpha: 2.0, phiA: 0.9, phiB: 0.9 });
+    const frame = sampleTrajectory(simulateRealitySplit(p, { duration: 1, dt: 0.05 }), 0);
+    const field = computeDivergenceField('scalar_kernel', p, frame, 320);
 
     expect(field.maxAbs).toBeCloseTo(0, 12);
     expect(field.l1).toBeCloseTo(0, 12);

@@ -21,38 +21,69 @@ import {
   platformResolution,
   type Platform,
 } from './platforms';
+import { DEFAULT_SPLIT_PARAMS, kernelRegionSeparation } from './realitySplit';
 import type { AnomalyParameters } from './anomalyEngine';
 
 /** Confidence level, in standard deviations, required to claim a detection. */
 export const DETECTION_SIGMA = 5;
 
+export interface ResolvedPredictions {
+  standard: number;
+  model: number;
+  delta: number;
+  observableName: string;
+}
+
 /**
- * Convert a comparison's raw model output into the dimensionless quantity an
- * apparatus actually reads out.
+ * Reduce a model comparison to the two numbers a real apparatus would return.
  *
- * This matters because the platform noise floors are quoted in observable
- * units. The two-site comparison already returns a probability, but the
- * localization comparison returns the response-kernel factor χ ≥ 1 against a
- * baseline of χ = 1 — and a kernel factor is not something a clock or an
- * interferometer reports. What a differential measurement returns is the
- * density contrast
+ * The platform noise floors are quoted in observable units, so whatever is
+ * compared against them has to be the measured quantity itself.
  *
- *     C = (χ − 1) / (χ + 1) ∈ [0, 1)
+ * two_site      — compareModels already returns an occupation probability.
+ * scalar_kernel — compareModels returns the bare response-kernel factor χ
+ *                 evaluated at ONE point. That is not the model's observable:
+ *                 the model predicts the normalized density
+ *                 P_loc = χ(x)P_B(x)/∫χP_B, in which a spatially constant χ
+ *                 cancels exactly. Reading a separation off a single χ reports
+ *                 effects that the normalized model says are identically zero
+ *                 (a flat field gave |Δ| ≈ 0.097 while the true answer is 0).
+ *                 The separation is therefore computed from the normalized
+ *                 spatial density instead — see kernelRegionSeparation.
  *
- * which reduces to αL/2 in the weak-response limit the model is derived in.
- * Without this step an unbounded χ would be compared directly against a
- * fractional-frequency noise floor, manufacturing million-sigma "predictions"
- * out of a units mismatch. compareModels itself is left untouched.
+ * compareModels itself is left untouched; this is a reading of its output.
  */
-export function toObservableUnits(experimentType: string, rawValue: number): number {
-  switch (experimentType) {
-    case 'localization':
-    case 'scalar_kernel':
-      return (rawValue - 1) / (rawValue + 1);
-    default:
-      // Probabilities and fidelities are already the measured quantity.
-      return rawValue;
+export function resolvePredictions(
+  experimentType: string,
+  parameters: AnomalyParameters,
+  comparison: ModelComparisonResult
+): ResolvedPredictions {
+  if (experimentType === 'scalar_kernel' || experimentType === 'localization') {
+    const separation = kernelRegionSeparation({
+      ...DEFAULT_SPLIT_PARAMS,
+      phiA: parameters.phiA,
+      phiB: parameters.phiB,
+      alpha: parameters.alpha,
+      gamma: parameters.gamma,
+      omega_w: parameters.omega_w,
+      g: parameters.g,
+      delta: parameters.delta,
+    });
+    return {
+      standard: separation.standardFraction,
+      model: separation.modelFraction,
+      delta: separation.delta,
+      observableName:
+        'Probability fraction in the kernel-enhanced region of the density profile',
+    };
   }
+
+  return {
+    standard: comparison.standardQM,
+    model: comparison.woodyardModel,
+    delta: comparison.woodyardModel - comparison.standardQM,
+    observableName: comparison.observableName,
+  };
 }
 
 /**
@@ -195,17 +226,16 @@ export function buildExperimentCard(
 ): ExperimentCard {
   const nSigma = options.nSigma ?? DETECTION_SIGMA;
   const comparison = options.comparison ?? compareModels(experimentType, parameters);
-  // Both predictions are mapped through the same monotone function, so the sign
-  // and the existence of a separation are preserved while the scale becomes
-  // something a real apparatus could be held to.
-  const standardPrediction = toObservableUnits(experimentType, comparison.standardQM);
-  const modelPrediction = toObservableUnits(experimentType, comparison.woodyardModel);
-  const delta = modelPrediction - standardPrediction;
+  const resolved = resolvePredictions(experimentType, parameters, comparison);
+  const standardPrediction = resolved.standard;
+  const modelPrediction = resolved.model;
+  const delta = resolved.delta;
   const percentDeviation =
     Math.abs(standardPrediction) > 1e-12
       ? (delta / standardPrediction) * 100
       : comparison.percentDeviation;
   const validity = modelValidity(experimentType, parameters);
+  const isKernelMode = experimentType === 'scalar_kernel' || experimentType === 'localization';
 
   const shots = options.shots ?? platform.practicalShots;
   const statistical = platform.singleShotResolution / Math.sqrt(Math.max(1, shots));
@@ -234,13 +264,30 @@ export function buildExperimentCard(
         `requires 1σ precision of ${formatSci(requiredPrecision)}, which lies below the platform's ` +
         `systematic floor of ${formatSci(platform.systematicFloor)}. A null result here would ` +
         `constrain nothing — choose a platform whose systematic floor is under ${formatSci(requiredPrecision)}.`
-      : `Measure ${comparison.observableName} at the stated parameters. Established physics predicts ` +
-        `${standardPrediction.toFixed(6)}; the proposed model predicts ${modelPrediction.toFixed(6)} ` +
-        `(${direction} the standard value by ${formatSci(Math.abs(delta))}). ` +
-        `If the measured value agrees with ${standardPrediction.toFixed(6)} to within ` +
-        `±${formatSci(nSigma * total)} (${nSigma}σ), the proposed model is FALSIFIED at ` +
-        `g = ${parameters.g}, α = ${parameters.alpha}, Δ = ${parameters.delta}. ` +
-        `Confirmation requires the ${nSigma}σ excess to survive every control below.` +
+      : // The test is stated at the REQUIRED precision, not at whatever the
+        // practical shot budget happens to give. Quoting ±nσ·σ_total would be
+        // vacuous for any card that needs longer integration: there
+        // |Δ| < nσ·σ_total by construction, so even a measurement landing
+        // exactly on the proposed prediction would satisfy a
+        // "consistent with the baseline" test and be reported as falsifying
+        // the very prediction it confirms.
+        `Measure ${resolved.observableName} at the stated parameters and integrate until the 1σ ` +
+        `uncertainty reaches σ* = ${formatSci(requiredPrecision)} ` +
+        `(${Number.isFinite(requiredShots) ? requiredShots.toExponential(2) : '∞'} shots). ` +
+        `At that precision the two predictions sit exactly ${nSigma}σ apart: established physics ` +
+        `predicts ${standardPrediction.toFixed(6)}, the proposed model predicts ` +
+        `${modelPrediction.toFixed(6)} (${direction} the standard value by ${formatSci(Math.abs(delta))}). ` +
+        `The proposed model is FALSIFIED if the measured value lands within ±σ* of ` +
+        `${standardPrediction.toFixed(6)}, which excludes ${modelPrediction.toFixed(6)} at ${nSigma}σ. ` +
+        `It survives only if the value lands within ±σ* of ${modelPrediction.toFixed(6)}, excluding ` +
+        `the standard prediction at ${nSigma}σ, and that excess then has to survive every control below. ` +
+        `Anything between the two is inconclusive at this integration, not evidence for either. ` +
+        (testability === 'needs_more_integration'
+          ? `Note that ${platform.label}'s practical budget of ${platform.practicalShots.toExponential(0)} shots ` +
+            `only reaches σ_total = ${formatSci(total)}, which is larger than the separation — at that budget ` +
+            `the experiment cannot discriminate the two models at all. `
+          : '') +
+        `Parameters: g = ${parameters.g}, α = ${parameters.alpha}, Δ = ${parameters.delta}.` +
         (validity === 'extrapolated'
           ? ` NOTE: α = ${parameters.alpha} is outside the weak-response regime the kernel was derived in, so this prediction is an extrapolation of the model rather than a consequence of it.`
           : '');
@@ -258,7 +305,7 @@ export function buildExperimentCard(
     experimentType,
     platform,
     parameters,
-    observable: comparison.observableName,
+    observable: resolved.observableName,
     readoutChannel: platform.readoutChannel,
     standardPrediction,
     modelPrediction,
@@ -272,8 +319,15 @@ export function buildExperimentCard(
     modelValidity: validity,
     falsificationCondition,
     controls: [
-      'Zero-coupling control: repeat with the scalar drive off (g → 0). The predicted separation must vanish.',
-      'Reversed-gradient control: swap φ_A ↔ φ_B. The predicted shift must change sign, not merely magnitude.',
+      // The gated parameter differs by sector: g is the two-site matter-scalar
+      // coupling and does not enter the kernel branch at all, so naming g as
+      // the kernel's null control would be untestable by construction.
+      isKernelMode
+        ? 'Zero-response control: repeat with the response strength off (α → 0). χ ≡ 1 and the predicted separation must vanish exactly.'
+        : 'Zero-coupling control: repeat with the matter-scalar coupling off (g → 0). The predicted separation must vanish exactly.',
+      isKernelMode
+        ? 'Flat-field control: set φ_A = φ_B. A spatially constant χ cancels in the normalization, so the predicted separation must vanish even at large α.'
+        : 'Reversed-gradient control: swap φ_A ↔ φ_B. The predicted shift must change sign, not merely magnitude.',
       'Blind analysis: fix the analysis pipeline and unblind only after the control runs are accepted.',
       `Interleaved reference: alternate signal and reference shots to reject drift slower than ${platform.integrationTime}.`,
     ],

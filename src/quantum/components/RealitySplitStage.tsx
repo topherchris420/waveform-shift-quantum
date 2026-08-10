@@ -142,15 +142,51 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
     [mode, params, currentFrame]
   );
 
+  const isKernelMode = mode === 'scalar_kernel';
+
+  /**
+   * Distinguishability statistic for the mode actually on screen.
+   *
+   * In kernel mode the visible split comes from the static density field, not
+   * from the two-site Hamiltonian trajectory — using traceDistance there would
+   * label a plainly visible divergence "REALITIES ALIGNED" (the two-site
+   * distance is exactly zero at t = 0 whatever the kernel is doing).
+   * ½∫|Δρ|dx is the total-variation distance between the two predicted
+   * densities, the same quantity the experiment cards are scored on.
+   */
+  const separation = isKernelMode ? currentField.l1 / 2 : currentFrame.traceDistance;
+
   const splitState: SplitState = useMemo(() => {
-    if (currentFrame.traceDistance <= 1e-9) return 'aligned';
-    return currentFrame.traceDistance > noiseFloor ? 'distinguishable' : 'diverging';
-  }, [currentFrame.traceDistance, noiseFloor]);
+    if (separation <= 1e-9) return 'aligned';
+    return separation > noiseFloor ? 'distinguishable' : 'diverging';
+  }, [separation, noiseFloor]);
+
+  /** Window summary, likewise mode-aware. The kernel field is time-independent. */
+  const summary = useMemo(() => {
+    if (isKernelMode) {
+      return {
+        peak: separation,
+        peakTime: 0,
+        mean: separation,
+        firstDetectable: separation > noiseFloor ? 0 : null,
+        peakNote: 'static field — no time dependence',
+        meanNote: 'constant over the window',
+      };
+    }
+    return {
+      peak: trajectory.maxDivergence,
+      peakTime: trajectory.maxDivergenceTime,
+      mean: trajectory.meanDivergence,
+      firstDetectable: trajectory.firstDetectableTime,
+      peakNote: `at t = ${trajectory.maxDivergenceTime.toFixed(2)}`,
+      meanNote: 'target for integrated measurements',
+    };
+  }, [isKernelMode, separation, noiseFloor, trajectory]);
 
   // Fire only on the transition into a distinguishable regime. Reporting every
   // frame would drive a parent re-render at 60 Hz for no new information.
   const traceDistanceRef = useRef(0);
-  traceDistanceRef.current = currentFrame.traceDistance;
+  traceDistanceRef.current = separation;
   const lastSplitState = useRef<SplitState>('aligned');
 
   useEffect(() => {
@@ -386,13 +422,20 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
       ctx.fillText('SITE A', handleAX - 20, BAND_FIELD.top + BAND_FIELD.height + 18);
       ctx.fillText('SITE B', handleBX - 20, BAND_FIELD.top + BAND_FIELD.height + 18);
 
-      // Alignment banner: the moment before the split.
-      if (frame.traceDistance <= 1e-9) {
+      // Alignment banner: the moment before the split. The statistic has to
+      // match the mode on screen, or a visible kernel split would be captioned
+      // as identical predictions.
+      const drawnSeparation = mode === 'scalar_kernel' ? field.l1 / 2 : frame.traceDistance;
+      if (drawnSeparation <= 1e-9) {
+        const prompt =
+          mode === 'scalar_kernel'
+            ? 'PREDICTIONS IDENTICAL — RAISE THE RESPONSE STRENGTH α TO SPLIT REALITY'
+            : 'PREDICTIONS IDENTICAL — RAISE THE COUPLING g TO SPLIT REALITY';
         ctx.fillStyle = 'rgba(226, 232, 240, 0.5)';
         ctx.font = '700 13px ui-monospace, JetBrains Mono, monospace';
         ctx.fillText(
-          'PREDICTIONS IDENTICAL — RAISE THE COUPLING g TO SPLIT REALITY',
-          PLOT_X0 + PLOT_W / 2 - 220,
+          prompt,
+          PLOT_X0 + PLOT_W / 2 - ctx.measureText(prompt).width / 2,
           BAND_DIV.top + BAND_DIV.height / 2
         );
       }
@@ -495,7 +538,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
   };
 
   const alignRealities = () => {
-    onParamsChange({ g: 0 });
+    onParamsChange(isKernelMode ? { alpha: 0 } : { g: 0 });
     scrubTo(0);
     setIsRunning(true);
   };
@@ -520,7 +563,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
     },
   };
   const state = stateStyles[splitState];
-  const significance = noiseFloor > 0 ? currentFrame.traceDistance / noiseFloor : 0;
+  const significance = noiseFloor > 0 ? separation / noiseFloor : 0;
 
   return (
     <section
@@ -538,8 +581,9 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
               Reality Split
             </h2>
             <p className="text-xs text-slate-400">
-              Both models evolve from the same |ψ(0)⟩ = |A⟩. Every difference below is caused by the
-              coupling g alone.
+              {isKernelMode
+                ? 'Both models read the same |ψ(x)|². Every difference below is caused by the response strength α alone.'
+                : 'Both models evolve from the same |ψ(0)⟩ = |A⟩. Every difference below is caused by the coupling g alone.'}
             </p>
           </div>
         </div>
@@ -578,7 +622,9 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
         >
           <EpistemicTag kind="established" />
           <span className="font-mono text-[10px] text-slate-400">
-            Standard QM · P_B = {currentFrame.standard.PB.toFixed(4)}
+            {isKernelMode
+              ? `Standard QM · Born density P_B(x)`
+              : `Standard QM · P_B = ${currentFrame.standard.PB.toFixed(4)}`}
           </span>
         </div>
 
@@ -599,14 +645,18 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
         >
           <EpistemicTag kind="proposed" />
           <span className="font-mono text-[10px] text-slate-400">
-            Woodyard (2026) · P_B = {currentFrame.model.PB.toFixed(4)}
+            {isKernelMode
+              ? `Woodyard (2026) · P_loc(x) = χ(x)P_B / ∫χP_B`
+              : `Woodyard (2026) · P_B = ${currentFrame.model.PB.toFixed(4)}`}
           </span>
         </div>
 
         <div className="pointer-events-none absolute right-3 top-3 flex flex-col items-end gap-1.5">
           <div className="rounded-md border border-slate-700 bg-slate-950/90 px-2.5 py-1 font-mono text-[10px] text-slate-300 backdrop-blur">
-            <span className="text-slate-500">D(t) = ½Σ|p−q|</span>{' '}
-            <span className="font-bold text-white">{currentFrame.traceDistance.toExponential(3)}</span>
+            <span className="text-slate-500">
+              {isKernelMode ? 'D = ½∫|Δρ|dx' : 'D(t) = ½Σ|p−q|'}
+            </span>{' '}
+            <span className="font-bold text-white">{separation.toExponential(3)}</span>
           </div>
           <div className="rounded-md border border-slate-700 bg-slate-950/90 px-2.5 py-1 font-mono text-[10px] text-slate-300 backdrop-blur">
             <span className="text-slate-500">vs {platform.label} floor</span>{' '}
@@ -664,20 +714,25 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
           </span>
         </div>
 
+        {/* The coupling that gates the split differs by sector: g is the
+            two-site matter-scalar coupling; α is the kernel's response
+            strength. Driving the wrong one would leave the split unchanged. */}
         <div className="flex min-w-[220px] flex-1 items-center gap-3">
           <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-amber-400">
-            <Zap className="h-3 w-3" /> Coupling g
+            <Zap className="h-3 w-3" /> {isKernelMode ? 'Response α' : 'Coupling g'}
           </span>
           <Slider
-            aria-label="Matter-scalar coupling g"
-            value={[params.g]}
-            onValueChange={([value]) => onParamsChange({ g: value })}
+            aria-label={isKernelMode ? 'Kernel response strength alpha' : 'Matter-scalar coupling g'}
+            value={[isKernelMode ? params.alpha : params.g]}
+            onValueChange={([value]) =>
+              onParamsChange(isKernelMode ? { alpha: value } : { g: value })
+            }
             min={0}
             max={3}
             step={0.01}
           />
           <span className="w-12 shrink-0 text-right font-mono text-xs text-amber-300">
-            {params.g.toFixed(2)}
+            {(isKernelMode ? params.alpha : params.g).toFixed(2)}
           </span>
         </div>
 
@@ -686,10 +741,14 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
           variant="outline"
           className="border-slate-600 bg-slate-800/80 font-mono text-xs text-slate-200 hover:bg-slate-700"
           onClick={alignRealities}
-          title="Set g = 0 so both models predict identically, then raise g to watch them split"
+          title={
+            isKernelMode
+              ? 'Set α = 0 so χ ≡ 1 and both models predict identically, then raise α to watch them split'
+              : 'Set g = 0 so both models predict identically, then raise g to watch them split'
+          }
         >
           <Ruler className="mr-1.5 h-3.5 w-3.5" />
-          ALIGN (g = 0)
+          {isKernelMode ? 'ALIGN (α = 0)' : 'ALIGN (g = 0)'}
         </Button>
       </div>
 
@@ -697,22 +756,22 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
       <div className="grid gap-px border-t border-slate-800 bg-slate-800 sm:grid-cols-2 lg:grid-cols-4">
         <ReadoutCell
           label="Peak divergence over window"
-          value={trajectory.maxDivergence.toExponential(3)}
-          sub={`at t = ${trajectory.maxDivergenceTime.toFixed(2)}`}
+          value={summary.peak.toExponential(3)}
+          sub={summary.peakNote}
           kind="prediction"
         />
         <ReadoutCell
           label="Time-averaged divergence"
-          value={trajectory.meanDivergence.toExponential(3)}
-          sub="target for integrated measurements"
+          value={summary.mean.toExponential(3)}
+          sub={summary.meanNote}
           kind="prediction"
         />
         <ReadoutCell
           label={`First resolvable by ${platform.label}`}
           value={
-            trajectory.firstDetectableTime === null
+            summary.firstDetectable === null
               ? 'never in window'
-              : `t = ${trajectory.firstDetectableTime.toFixed(2)}`
+              : `t = ${summary.firstDetectable.toFixed(2)}`
           }
           sub={`floor ${noiseFloor.toExponential(1)}`}
           kind="prediction"

@@ -291,6 +291,40 @@ const SITE_A_X = -0.55;
 const SITE_B_X = 0.55;
 const SITE_WIDTH = 0.28;
 
+/** Field coupling coefficient β in ω_loc = ω₀ + βφ + κ∇²φ. */
+const KERNEL_BETA = 2.0;
+/** Field curvature coefficient κ in the same expression. */
+const KERNEL_KAPPA = 0.15;
+/** Width over which the scalar field crosses between its two asymptotic values. */
+const FIELD_TRANSITION_WIDTH = 0.5;
+
+/**
+ * Scalar field profile across the sample, with its analytic Laplacian.
+ *
+ * φ(x) = φ̄ + (Δφ/2)·tanh(x/w),  φ''(x) = −(Δφ/w²)·sech²(x/w)·tanh(x/w)
+ *
+ * A smooth transition is used rather than a straight line between φA and φB
+ * because a linear profile has ∇²φ ≡ 0, which would silently switch off the κ
+ * term of the local resonance. (An earlier version did exactly that: it paired
+ * a linear φ with a fabricated curvature −2(φB−φA)x, and for β = 2, κ = 0.5 the
+ * two terms cancelled identically, pinning ω_loc at ω₀ and making the entire
+ * scalar divergence field vanish.)
+ */
+export function scalarFieldProfile(
+  params: Pick<RealitySplitParams, 'phiA' | 'phiB'>,
+  x: number
+): { phi: number; laplacian: number } {
+  const mean = (params.phiA + params.phiB) / 2;
+  const span = params.phiB - params.phiA;
+  const w = FIELD_TRANSITION_WIDTH;
+  const t = Math.tanh(x / w);
+  const sech2 = 1 - t * t;
+  return {
+    phi: mean + (span / 2) * t,
+    laplacian: -(span / (w * w)) * sech2 * t,
+  };
+}
+
 const gaussian = (x: number, mu: number, sigma: number) =>
   Math.exp(-((x - mu) ** 2) / (2 * sigma * sigma));
 
@@ -335,19 +369,20 @@ export function computeDivergenceField(
       x[i] = xi;
       // Single localized wavepacket; the kernel, not the state, does the biasing.
       born[i] = gaussian(xi, 0, 0.32);
-      // Local resonance tracks the scalar field profile across the sample.
-      const phiLocal = params.phiA + (params.phiB - params.phiA) * (xi + 1) * 0.5;
-      const curvature = -2 * (params.phiB - params.phiA) * xi;
+      const { phi, laplacian } = scalarFieldProfile(params, xi);
       kernels[i] = localizationKernel({
         omega0: 10.0,
-        beta: 2.0,
-        kappa: 0.5,
-        phi: phiLocal,
-        d2phi: curvature,
+        beta: KERNEL_BETA,
+        kappa: KERNEL_KAPPA,
+        phi,
+        d2phi: laplacian,
         omega_w: params.omega_w,
         gamma: params.gamma,
-        // g gates the proposed effect: with no coupling there is no biasing.
-        alpha: params.alpha * (params.g === 0 ? 0 : 1),
+        // α is the kernel sector's own coupling: α → 0 gives χ ≡ 1 and recovers
+        // the Born rule exactly. (g is the two-site matter-scalar coupling and
+        // does not enter compareModels' kernel branch, so gating on it here
+        // would contradict the numbers shown everywhere else.)
+        alpha: params.alpha,
       });
     }
 
@@ -386,6 +421,68 @@ export function computeDivergenceField(
   }
 
   return { x, rhoStandard, rhoModel, divergence, maxAbs, l1 };
+}
+
+export interface KernelRegionSeparation {
+  /** Probability standard QM puts in the region, ∫_R P_B(x) dx. */
+  standardFraction: number;
+  /** Probability the proposed model puts there, ∫_R P_loc(x) dx. */
+  modelFraction: number;
+  /** modelFraction − standardFraction. Equals the total-variation distance. */
+  delta: number;
+  /** Fraction of the sample the region covers, for the experiment write-up. */
+  regionWidth: number;
+}
+
+/**
+ * Reduce the localization-kernel prediction to a single measurable number.
+ *
+ * The kernel model's actual observable is the NORMALIZED density
+ * P_loc(x) = χ(x)P_B(x)/∫χP_B, not the bare kernel factor χ. That distinction
+ * matters: a spatially constant χ cancels completely in the normalization, so a
+ * flat field predicts exactly zero deviation however large χ is. Reading a
+ * separation off a single χ value therefore invents effects the model says are
+ * not there.
+ *
+ * The statistic here is the probability contained in the region where the model
+ * predicts an excess — the optimal discriminating region. Because the field
+ * integrates to zero, ∫_{Δρ>0} Δρ = ½∫|Δρ| is exactly the total-variation
+ * distance between the two predicted distributions, i.e. the largest advantage
+ * any single measurement can have in telling them apart. Both fractions are
+ * probabilities, so they drop straight into the platform noise model.
+ */
+export function kernelRegionSeparation(
+  params: RealitySplitParams,
+  gridSize = 320
+): KernelRegionSeparation {
+  // The kernel field is static, so any frame gives the same answer.
+  const frame: SplitFrame = {
+    t: 0,
+    standard: { PA: 1, PB: 0, norm: 1 },
+    model: { PA: 1, PB: 0, norm: 1 },
+    deltaPB: 0,
+    traceDistance: 0,
+  };
+  const field = computeDivergenceField('scalar_kernel', params, frame, gridSize);
+  const dx = 2 / (gridSize - 1);
+
+  let standardFraction = 0;
+  let modelFraction = 0;
+  let cells = 0;
+  for (let i = 0; i < gridSize; i += 1) {
+    if (field.divergence[i] > 0) {
+      standardFraction += field.rhoStandard[i] * dx;
+      modelFraction += field.rhoModel[i] * dx;
+      cells += 1;
+    }
+  }
+
+  return {
+    standardFraction,
+    modelFraction,
+    delta: modelFraction - standardFraction,
+    regionWidth: cells / gridSize,
+  };
 }
 
 /**

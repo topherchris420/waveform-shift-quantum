@@ -6,8 +6,9 @@ import {
   experimentCardToCSV,
   modelValidity,
   requiredShotsFor,
-  toObservableUnits,
+  resolvePredictions,
 } from '../lib/experimentCard';
+import { compareModels } from '../lib/physics';
 import {
   getPlatform,
   PLATFORMS,
@@ -90,22 +91,42 @@ describe('Required precision and shot budget', () => {
   });
 });
 
-describe('Observable units', () => {
-  it('leaves probability-valued comparisons untouched', () => {
-    expect(toObservableUnits('two_site', 0.42)).toBe(0.42);
-    expect(toObservableUnits('teleportation', 0.9)).toBe(0.9);
+describe('Resolved predictions', () => {
+  const comparisonFor = (type: string, params: AnomalyParameters) => compareModels(type, params);
+
+  it('passes probability-valued comparisons straight through', () => {
+    const cmp = comparisonFor('two_site', regime);
+    const resolved = resolvePredictions('two_site', regime, cmp);
+    expect(resolved.standard).toBe(cmp.standardQM);
+    expect(resolved.model).toBe(cmp.woodyardModel);
   });
 
-  it('maps the unbounded kernel factor onto a bounded density contrast', () => {
-    // χ = 1 is the no-effect baseline and must map to exactly zero contrast.
-    expect(toObservableUnits('scalar_kernel', 1)).toBe(0);
-    // The contrast is bounded below 1 no matter how large χ becomes, so it can
-    // be compared against a platform noise floor without inventing significance.
-    expect(toObservableUnits('scalar_kernel', Math.exp(3))).toBeLessThan(1);
-    expect(toObservableUnits('scalar_kernel', 1e6)).toBeLessThan(1);
-    // Weak-response limit: (χ−1)/(χ+1) → αL/2 as αL → 0.
-    const alphaL = 1e-4;
-    expect(toObservableUnits('scalar_kernel', Math.exp(alphaL))).toBeCloseTo(alphaL / 2, 8);
+  it('predicts exactly zero separation for a spatially flat scalar field', () => {
+    // The kernel model's observable is the NORMALIZED density
+    // P_loc = χP_B/∫χP_B, in which a constant χ cancels completely. Reading the
+    // separation off a single χ value reported ~0.1 here, which the model says
+    // is not there at all.
+    const flat: AnomalyParameters = { ...regime, phiA: 0.9, phiB: 0.9, alpha: 1.0 };
+    const resolved = resolvePredictions('scalar_kernel', flat, comparisonFor('scalar_kernel', flat));
+    expect(Math.abs(resolved.delta)).toBeLessThan(1e-12);
+  });
+
+  it('predicts exactly zero separation when the response strength is off', () => {
+    const off: AnomalyParameters = { ...regime, phiA: -1.5, phiB: 1.5, alpha: 0 };
+    const resolved = resolvePredictions('scalar_kernel', off, comparisonFor('scalar_kernel', off));
+    expect(Math.abs(resolved.delta)).toBeLessThan(1e-12);
+  });
+
+  it('predicts a real, monotone separation for a genuine field gradient', () => {
+    const at = (alpha: number) => {
+      const p: AnomalyParameters = { ...regime, phiA: -1.5, phiB: 1.5, alpha };
+      return resolvePredictions('scalar_kernel', p, comparisonFor('scalar_kernel', p)).delta;
+    };
+    // Guards the case where a fabricated Laplacian cancelled the βφ term and
+    // pinned ω_loc at ω₀, leaving the kernel spatially flat and the field dead.
+    expect(at(1.0)).toBeGreaterThan(1e-3);
+    expect(at(1.0)).toBeGreaterThan(at(0.3));
+    expect(at(0.3)).toBeGreaterThan(at(0.05));
   });
 
   it('keeps every card separation inside the observable range', () => {
@@ -157,6 +178,37 @@ describe('Experiment card', () => {
     expect(card.controls.length).toBeGreaterThan(0);
     expect(card.confounders.length).toBeGreaterThan(0);
     expect(card.observable.length).toBeGreaterThan(0);
+  });
+
+  it('states the falsification test at the required precision, not the practical one', () => {
+    // The old rule declared the model falsified whenever a result fell within
+    // nσ·σ_total of the standard prediction. For a needs_more_integration card
+    // |Δ| < nσ·σ_total by construction, so a measurement landing exactly ON the
+    // proposed prediction satisfied it — the card described its own prediction
+    // as falsifying itself. The test must be anchored to σ* = |Δ|/n instead.
+    const marginal = transmon.systematicFloor * DETECTION_SIGMA * 1.000001;
+    const card = buildExperimentCard('two_site', regime, transmon, {
+      comparison: {
+        standardQM: 0.5,
+        woodyardModel: 0.5 + marginal,
+        delta: marginal,
+        percentDeviation: 100 * (marginal / 0.5),
+        observableName: 'Site B Occupation Probability PB',
+        assumptions: [],
+        scientificStatus: 'Proposed',
+        falsificationCondition: '',
+      },
+    });
+
+    expect(card.testability).toBe('needs_more_integration');
+    // Anchored to the required precision, and honest that the practical budget
+    // cannot discriminate the two models at all.
+    expect(card.falsificationCondition).toContain(card.requiredPrecision.toExponential(2));
+    expect(card.falsificationCondition).toContain('cannot discriminate');
+    // It must name the PROPOSED prediction as the thing being excluded, not
+    // only the baseline.
+    expect(card.falsificationCondition).toContain(card.modelPrediction.toFixed(6));
+    expect(card.falsificationCondition).toContain('survives only if');
   });
 
   it('computes significance as |Δ| divided by the total uncertainty', () => {
