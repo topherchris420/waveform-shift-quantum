@@ -1,6 +1,7 @@
 import React from 'react';
 import { BookOpen, ExternalLink, FileText, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { InlineMath } from 'react-katex';
 
 const primaryPaper = {
   title: 'Field-Modulated Spatial Localization as a Dynamical Variable: An Effective Matter–Scalar Model of Re-Localization Without Discontinuous Disappearance',
@@ -162,9 +163,15 @@ export const ReferencesFooter: React.FC = () => (
           </li>
         ))}
       </ul>
-      <p className="mt-5 text-[11px] leading-5 text-muted-foreground">
-        {"Theoretical Framework Assumptions: Effective matter-scalar coupling $g \\phi(\\mathbf{x},t)$; non-relativistic Schrödinger wavefunction $\\psi(\\mathbf{x},t)$; real auxiliary scalar field $\\phi(\\mathbf{x},t)$ with parameters $(c_\\phi, m_\\phi, \\lambda)$; normalized localization response kernel $\\chi(\\mathbf{x},t;\\omega_w) = \\exp[\\alpha \\mathcal{L}(\\mathbf{x},t;\\omega_w)]$. Weak-coupling limit $g\\phi_0 \\ll \\|V\\|$ reproduces exact standard quantum mechanics."}
-      </p>
+      <div className="mt-5 pt-4 border-t border-white/10 space-y-3">
+        <p className="text-[11px] leading-5 text-muted-foreground">
+          <span className="font-semibold text-slate-300">Theoretical Framework Assumptions:</span>{' '}
+          Effective matter-scalar coupling <InlineMath math="g \phi(\mathbf{x},t)" />; non-relativistic Schrödinger wavefunction <InlineMath math="\psi(\mathbf{x},t)" />; real auxiliary scalar field <InlineMath math="\phi(\mathbf{x},t)" /> with parameters <InlineMath math="(c_\phi, m_\phi, \lambda)" />; normalized localization response kernel <InlineMath math="\chi(\mathbf{x},t;\omega_w) = \exp[\alpha \mathcal{L}(\mathbf{x},t;\omega_w)]" />. Weak-coupling limit <InlineMath math="g\phi_0 \ll \|V\|" /> reproduces exact standard quantum mechanics.
+        </p>
+        <blockquote className="text-center text-xs italic text-cyan-400/90 font-serif pt-1">
+          &ldquo;Quae in occulto sunt, ad lucem perducantur&rdquo;
+        </blockquote>
+      </div>
     </div>
   </section>
 );
