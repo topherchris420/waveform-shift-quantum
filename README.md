@@ -40,6 +40,20 @@ To ensure scientific rigor, all physics calculations and visual models are tagge
 
 ---
 
+## The Genesis Protocol: Complex-Systems Resource Routing
+
+The Genesis Protocol extends Waveform Shift's experimental philosophy into economic coordination: run monetary exchange and computational resource routing from equivalent starting conditions, measure where their outcomes diverge, and search for the conditions under which each coordination mechanism performs better.
+
+> **Core Principle:** Computation may outperform money for coordinating physically measurable resources (where the scarce information is how resources physically fit together), while markets remain superior where subjective preferences, price discovery, and financial risk carry the most valuable information.
+
+### Key Simulation Components
+1. **Multidimensional Value Vectors**: Replaces single scalar monetary pricing with 8-dimensional resource vectors $V_i(t) = f(S_i, D_i, U_i, Q_i, L_i, E_i, R_i, C_i)$ measuring scarcity, demand, urgency, quality, location, energy cost, reliability, and compatibility.
+2. **CAISO Duck Curve Engine**: A 24-hour stochastic power grid simulator that models real-world energy availability anomalies.
+3. **Multi-Hop Triangulation**: Dynamic routing through intermediary relay nodes (Battery Storage, Compute Brokers, Data Hubs) to perform time-shifting and form-shifting resource allocation.
+
+
+---
+
 ## Verification & Build Suite
 
 ```bash
