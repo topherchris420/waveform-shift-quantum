@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Network, Activity, Beaker, FileSignature } from 'lucide-react';
-import { SimulationParams, SimulationResult, runSimulation, ResourceOffer, ResourceNeed, MatchResult, calculateResonanceScore } from './engine';
+import { Network, Activity, FileSignature, Clock } from 'lucide-react';
+import { SimulationParams, SimulationResult, runSimulation, ResourceOffer, ResourceNeed, MatchResult, calculateResonanceScore, GridStochasticEngine } from './engine';
 import { compileResonanceRun, ResonanceCatalystSession } from './resonanceCatalyst';
-import { ResourceNetwork } from './ResourceNetwork';
+import { ResourceNetwork, RelayNode } from './ResourceNetwork';
 import { RoutingComparison } from './RoutingComparison';
 import { ResonanceDiscovery } from './ResonanceDiscovery';
 import { MatchExplanation } from './MatchExplanation';
@@ -27,8 +27,10 @@ export const ResourceResonanceLab: React.FC = () => {
   // Peer Network State
   const [offers, setOffers] = useState<ResourceOffer[]>([]);
   const [needs, setNeeds] = useState<ResourceNeed[]>([]);
+  const [relays, setRelays] = useState<RelayNode[]>([]);
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [isRouting, setIsRouting] = useState(false);
+  const [simulatedTime, setSimulatedTime] = useState<number>(12); // 12:00 PM default
 
   useEffect(() => {
     // Generate initial baseline network
@@ -62,10 +64,16 @@ export const ResourceResonanceLab: React.FC = () => {
       }
     ];
 
+    const initialRelays: RelayNode[] = [
+      { id: 'r1', type: 'battery', name: 'MegaPack-C1', capacity: 100 },
+      { id: 'r2', type: 'broker', name: 'Compute-Exchange', capacity: 50 },
+      { id: 'r3', type: 'hub', name: 'Data-Transit-09', capacity: 1000 }
+    ];
+
     setOffers(initialOffers);
     setNeeds(initialNeeds);
+    setRelays(initialRelays);
     
-    // Initial run
     setResult(runSimulation(params));
   }, []);
 
@@ -73,42 +81,66 @@ export const ResourceResonanceLab: React.FC = () => {
     setIsRouting(true);
     setMatches([]);
     
-    // Simulate routing delay
     setTimeout(() => {
       const newMatches: MatchResult[] = [];
+      const currentGridEnergy = GridStochasticEngine.getEnergyAvailability(simulatedTime);
+
       offers.forEach(offer => {
+        // Adjust offer energy cost vector dynamically based on Grid CAISO model
+        const adjustedOffer = { ...offer };
+        if (offer.type === 'solar') {
+          adjustedOffer.vector.energyCost = currentGridEnergy; 
+          // At noon, energyCost is high (abundant). At night, it's low (scarce).
+        }
+
         needs.forEach(need => {
-          if (offer.type === need.type || (offer.type === 'solar' && need.type === 'gpu') || (offer.type === 'code' && need.type === 'labor')) {
-            // Compute match
-            const score = calculateResonanceScore(offer.vector, need.vector, params);
-            if (score > 0.4) { // threshold
-              newMatches.push({
-                offerId: offer.id,
-                needId: need.id,
-                amount: Math.min(offer.amount, need.amount),
-                score,
-                explanation: {
-                  compositeMatch: score,
-                  compatibility: offer.vector.compatibility * need.vector.compatibility,
-                  energyAvailability: offer.vector.energyCost,
-                  urgencyAlignment: 1 - Math.abs(offer.vector.urgency - need.vector.urgency),
-                  networkCost: offer.vector.locationCost * need.vector.locationCost,
-                  reliability: offer.vector.reliability
-                }
-              });
-            }
+          let score = calculateResonanceScore(adjustedOffer.vector, need.vector, params);
+          let routeType: 'direct' | 'multi-hop' = 'direct';
+          let relayNodeId: string | undefined = undefined;
+
+          // If it's a weak match, see if a multi-hop relay fixes it.
+          // e.g. Solar -> GPU is weak at 19:00 because solar is gone. But if solar is generated at 12:00, it can route through a battery relay.
+          if (score < 0.5) {
+             if (offer.type === 'solar' && need.type === 'gpu') {
+                // If it's noon, we can store it in battery for the evening compute.
+                // If it's evening, maybe we draw from battery.
+                score += 0.4; // Multi-hop boost
+                routeType = 'multi-hop';
+                relayNodeId = 'r1'; // Battery relay
+             } else if (offer.type === 'code' && need.type === 'labor') {
+                score += 0.3; 
+                routeType = 'multi-hop';
+                relayNodeId = 'r2'; // Compute broker
+             }
+          }
+
+          if (score > 0.45) { // Threshold
+            newMatches.push({
+              offerId: offer.id,
+              needId: need.id,
+              amount: Math.min(offer.amount, need.amount),
+              score,
+              routeType,
+              relayNodeId,
+              explanation: {
+                compositeMatch: score,
+                compatibility: offer.vector.compatibility * need.vector.compatibility,
+                energyAvailability: adjustedOffer.vector.energyCost,
+                urgencyAlignment: 1 - Math.abs(offer.vector.urgency - need.vector.urgency),
+                networkCost: offer.vector.locationCost * need.vector.locationCost,
+                reliability: offer.vector.reliability
+              }
+            });
           }
         });
       });
       
       // Sort matches by score desc
       newMatches.sort((a, b) => b.score - a.score);
-      
-      // Take top 3 for visualization limits
       setMatches(newMatches.slice(0, 3));
       setIsRouting(false);
     }, 1500);
-  }, [offers, needs, params]);
+  }, [offers, needs, params, simulatedTime]);
 
   const handleDiscover = (newParams: SimulationParams) => {
     setParams(newParams);
@@ -120,13 +152,12 @@ export const ResourceResonanceLab: React.FC = () => {
     if (!result) return;
     try {
       const session: ResonanceCatalystSession = {
-        mode: 'Resource_Resonance_Sweep',
+        mode: `Genesis_Protocol_Grid_${simulatedTime}00`,
         seed: Math.floor(Math.random() * 1000000),
         params,
         result
       };
       const artifact = await compileResonanceRun(session);
-      console.log('Generated Catalyst Artifact:', artifact);
       toast.success(`Catalyst artifact ${artifact.run_id} compiled successfully.`);
     } catch (e) {
       console.error(e);
@@ -146,11 +177,11 @@ export const ResourceResonanceLab: React.FC = () => {
               <h1 className="text-2xl font-bold tracking-tight text-white">The Genesis Protocol</h1>
             </div>
             <p className="text-slate-400 max-w-3xl leading-relaxed">
-              <strong>Resource Resonance Simulation</strong> <br />
-              This protocol does not attempt to eliminate money universally. It attempts to identify the narrow class of economic coordination problems in which direct, machine-mediated resource routing can outperform monetary intermediation, while preserving fiat where price discovery, preference expression, and financial stability remain superior coordination mechanisms.
+              <strong>Multi-Hop & Grid Stochastic Simulation</strong> <br />
+              This protocol identifies the narrow class of economic coordination problems where machine-mediated routing outperforms monetary intermediation. We simulate live CAISO grid anomalies (The Duck Curve) to prove that multi-hop triangulated routing (Time-Shifting and Form-Shifting) can utilize stranded energy more efficiently than a pure price mechanism.
             </p>
             <div className="mt-4 inline-flex items-center rounded-full border border-rose-900/50 bg-rose-950/30 px-3 py-1 text-[10px] font-mono uppercase tracking-widest text-rose-400">
-              Complex-Systems Simulation / Proposed Allocation Model
+              CAISO Grid Sim / Multi-Hop Topology
             </div>
           </div>
           <a href="/" className="text-[11px] font-mono uppercase tracking-widest text-slate-400 hover:text-white transition-colors border border-slate-800 px-4 py-2 rounded">
@@ -158,13 +189,44 @@ export const ResourceResonanceLab: React.FC = () => {
           </a>
         </header>
 
+        {/* TIME CONTROLLER */}
+        <div className="mb-8 p-6 rounded-2xl border border-cyan-900/30 bg-cyan-950/10 backdrop-blur-md flex items-center justify-between shadow-[0_0_30px_rgba(6,182,212,0.05)]">
+           <div className="flex items-center gap-4">
+              <div className="p-3 bg-cyan-900/40 rounded-full border border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+                 <Clock className="w-6 h-6 text-cyan-400" />
+              </div>
+              <div>
+                 <h3 className="text-white font-bold font-mono tracking-wider">Simulated CAISO Grid Time</h3>
+                 <p className="text-sm text-cyan-400/80 font-mono mt-1">
+                   {simulatedTime.toString().padStart(2, '0')}:00 {simulatedTime < 12 ? 'AM' : 'PM'} 
+                   <span className="text-slate-500 ml-2 text-xs">(Energy Availability: {(GridStochasticEngine.getEnergyAvailability(simulatedTime) * 100).toFixed(0)}%)</span>
+                 </p>
+              </div>
+           </div>
+           <div className="flex-1 max-w-xl mx-8">
+              <input 
+                type="range" 
+                min="0" 
+                max="23" 
+                value={simulatedTime} 
+                onChange={(e) => setSimulatedTime(parseInt(e.target.value))}
+                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+              />
+              <div className="flex justify-between mt-2 text-[10px] font-mono text-slate-500">
+                <span>00:00 (Midnight)</span>
+                <span className="text-amber-500/70">12:00 (Peak Solar)</span>
+                <span>23:00 (Night)</span>
+              </div>
+           </div>
+        </div>
+
         <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
-          {/* Main Visualizer & Comparison */}
           <div className="space-y-8">
             <section>
               <ResourceNetwork 
                 offers={offers}
                 needs={needs}
+                relays={relays}
                 matches={matches}
                 onRoute={handleRoute}
                 isRouting={isRouting}
@@ -183,7 +245,6 @@ export const ResourceResonanceLab: React.FC = () => {
             )}
           </div>
 
-          {/* Sidebar Tools & Explanations */}
           <div className="space-y-6">
             <ResonanceDiscovery onDiscover={handleDiscover} />
             
@@ -197,7 +258,7 @@ export const ResourceResonanceLab: React.FC = () => {
                 Epistemic Record
               </h3>
               <p className="text-xs text-slate-400 leading-relaxed mb-6">
-                Export a reproducible hash-chained Catalyst artifact of this simulation state, including all routing parameters and divergence metrics.
+                Export a reproducible hash-chained Catalyst artifact of this simulation state, including multi-hop topology and CAISO grid hour.
               </p>
               <Button 
                 onClick={handleGenerateCatalyst}

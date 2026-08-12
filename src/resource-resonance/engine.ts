@@ -30,6 +30,8 @@ export interface MatchResult {
   needId: string;
   amount: number;
   score: number;
+  routeType: 'direct' | 'multi-hop';
+  relayNodeId?: string; // Optional intermediary node
   explanation: {
     compositeMatch: number;
     compatibility: number;
@@ -70,74 +72,66 @@ export interface SimulationResult {
 }
 
 /**
+ * GridStochasticEngine: Simulates CAISO Duck Curve
+ */
+export class GridStochasticEngine {
+  // Returns normalized value (0-1) representing solar generation (peaks at 12:00)
+  static getSolarGeneration(hour24: number): number {
+    if (hour24 < 6 || hour24 > 19) return 0.05;
+    // Bell curve peaking at 12
+    const variance = 9;
+    return Math.exp(-Math.pow(hour24 - 12.5, 2) / (2 * variance));
+  }
+
+  // Returns normalized demand (peaks at 18:00 - 20:00)
+  static getGridDemand(hour24: number): number {
+    const base = 0.4;
+    const morningPeak = Math.exp(-Math.pow(hour24 - 8, 2) / 4) * 0.3;
+    const eveningPeak = Math.exp(-Math.pow(hour24 - 19, 2) / 6) * 0.6;
+    return Math.min(1, base + morningPeak + eveningPeak);
+  }
+
+  // Energy Availability (1 = abundant, 0 = scarce)
+  static getEnergyAvailability(hour24: number): number {
+    const gen = this.getSolarGeneration(hour24);
+    const demand = this.getGridDemand(hour24);
+    const availability = 0.5 + (gen * 0.5) - (demand * 0.3);
+    return Math.max(0.1, Math.min(1, availability));
+  }
+}
+
+/**
  * V_i(t) = f(S_i,D_i,U_i,Q_i,L_i,E_i,R_i,C_i)
  */
 export function calculateResonanceScore(offer: ResourceVector, need: ResourceVector, params: SimulationParams): number {
-  // Compatibility is a strict multiplier (must be compatible)
   const compatibility = offer.compatibility * need.compatibility;
-  
-  // Alignment metrics
   const urgencyAlignment = 1 - Math.abs(offer.urgency - need.urgency);
-  const energyAvailability = offer.energyCost; // 1 means abundant renewable
+  const energyAvailability = offer.energyCost;
   const networkCost = offer.locationCost * need.locationCost * (1 - params.geographicalFriction);
   const reliability = offer.reliability;
 
-  const weights = {
-    urgency: 0.2,
-    energy: 0.3,
-    network: 0.2,
-    reliability: 0.3
-  };
+  const weights = { urgency: 0.2, energy: 0.3, network: 0.2, reliability: 0.3 };
 
-  const composite = compatibility * (
+  return compatibility * (
     urgencyAlignment * weights.urgency +
     energyAvailability * weights.energy +
     networkCost * weights.network +
     reliability * weights.reliability
   );
-
-  return composite;
 }
 
-/**
- * Calculate monetary score (compressed information)
- * Converts everything to an abstract price and matches based on that, ignoring some nuance.
- */
 export function calculateMonetaryScore(offer: ResourceVector, need: ResourceVector, params: SimulationParams): number {
-  // Money compresses everything into a single price.
-  // It heavily weighs scarcity and demand, often ignoring nuance like stranded renewable energy or location friction.
   const priceOffer = (offer.scarcity * 0.6 + offer.quality * 0.4) * (1 + params.supplyDemandImbalance);
   const willingnessToPay = (need.demand * 0.5 + need.urgency * 0.5);
-
   const priceMatch = 1 - Math.abs(priceOffer - willingnessToPay);
-  
-  // Compatibility is still required even in monetary systems, but is binary often
   const compatibility = (offer.compatibility * need.compatibility) > 0.5 ? 1 : 0.1;
-
-  // The actual utility realized might be low if energy or network cost is bad, 
-  // but the market clears based on price match anyway.
-  return priceMatch * compatibility;
+  return priceMatch * Math.max(0, compatibility);
 }
 
 export function runSimulation(params: SimulationParams): SimulationResult {
-  // We simulate a population of needs and offers.
-  const N = Math.floor(params.networkSize * 100);
-  
-  // Base numbers generated deterministically based on params
-  // Model A (Monetary) tends to struggle when energy volatility is high (stranded renewables)
-  // or geographical friction is high (because price doesn't capture local routing well).
-  
-  // The Resonance model shines when:
-  // - renewableVolatility is high (can route to stranded energy without price overhead)
-  // - geographicalFriction is high (routes locally based on multi-d vectors)
-  
-  // It struggles (Failure region) when:
-  // - participantReliability is very low (direct routing fails if reputation vector is spoofed or noisy, while monetary routing requires upfront collateral/payment)
-  
   let utilA = 0.65 - (params.renewableVolatility * 0.15) - (params.geographicalFriction * 0.1) + (params.participantReliability * 0.05);
   let utilB = 0.70 + (params.renewableVolatility * 0.1) + (params.geographicalFriction * 0.1) - ((1 - params.participantReliability) * 0.25);
   
-  // Bound between 0 and 1
   utilA = Math.max(0, Math.min(1, utilA));
   utilB = Math.max(0, Math.min(1, utilB));
 
@@ -148,19 +142,19 @@ export function runSimulation(params: SimulationParams): SimulationResult {
     routingLatency: 20 + params.geographicalFriction * 50,
     unmetDemand: (1 - utilA) * 100,
     totalNetworkUtility: utilA * 100,
-    concentration: 0.8, // Money tends to concentrate
+    concentration: 0.8,
     coordinationOverhead: 0.1
   };
 
   const modelB: SimulationMetrics = {
     fulfilledNeeds: utilB * 100,
     resourceUtilization: utilB * 100,
-    wastedEnergy: (1 - utilB) * 0.2 * 100, // Better at using stranded energy
-    routingLatency: 10 + params.geographicalFriction * 20, // Local routing is faster
+    wastedEnergy: (1 - utilB) * 0.2 * 100,
+    routingLatency: 10 + params.geographicalFriction * 20,
     unmetDemand: (1 - utilB) * 100,
     totalNetworkUtility: utilB * 100,
-    concentration: 0.3, // Direct routing distributes better
-    coordinationOverhead: 0.4 - (params.participantReliability * 0.2) // Higher compute overhead, but goes down if reliable
+    concentration: 0.3,
+    coordinationOverhead: 0.4 - (params.participantReliability * 0.2)
   };
 
   const deltaUtility = modelB.totalNetworkUtility - modelA.totalNetworkUtility;
@@ -174,10 +168,5 @@ export function runSimulation(params: SimulationParams): SimulationResult {
     primaryDriver = "Local multi-dimensional routing avoids global market friction.";
   }
 
-  return {
-    modelA,
-    modelB,
-    deltaUtility,
-    primaryDriver
-  };
+  return { modelA, modelB, deltaUtility, primaryDriver };
 }

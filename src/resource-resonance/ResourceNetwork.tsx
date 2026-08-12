@@ -1,10 +1,18 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MatchResult, ResourceOffer, ResourceNeed } from './engine';
-import { Activity, Zap, Cpu, Code, Database, Hammer } from 'lucide-react';
+import { Activity, Zap, Cpu, Code, Database, Hammer, Battery, ArrowRightLeft, RadioReceiver } from 'lucide-react';
+
+export interface RelayNode {
+  id: string;
+  type: 'battery' | 'broker' | 'hub';
+  name: string;
+  capacity: number;
+}
 
 interface ResourceNetworkProps {
   offers: ResourceOffer[];
   needs: ResourceNeed[];
+  relays: RelayNode[];
   matches: MatchResult[];
   onRoute: () => void;
   isRouting: boolean;
@@ -16,16 +24,21 @@ const ICONS: Record<string, React.ElementType> = {
   'code': Code,
   'storage': Database,
   'labor': Hammer,
+  'battery': Battery,
+  'broker': ArrowRightLeft,
+  'hub': RadioReceiver,
   'default': Activity
 };
 
-// Colors for different resource types
 const COLORS: Record<string, string> = {
   'solar': 'text-amber-400',
   'gpu': 'text-emerald-400',
   'code': 'text-indigo-400',
   'storage': 'text-cyan-400',
   'labor': 'text-rose-400',
+  'battery': 'text-fuchsia-400',
+  'broker': 'text-violet-400',
+  'hub': 'text-blue-400',
   'default': 'text-slate-400'
 };
 
@@ -35,6 +48,9 @@ const BG_COLORS: Record<string, string> = {
   'code': 'bg-indigo-400/20 border-indigo-400/50 shadow-[0_0_15px_rgba(129,140,248,0.3)]',
   'storage': 'bg-cyan-400/20 border-cyan-400/50 shadow-[0_0_15px_rgba(34,211,238,0.3)]',
   'labor': 'bg-rose-400/20 border-rose-400/50 shadow-[0_0_15px_rgba(251,113,133,0.3)]',
+  'battery': 'bg-fuchsia-400/20 border-fuchsia-400/50 shadow-[0_0_15px_rgba(232,121,249,0.3)]',
+  'broker': 'bg-violet-400/20 border-violet-400/50 shadow-[0_0_15px_rgba(167,139,250,0.3)]',
+  'hub': 'bg-blue-400/20 border-blue-400/50 shadow-[0_0_15px_rgba(96,165,250,0.3)]',
   'default': 'bg-slate-400/20 border-slate-400/50 shadow-[0_0_15px_rgba(148,163,184,0.3)]'
 };
 
@@ -44,10 +60,13 @@ const STROKE_COLORS: Record<string, string> = {
   'code': '#818cf8',
   'storage': '#22d3ee',
   'labor': '#fb7185',
+  'battery': '#e879f9',
+  'broker': '#a78bfa',
+  'hub': '#60a5fa',
   'default': '#94a3b8'
 };
 
-export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs, matches, onRoute, isRouting }) => {
+export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs, relays, matches, onRoute, isRouting }) => {
   const [animatedMatches, setAnimatedMatches] = useState<MatchResult[]>([]);
   const [particles, setParticles] = useState<{ id: string, match: MatchResult, progress: number }[]>([]);
 
@@ -59,7 +78,6 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
       matches.forEach((match, i) => {
         setTimeout(() => {
           setAnimatedMatches(prev => [...prev, match]);
-          // Spawn particles
           for (let p = 0; p < 3; p++) {
             setTimeout(() => {
               const pId = `p-${i}-${p}-${Date.now()}`;
@@ -75,14 +93,13 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
     }
   }, [matches, isRouting]);
 
-  // Particle animation loop
   useEffect(() => {
     if (particles.length === 0) return;
     let animationFrameId: number;
 
     const animate = () => {
       setParticles(prev => 
-        prev.map(p => ({ ...p, progress: p.progress + 0.015 }))
+        prev.map(p => ({ ...p, progress: p.progress + 0.012 }))
             .filter(p => p.progress < 1)
       );
       animationFrameId = requestAnimationFrame(animate);
@@ -92,22 +109,21 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
     return () => cancelAnimationFrame(animationFrameId);
   }, [particles]);
 
-  // Helpers to calculate SVG paths
-  const getOfferY = (index: number) => 15 + index * 35; // percentage
-  const getNeedY = (index: number) => 15 + index * 35; // percentage
+  const getOfferY = (index: number) => 15 + index * 30; 
+  const getNeedY = (index: number) => 15 + index * 30; 
+  const getRelayY = (index: number) => 25 + index * 30; // Center column
 
   return (
     <div className="relative rounded-2xl border border-white/10 bg-black/50 p-6 overflow-hidden min-h-[500px] flex flex-col shadow-2xl backdrop-blur-md group">
       
-      {/* 3D-ish Background Grid & Gradients */}
       <div className="absolute inset-0 pointer-events-none opacity-30 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px] [transform:perspective(500px)_rotateX(60deg)_translateY(-100px)_scale(2.5)] origin-top z-0" />
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,_rgba(6,182,212,0.15)_0%,_transparent_70%)] z-0" />
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/20 via-transparent to-black/80 z-0" />
 
-      <div className="relative z-20 flex items-center justify-between mb-10">
+      <div className="relative z-20 flex items-center justify-between mb-4">
         <h3 className="font-mono text-sm font-bold tracking-[0.2em] text-white uppercase drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] flex items-center gap-2">
           <Activity className="w-5 h-5 text-cyan-400" />
-          The Genesis Protocol Engine
+          Triangulation Engine
         </h3>
         <button
           onClick={onRoute}
@@ -116,21 +132,20 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
         >
           {isRouting ? (
             <span className="flex items-center gap-2">
-              <Activity className="w-4 h-4 animate-spin text-cyan-400" /> Calculating Multidimensional Tensors...
+              <Activity className="w-4 h-4 animate-spin text-cyan-400" /> Calculating Multi-Hop Routes...
             </span>
           ) : (
             <span className="flex items-center gap-2">
               Route Native Capacity <Zap className="w-3 h-3 text-cyan-400" />
             </span>
           )}
-          {/* Button shine effect */}
           <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
         </button>
       </div>
 
-      <div className="relative z-10 flex-1 flex justify-between items-stretch gap-4">
+      <div className="relative z-10 flex-1 flex justify-between items-stretch gap-4 mt-6">
         
-        {/* SVG Layer for connections */}
+        {/* SVG Layer */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" style={{ overflow: 'visible' }}>
           <defs>
             <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
@@ -148,44 +163,27 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
             const needIndex = needs.findIndex(n => n.id === match.needId);
             const oY = getOfferY(offerIndex);
             const nY = getNeedY(needIndex);
-            
-            // Path from Offer (left, roughly 20% X) to Center (50% X) to Need (right, roughly 80% X)
-            const pathD = `M 20 ${oY} C 40 ${oY}, 40 50, 50 50 C 60 50, 60 ${nY}, 80 ${nY}`;
-            
             const strokeColor = STROKE_COLORS[offers[offerIndex]?.type] || '#fff';
+            
+            let pathD = '';
+            if (match.routeType === 'multi-hop' && match.relayNodeId) {
+               const relayIndex = relays.findIndex(r => r.id === match.relayNodeId);
+               const rY = getRelayY(relayIndex);
+               // Multi-hop path: Offer(20) -> Relay(50) -> Need(80)
+               pathD = `M 20 ${oY} C 35 ${oY}, 35 ${rY}, 50 ${rY} C 65 ${rY}, 65 ${nY}, 80 ${nY}`;
+            } else {
+               // Direct path: Offer(20) -> Need(80) directly across the middle
+               pathD = `M 20 ${oY} C 40 ${oY}, 40 50, 50 50 C 60 50, 60 ${nY}, 80 ${nY}`;
+            }
 
             return (
               <g key={`match-path-${i}`}>
-                {/* Background dashed line */}
-                <path 
-                  d={pathD} 
-                  fill="none" 
-                  stroke={strokeColor} 
-                  strokeWidth="1.5" 
-                  strokeOpacity="0.15" 
-                  strokeDasharray="4 4"
-                  vectorEffect="non-scaling-stroke"
-                />
-                
-                {/* Glowing animated line */}
-                <path 
-                  d={pathD} 
-                  fill="none" 
-                  stroke={strokeColor} 
-                  strokeWidth="2" 
-                  strokeOpacity="0.8"
-                  filter="url(#glow)"
-                  className="animate-[dash_3s_linear_infinite]"
-                  strokeDasharray="100"
-                  strokeDashoffset="100"
-                  vectorEffect="non-scaling-stroke"
-                  style={{ animationDirection: 'reverse' }}
-                />
+                <path d={pathD} fill="none" stroke={strokeColor} strokeWidth="1.5" strokeOpacity="0.15" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+                <path d={pathD} fill="none" stroke={strokeColor} strokeWidth="2" strokeOpacity="0.8" filter="url(#glow)" className="animate-[dash_3s_linear_infinite]" strokeDasharray="100" strokeDashoffset="100" vectorEffect="non-scaling-stroke" style={{ animationDirection: 'reverse' }} />
               </g>
             );
           })}
 
-          {/* Render Particles */}
           {particles.map(p => {
             const offerIndex = offers.findIndex(o => o.id === p.match.offerId);
             const needIndex = needs.findIndex(n => n.id === p.match.needId);
@@ -193,20 +191,33 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
             const nY = getNeedY(needIndex);
             const strokeColor = STROKE_COLORS[offers[offerIndex]?.type] || '#fff';
 
-            // Custom cubic bezier interpolation for particle position
-            // Matches the SVG path: M 20 oY C 40 oY, 40 50, 50 50 C 60 50, 60 nY, 80 nY
             const t = p.progress;
             let x, y;
-            if (t < 0.5) {
-              // First half (0 to 0.5 maps to t=0 to 1 for first segment)
-              const t1 = t * 2;
-              x = Math.pow(1-t1, 3)*20 + 3*Math.pow(1-t1, 2)*t1*40 + 3*(1-t1)*Math.pow(t1, 2)*40 + Math.pow(t1, 3)*50;
-              y = Math.pow(1-t1, 3)*oY + 3*Math.pow(1-t1, 2)*t1*oY + 3*(1-t1)*Math.pow(t1, 2)*50 + Math.pow(t1, 3)*50;
+
+            if (p.match.routeType === 'multi-hop' && p.match.relayNodeId) {
+               const relayIndex = relays.findIndex(r => r.id === p.match.relayNodeId);
+               const rY = getRelayY(relayIndex);
+               // M 20 oY C 35 oY, 35 rY, 50 rY C 65 rY, 65 nY, 80 nY
+               if (t < 0.5) {
+                 const t1 = t * 2;
+                 x = Math.pow(1-t1, 3)*20 + 3*Math.pow(1-t1, 2)*t1*35 + 3*(1-t1)*Math.pow(t1, 2)*35 + Math.pow(t1, 3)*50;
+                 y = Math.pow(1-t1, 3)*oY + 3*Math.pow(1-t1, 2)*t1*oY + 3*(1-t1)*Math.pow(t1, 2)*rY + Math.pow(t1, 3)*rY;
+               } else {
+                 const t2 = (t - 0.5) * 2;
+                 x = Math.pow(1-t2, 3)*50 + 3*Math.pow(1-t2, 2)*t2*65 + 3*(1-t2)*Math.pow(t2, 2)*65 + Math.pow(t2, 3)*80;
+                 y = Math.pow(1-t2, 3)*rY + 3*Math.pow(1-t2, 2)*t2*rY + 3*(1-t2)*Math.pow(t2, 2)*nY + Math.pow(t2, 3)*nY;
+               }
             } else {
-              // Second half (0.5 to 1 maps to t=0 to 1 for second segment)
-              const t2 = (t - 0.5) * 2;
-              x = Math.pow(1-t2, 3)*50 + 3*Math.pow(1-t2, 2)*t2*60 + 3*(1-t2)*Math.pow(t2, 2)*60 + Math.pow(t2, 3)*80;
-              y = Math.pow(1-t2, 3)*50 + 3*Math.pow(1-t2, 2)*t2*50 + 3*(1-t2)*Math.pow(t2, 2)*nY + Math.pow(t2, 3)*nY;
+               // Direct path M 20 oY C 40 oY, 40 50, 50 50 C 60 50, 60 nY, 80 nY
+               if (t < 0.5) {
+                 const t1 = t * 2;
+                 x = Math.pow(1-t1, 3)*20 + 3*Math.pow(1-t1, 2)*t1*40 + 3*(1-t1)*Math.pow(t1, 2)*40 + Math.pow(t1, 3)*50;
+                 y = Math.pow(1-t1, 3)*oY + 3*Math.pow(1-t1, 2)*t1*oY + 3*(1-t1)*Math.pow(t1, 2)*50 + Math.pow(t1, 3)*50;
+               } else {
+                 const t2 = (t - 0.5) * 2;
+                 x = Math.pow(1-t2, 3)*50 + 3*Math.pow(1-t2, 2)*t2*60 + 3*(1-t2)*Math.pow(t2, 2)*60 + Math.pow(t2, 3)*80;
+                 y = Math.pow(1-t2, 3)*50 + 3*Math.pow(1-t2, 2)*t2*50 + 3*(1-t2)*Math.pow(t2, 2)*nY + Math.pow(t2, 3)*nY;
+               }
             }
 
             return (
@@ -217,19 +228,17 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
                 r="3"
                 fill={strokeColor}
                 filter="url(#glow)"
-                opacity={Math.sin(p.progress * Math.PI)} // Fade in and out
+                opacity={Math.sin(p.progress * Math.PI)}
               />
             );
           })}
         </svg>
 
         {/* Left column: Offers */}
-        <div className="flex flex-col justify-between w-1/4 h-[80%] my-auto z-20 relative">
+        <div className="flex flex-col justify-between w-[25%] h-full my-auto z-20 relative">
           {offers.map((offer, index) => {
             const Icon = ICONS[offer.type] || ICONS['default'];
             const isMatched = animatedMatches.some(m => m.offerId === offer.id);
-            const styleClass = isMatched ? BG_COLORS[offer.type] : 'bg-white/5 border-white/10';
-            const textClass = isMatched ? COLORS[offer.type] : 'text-slate-500';
             
             return (
               <div 
@@ -237,46 +246,53 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-700 transform ${isMatched ? 'scale-105 z-10' : 'scale-100'} backdrop-blur-md`}
                 style={{ top: `${getOfferY(index)}%`, position: 'absolute', width: '100%', transform: `translateY(-50%) ${isMatched ? 'scale(1.05)' : ''}` }}
               >
-                <div className={`p-2.5 rounded-lg border ${isMatched ? 'border-current shadow-lg' : 'border-transparent bg-black/40'}`}>
-                  <Icon className={`w-5 h-5 ${textClass} ${isMatched ? 'animate-pulse' : ''}`} />
+                <div className={`p-2 rounded-lg border ${isMatched ? 'border-current shadow-lg' : 'border-transparent bg-black/40'}`}>
+                  <Icon className={`w-4 h-4 ${isMatched ? COLORS[offer.type] + ' animate-pulse' : 'text-slate-500'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[9px] uppercase font-mono tracking-widest text-slate-500 truncate mb-0.5">Capacity Offer</p>
-                  <p className={`text-sm font-bold truncate ${isMatched ? 'text-white' : 'text-slate-300'}`}>{offer.amount} {offer.type.toUpperCase()}</p>
+                  <p className="text-[9px] uppercase font-mono tracking-widest text-slate-500 truncate mb-0.5">Offer</p>
+                  <p className={`text-xs font-bold truncate ${isMatched ? 'text-white' : 'text-slate-300'}`}>{offer.amount} {offer.type.toUpperCase()}</p>
                 </div>
-                {/* Connection point dot */}
                 <div className={`absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${isMatched ? BG_COLORS[offer.type] : 'bg-slate-800'}`} />
               </div>
             );
           })}
         </div>
 
-        {/* Center: Routing Engine / Visual connections */}
-        <div className="flex-1 flex flex-col justify-center items-center relative z-20">
-          <div className="relative group perspective-1000">
-            {/* 3D Rotating Rings */}
-            <div className={`absolute inset-0 rounded-full border-b-2 border-r-2 border-cyan-500/50 w-24 h-24 -ml-4 -mt-4 transition-all duration-1000 ${isRouting ? 'animate-[spin_1s_linear_infinite]' : 'animate-[spin_8s_linear_infinite]'}`} style={{ transform: 'rotateX(60deg) rotateY(20deg)' }} />
-            <div className={`absolute inset-0 rounded-full border-t-2 border-l-2 border-violet-500/50 w-24 h-24 -ml-4 -mt-4 transition-all duration-1000 ${isRouting ? 'animate-[spin_1.5s_linear_infinite_reverse]' : 'animate-[spin_10s_linear_infinite_reverse]'}`} style={{ transform: 'rotateX(40deg) rotateY(-20deg)' }} />
-            
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center relative bg-black/80 border border-white/20 backdrop-blur-xl transition-all duration-500 ${isRouting ? 'shadow-[0_0_50px_rgba(6,182,212,0.8)] scale-110' : 'shadow-[0_0_20px_rgba(6,182,212,0.2)]'}`}>
-              <Activity className={`w-8 h-8 transition-all duration-500 ${isRouting ? 'text-cyan-300 animate-pulse' : 'text-cyan-600'}`} />
-            </div>
-          </div>
-          <div className="mt-8 font-mono text-[11px] text-cyan-400/90 tracking-[0.3em] uppercase drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">
-            Tensor Matcher
-          </div>
-          <div className="text-[9px] text-slate-500 font-mono tracking-widest mt-1">
-            N-Dimensional Routing
-          </div>
+        {/* Center column: Relay Nodes & Core Engine */}
+        <div className="w-[20%] relative z-20 flex flex-col justify-between h-full">
+           {relays.map((relay, index) => {
+              const Icon = ICONS[relay.type] || ICONS['default'];
+              const isMatched = animatedMatches.some(m => m.routeType === 'multi-hop' && m.relayNodeId === relay.id);
+              
+              return (
+                <div 
+                  key={relay.id} 
+                  className={`flex flex-col items-center gap-2 p-2 rounded-xl border transition-all duration-700 transform ${isMatched ? 'scale-105 z-10' : 'scale-100'} backdrop-blur-md bg-black/40`}
+                  style={{ top: `${getRelayY(index)}%`, position: 'absolute', width: '100%', transform: `translateY(-50%) ${isMatched ? 'scale(1.05)' : ''}` }}
+                >
+                  <div className={`p-2 rounded-full border ${isMatched ? 'border-current shadow-[0_0_15px_currentColor]' : 'border-slate-700'} ${isMatched ? COLORS[relay.type] : 'text-slate-500'}`}>
+                    <Icon className={`w-4 h-4 ${isMatched ? 'animate-bounce' : ''}`} />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[8px] uppercase font-mono tracking-widest text-slate-500 truncate">{relay.type} relay</p>
+                    <p className={`text-[10px] font-bold truncate ${isMatched ? 'text-white' : 'text-slate-400'}`}>{relay.name}</p>
+                  </div>
+                </div>
+              );
+           })}
+           
+           {/* Center Engine Core if no relays are active, or just behind them */}
+           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 opacity-40">
+              <div className={`w-32 h-32 rounded-full border-2 border-dashed border-cyan-900/50 flex items-center justify-center transition-all duration-1000 ${isRouting ? 'animate-[spin_4s_linear_infinite]' : ''}`} />
+           </div>
         </div>
 
         {/* Right column: Needs */}
-        <div className="flex flex-col justify-between w-1/4 h-[80%] my-auto z-20 relative">
+        <div className="flex flex-col justify-between w-[25%] h-full my-auto z-20 relative">
           {needs.map((need, index) => {
             const Icon = ICONS[need.type] || ICONS['default'];
             const isMatched = animatedMatches.some(m => m.needId === need.id);
-            const styleClass = isMatched ? BG_COLORS[need.type] : 'bg-white/5 border-white/10';
-            const textClass = isMatched ? COLORS[need.type] : 'text-slate-500';
             
             return (
               <div 
@@ -284,15 +300,13 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-700 transform ${isMatched ? 'scale-105 z-10' : 'scale-100'} backdrop-blur-md`}
                 style={{ top: `${getNeedY(index)}%`, position: 'absolute', width: '100%', transform: `translateY(-50%) ${isMatched ? 'scale(1.05)' : ''}` }}
               >
-                {/* Connection point dot */}
                 <div className={`absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${isMatched ? BG_COLORS[need.type] : 'bg-slate-800'}`} />
-                
                 <div className="flex-1 min-w-0 text-right">
-                  <p className="text-[9px] uppercase font-mono tracking-widest text-slate-500 truncate mb-0.5">{need.requesterId}</p>
-                  <p className={`text-sm font-bold truncate ${isMatched ? 'text-white' : 'text-slate-300'}`}>{need.amount} {need.type.toUpperCase()}</p>
+                  <p className="text-[9px] uppercase font-mono tracking-widest text-slate-500 truncate mb-0.5">Need</p>
+                  <p className={`text-xs font-bold truncate ${isMatched ? 'text-white' : 'text-slate-300'}`}>{need.amount} {need.type.toUpperCase()}</p>
                 </div>
-                <div className={`p-2.5 rounded-lg border ${isMatched ? 'border-current shadow-lg' : 'border-transparent bg-black/40'}`}>
-                  <Icon className={`w-5 h-5 ${textClass} ${isMatched ? 'animate-pulse' : ''}`} />
+                <div className={`p-2 rounded-lg border ${isMatched ? 'border-current shadow-lg' : 'border-transparent bg-black/40'}`}>
+                  <Icon className={`w-4 h-4 ${isMatched ? COLORS[need.type] + ' animate-pulse' : 'text-slate-500'}`} />
                 </div>
               </div>
             );
@@ -302,22 +316,3 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
     </div>
   );
 };
-
-// Add global styles for the dash animation if not present in tailwind config
-// In a real app this would go in index.css, but we'll inline it here for the artifact
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.innerHTML = `
-    @keyframes dash {
-      to {
-        stroke-dashoffset: 0;
-      }
-    }
-    @keyframes shimmer {
-      100% {
-        transform: translateX(100%);
-      }
-    }
-  `;
-  document.head.appendChild(style);
-}
