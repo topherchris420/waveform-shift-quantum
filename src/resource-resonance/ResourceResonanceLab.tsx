@@ -170,25 +170,6 @@ export const ResourceResonanceLab: React.FC = () => {
       <Toaster theme="dark" />
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         
-        <header className="mb-12 border-b border-slate-800 pb-8 flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <Network className="w-6 h-6 text-cyan-400" />
-              <h1 className="text-2xl font-bold tracking-tight text-white">The Genesis Protocol</h1>
-            </div>
-            <p className="text-slate-400 max-w-3xl leading-relaxed">
-              <strong>Multi-Hop & Grid Stochastic Simulation</strong> <br />
-              This protocol identifies the narrow class of economic coordination problems where machine-mediated routing outperforms monetary intermediation. We simulate live CAISO grid anomalies (The Duck Curve) to prove that multi-hop triangulated routing (Time-Shifting and Form-Shifting) can utilize stranded energy more efficiently than a pure price mechanism.
-            </p>
-            <div className="mt-4 inline-flex items-center rounded-full border border-rose-900/50 bg-rose-950/30 px-3 py-1 text-[10px] font-mono uppercase tracking-widest text-rose-400">
-              CAISO Grid Sim / Multi-Hop Topology
-            </div>
-          </div>
-          <a href="/" className="text-[11px] font-mono uppercase tracking-widest text-slate-400 hover:text-white transition-colors border border-slate-800 px-4 py-2 rounded">
-            Return to Physics Lab
-          </a>
-        </header>
-
         {/* TIME CONTROLLER */}
         <div className="mb-8 p-6 rounded-2xl border border-cyan-900/30 bg-cyan-950/10 backdrop-blur-md flex items-center justify-between shadow-[0_0_30px_rgba(6,182,212,0.05)]">
            <div className="flex items-center gap-4">

@@ -3,6 +3,7 @@ import { SimulationParams, runSimulation } from './engine';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Search, Loader2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ResonanceDiscoveryProps {
   onDiscover: (params: SimulationParams) => void;
@@ -56,17 +57,26 @@ export const ResonanceDiscovery: React.FC<ResonanceDiscoveryProps> = ({ onDiscov
       </div>
 
       <div className="flex flex-col md:flex-row items-center gap-4 mt-6">
-        <Button 
-          onClick={handleSweep} 
-          disabled={isSweeping}
-          className="w-full md:w-auto bg-cyan-600 hover:bg-cyan-500 text-white font-mono uppercase text-xs tracking-wider h-10 px-6"
-        >
-          {isSweeping ? (
-            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sweeping Space...</>
-          ) : (
-            'Find Resonance Window'
-          )}
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                onClick={handleSweep} 
+                disabled={isSweeping}
+                className="w-full md:w-auto bg-cyan-600 hover:bg-cyan-500 text-white font-mono uppercase text-xs tracking-wider h-10 px-6 cursor-help"
+              >
+                {isSweeping ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sweeping Space...</>
+                ) : (
+                  'Find Resonance Window'
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[250px] border-cyan-900/50 bg-slate-900 text-xs text-slate-300">
+              <p>Simulates thousands of multi-dimensional routing configurations to find edge cases where the physics of computation mathematically beats the compression of fiat pricing.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         
         {isSweeping && (
           <div className="flex-1 w-full">

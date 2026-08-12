@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MatchResult, ResourceOffer, ResourceNeed } from './engine';
 import { Activity, Zap, Cpu, Code, Database, Hammer, Battery, ArrowRightLeft, RadioReceiver } from 'lucide-react';
 
@@ -68,12 +68,20 @@ const STROKE_COLORS: Record<string, string> = {
 
 export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs, relays, matches, onRoute, isRouting }) => {
   const [animatedMatches, setAnimatedMatches] = useState<MatchResult[]>([]);
-  const [particles, setParticles] = useState<{ id: string, match: MatchResult, progress: number }[]>([]);
+  
+  // Use state just to mount the particle elements, but NOT for their progress updates.
+  const [particleInstances, setParticleInstances] = useState<{ id: string, match: MatchResult, pIndex: number }[]>([]);
+  
+  // DOM Refs to bypass React renders for the 60FPS loop
+  const circleRefs = useRef<{ [id: string]: SVGCircleElement | null }>({});
+  const progressRefs = useRef<{ [id: string]: number }>({});
 
   useEffect(() => {
     if (matches.length > 0 && !isRouting) {
       let delay = 0;
       setAnimatedMatches([]);
+      setParticleInstances([]);
+      progressRefs.current = {};
       
       matches.forEach((match, i) => {
         setTimeout(() => {
@@ -81,7 +89,8 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
           for (let p = 0; p < 3; p++) {
             setTimeout(() => {
               const pId = `p-${i}-${p}-${Date.now()}`;
-              setParticles(prev => [...prev, { id: pId, match, progress: 0 }]);
+              setParticleInstances(prev => [...prev, { id: pId, match, pIndex: p }]);
+              progressRefs.current[pId] = 0;
             }, p * 300);
           }
         }, delay);
@@ -89,25 +98,70 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
       });
     } else if (matches.length === 0) {
       setAnimatedMatches([]);
-      setParticles([]);
+      setParticleInstances([]);
+      progressRefs.current = {};
     }
   }, [matches, isRouting]);
 
   useEffect(() => {
-    if (particles.length === 0) return;
+    if (particleInstances.length === 0) return;
     let animationFrameId: number;
 
     const animate = () => {
-      setParticles(prev => 
-        prev.map(p => ({ ...p, progress: p.progress + 0.012 }))
-            .filter(p => p.progress < 1)
-      );
+      for (const pId in progressRefs.current) {
+         let progress = progressRefs.current[pId];
+         progress += 0.012;
+         if (progress > 1) progress = 0; // Infinite loop for persistent flow
+         progressRefs.current[pId] = progress;
+
+         const circle = circleRefs.current[pId];
+         if (circle) {
+             const instance = particleInstances.find(p => p.id === pId);
+             if (instance) {
+                 const offerIndex = offers.findIndex(o => o.id === instance.match.offerId);
+                 const needIndex = needs.findIndex(n => n.id === instance.match.needId);
+                 const oY = 15 + offerIndex * 30;
+                 const nY = 15 + needIndex * 30;
+                 
+                 const t = progress;
+                 let x, y;
+
+                 if (instance.match.routeType === 'multi-hop' && instance.match.relayNodeId) {
+                    const relayIndex = relays.findIndex(r => r.id === instance.match.relayNodeId);
+                    const rY = 25 + relayIndex * 30;
+                    if (t < 0.5) {
+                      const t1 = t * 2;
+                      x = Math.pow(1-t1, 3)*20 + 3*Math.pow(1-t1, 2)*t1*35 + 3*(1-t1)*Math.pow(t1, 2)*35 + Math.pow(t1, 3)*50;
+                      y = Math.pow(1-t1, 3)*oY + 3*Math.pow(1-t1, 2)*t1*oY + 3*(1-t1)*Math.pow(t1, 2)*rY + Math.pow(t1, 3)*rY;
+                    } else {
+                      const t2 = (t - 0.5) * 2;
+                      x = Math.pow(1-t2, 3)*50 + 3*Math.pow(1-t2, 2)*t2*65 + 3*(1-t2)*Math.pow(t2, 2)*65 + Math.pow(t2, 3)*80;
+                      y = Math.pow(1-t2, 3)*rY + 3*Math.pow(1-t2, 2)*t2*rY + 3*(1-t2)*Math.pow(t2, 2)*nY + Math.pow(t2, 3)*nY;
+                    }
+                 } else {
+                    if (t < 0.5) {
+                      const t1 = t * 2;
+                      x = Math.pow(1-t1, 3)*20 + 3*Math.pow(1-t1, 2)*t1*40 + 3*(1-t1)*Math.pow(t1, 2)*40 + Math.pow(t1, 3)*50;
+                      y = Math.pow(1-t1, 3)*oY + 3*Math.pow(1-t1, 2)*t1*oY + 3*(1-t1)*Math.pow(t1, 2)*50 + Math.pow(t1, 3)*50;
+                    } else {
+                      const t2 = (t - 0.5) * 2;
+                      x = Math.pow(1-t2, 3)*50 + 3*Math.pow(1-t2, 2)*t2*60 + 3*(1-t2)*Math.pow(t2, 2)*60 + Math.pow(t2, 3)*80;
+                      y = Math.pow(1-t2, 3)*50 + 3*Math.pow(1-t2, 2)*t2*50 + 3*(1-t2)*Math.pow(t2, 2)*nY + Math.pow(t2, 3)*nY;
+                    }
+                 }
+                 
+                 circle.setAttribute('cx', `${x}%`);
+                 circle.setAttribute('cy', `${y}%`);
+                 circle.setAttribute('opacity', `${Math.sin(progress * Math.PI)}`);
+             }
+         }
+      }
       animationFrameId = requestAnimationFrame(animate);
     };
 
     animationFrameId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [particles]);
+  }, [particleInstances, offers, needs, relays]);
 
   const getOfferY = (index: number) => 15 + index * 30; 
   const getNeedY = (index: number) => 15 + index * 30; 
@@ -184,51 +238,20 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
             );
           })}
 
-          {particles.map(p => {
+          {particleInstances.map(p => {
             const offerIndex = offers.findIndex(o => o.id === p.match.offerId);
-            const needIndex = needs.findIndex(n => n.id === p.match.needId);
-            const oY = getOfferY(offerIndex);
-            const nY = getNeedY(needIndex);
             const strokeColor = STROKE_COLORS[offers[offerIndex]?.type] || '#fff';
-
-            const t = p.progress;
-            let x, y;
-
-            if (p.match.routeType === 'multi-hop' && p.match.relayNodeId) {
-               const relayIndex = relays.findIndex(r => r.id === p.match.relayNodeId);
-               const rY = getRelayY(relayIndex);
-               // M 20 oY C 35 oY, 35 rY, 50 rY C 65 rY, 65 nY, 80 nY
-               if (t < 0.5) {
-                 const t1 = t * 2;
-                 x = Math.pow(1-t1, 3)*20 + 3*Math.pow(1-t1, 2)*t1*35 + 3*(1-t1)*Math.pow(t1, 2)*35 + Math.pow(t1, 3)*50;
-                 y = Math.pow(1-t1, 3)*oY + 3*Math.pow(1-t1, 2)*t1*oY + 3*(1-t1)*Math.pow(t1, 2)*rY + Math.pow(t1, 3)*rY;
-               } else {
-                 const t2 = (t - 0.5) * 2;
-                 x = Math.pow(1-t2, 3)*50 + 3*Math.pow(1-t2, 2)*t2*65 + 3*(1-t2)*Math.pow(t2, 2)*65 + Math.pow(t2, 3)*80;
-                 y = Math.pow(1-t2, 3)*rY + 3*Math.pow(1-t2, 2)*t2*rY + 3*(1-t2)*Math.pow(t2, 2)*nY + Math.pow(t2, 3)*nY;
-               }
-            } else {
-               // Direct path M 20 oY C 40 oY, 40 50, 50 50 C 60 50, 60 nY, 80 nY
-               if (t < 0.5) {
-                 const t1 = t * 2;
-                 x = Math.pow(1-t1, 3)*20 + 3*Math.pow(1-t1, 2)*t1*40 + 3*(1-t1)*Math.pow(t1, 2)*40 + Math.pow(t1, 3)*50;
-                 y = Math.pow(1-t1, 3)*oY + 3*Math.pow(1-t1, 2)*t1*oY + 3*(1-t1)*Math.pow(t1, 2)*50 + Math.pow(t1, 3)*50;
-               } else {
-                 const t2 = (t - 0.5) * 2;
-                 x = Math.pow(1-t2, 3)*50 + 3*Math.pow(1-t2, 2)*t2*60 + 3*(1-t2)*Math.pow(t2, 2)*60 + Math.pow(t2, 3)*80;
-                 y = Math.pow(1-t2, 3)*50 + 3*Math.pow(1-t2, 2)*t2*50 + 3*(1-t2)*Math.pow(t2, 2)*nY + Math.pow(t2, 3)*nY;
-               }
-            }
 
             return (
               <circle 
                 key={p.id}
-                cx={`${x}%`}
-                cy={`${y}%`}
+                ref={(el) => (circleRefs.current[p.id] = el)}
+                cx="0%"
+                cy="0%"
                 r="3"
                 fill={strokeColor}
                 filter="url(#glow)"
-                opacity={Math.sin(p.progress * Math.PI)}
+                opacity="0"
               />
             );
           })}

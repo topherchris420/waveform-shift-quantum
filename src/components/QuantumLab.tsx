@@ -330,46 +330,6 @@ export const QuantumLab: React.FC = () => {
 
   return (
     <main className="experience-background min-h-screen text-foreground">
-      {/* Top navigation */}
-      <section className="px-4 pt-4 sm:px-6 lg:px-8">
-        <nav className="topline-nav mx-auto flex max-w-[1700px] items-center justify-between gap-4 px-4 py-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <BrandMark />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-foreground">Waveform Shift Quantum</p>
-              <p className="section-eyebrow mt-0.5">Experiment Discovery &amp; Falsification Engine</p>
-            </div>
-          </div>
-          <div className="hidden items-center gap-4 text-sm text-muted-foreground lg:flex">
-            <a href="#reality-split" className="transition hover:text-foreground">Reality Split</a>
-            <a href="#discovery-mode" className="transition hover:text-foreground">Discovery</a>
-            <a href="#instrument-bay" className="transition hover:text-foreground">Instruments</a>
-            <a href="#catalyst-panel" className="transition hover:text-foreground">Catalyst</a>
-            <span className="text-slate-800">|</span>
-            <a href="/resonance" className="transition text-cyan-400 hover:text-cyan-300 font-medium">Resource Resonance</a>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setIsPaperModalOpen(true)}
-              className="gap-2 border-cyan-500/40 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20"
-            >
-              <BookOpen className="h-4 w-4 text-cyan-400" />
-              <span className="hidden sm:inline">Manuscript</span>
-            </Button>
-            <Button
-              size="sm"
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={runExperiment}
-            >
-              <Beaker className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Record</span>
-            </Button>
-          </div>
-        </nav>
-      </section>
-
       {/* Editorial masthead */}
       <section className="mx-auto max-w-[1700px] px-4 pb-4 pt-16 sm:px-6 lg:px-8 lg:pt-24">
         <div className="hero-rule pl-6 md:pl-12">

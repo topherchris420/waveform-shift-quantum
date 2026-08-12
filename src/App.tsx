@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import ResonanceIndex from "./pages/ResonanceIndex";
 import NotFound from "./pages/NotFound";
+import { GlobalNav } from "./components/GlobalNav";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <GlobalNav />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/resonance" element={<ResonanceIndex />} />
