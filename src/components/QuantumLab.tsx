@@ -345,6 +345,8 @@ export const QuantumLab: React.FC = () => {
             <a href="#discovery-mode" className="transition hover:text-foreground">Discovery</a>
             <a href="#instrument-bay" className="transition hover:text-foreground">Instruments</a>
             <a href="#catalyst-panel" className="transition hover:text-foreground">Catalyst</a>
+            <span className="text-slate-800">|</span>
+            <a href="/resonance" className="transition text-cyan-400 hover:text-cyan-300 font-medium">Resource Resonance</a>
           </div>
           <div className="flex items-center gap-2">
             <Button
