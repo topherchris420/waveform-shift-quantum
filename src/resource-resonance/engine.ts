@@ -248,6 +248,7 @@ function buildAgents(params: SimulationParams, rand: () => number, shock: number
 
 interface AllocationOutcome {
   utility: number;          // 0-1 delivered welfare / potential welfare
+  welfare: number;          // raw realised welfare (unnormalised)
   unmet: number;            // 0-1
   waste: number;            // 0-1 of supplied volume that is misallocated / spilled
   hhi: number;
@@ -414,8 +415,16 @@ export function runSimulation(params: SimulationParams, seed = 20260813): Simula
     const shock = (rand() * 2 - 1) * (0.15 + params.renewableVolatility * 0.55);
     const { offers, needs } = buildAgents(params, rand, shock);
 
-    const a = allocate(offers, needs, params, 'monetary');
-    const b = allocate(offers, needs, params, 'resonance');
+    // Oracle = perfectly informed planner; both mechanisms are scored against it,
+    // so "utility" is the share of attainable welfare each one actually realises.
+    const oracle = allocate(offers, needs, params, 'oracle', mulberry32(seed + k));
+    const norm = (r: AllocationOutcome) => {
+      r.utility = oracle.welfare > 0 ? Math.min(1, r.welfare / oracle.welfare) : 0;
+      return r;
+    };
+
+    const a = norm(allocate(offers, needs, params, 'monetary', mulberry32(seed + k * 13)));
+    const b = norm(allocate(offers, needs, params, 'resonance', mulberry32(seed + k * 31)));
     runsA.push(a);
     runsB.push(b);
     deltas.push((b.utility * (1 - b.overhead) - a.utility * (1 - a.overhead)) * 100);
@@ -423,10 +432,15 @@ export function runSimulation(params: SimulationParams, seed = 20260813): Simula
     // Stress test: knock out the single largest provider in each mechanism.
     const topA = a.providerFlow.indexOf(Math.max(...a.providerFlow));
     const topB = b.providerFlow.indexOf(Math.max(...b.providerFlow));
-    const aFail = allocate(offers, needs, params, 'monetary', topA);
-    const bFail = allocate(offers, needs, params, 'resonance', topB);
-    cascadeA += (a.utility - aFail.utility) * 100;
-    cascadeB += (b.utility - bFail.utility) * 100;
+    const aFail = allocate(offers, needs, params, 'monetary', mulberry32(seed + k * 13), topA);
+    const bFail = allocate(offers, needs, params, 'resonance', mulberry32(seed + k * 31), topB);
+    // Contagion = welfare lost *beyond* the failed node's own direct contribution.
+    const shareA = a.welfare > 0 ? (a.providerFlow[topA] ?? 0) / (a.providerFlow.reduce((s, v) => s + v, 0) || 1) : 0;
+    const shareB = b.welfare > 0 ? (b.providerFlow[topB] ?? 0) / (b.providerFlow.reduce((s, v) => s + v, 0) || 1) : 0;
+    const lossA = a.welfare > 0 ? 1 - aFail.welfare / a.welfare : 0;
+    const lossB = b.welfare > 0 ? 1 - bFail.welfare / b.welfare : 0;
+    cascadeA += Math.max(0, lossA - shareA) * 100;
+    cascadeB += Math.max(0, lossB - shareB) * 100;
   }
 
   cascadeA /= ENSEMBLE;
