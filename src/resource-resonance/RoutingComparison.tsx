@@ -1,14 +1,21 @@
 import React from 'react';
 import { SimulationResult } from './engine';
-import { Metric } from '@/components/QuantumLab'; // Need to define Metric locally or import if available, I'll define a local inline one to be safe
+import { ShieldCheck, ShieldAlert, MinusCircle } from 'lucide-react';
 
 interface RoutingComparisonProps {
   result: SimulationResult;
 }
 
 export const RoutingComparison: React.FC<RoutingComparisonProps> = ({ result }) => {
-  const deltaUtility = result.modelB.totalNetworkUtility - result.modelA.totalNetworkUtility;
+  const deltaUtility = result.deltaUtility;
   const isResonanceBetter = deltaUtility > 0;
+
+  const verdictTheme =
+    result.verdict === 'improves-safely'
+      ? { color: 'text-emerald-400', border: 'border-emerald-500/40', Icon: ShieldCheck, title: 'Improves allocation without new systemic risk' }
+      : result.verdict === 'improves-with-risk'
+      ? { color: 'text-amber-400', border: 'border-amber-500/40', Icon: ShieldAlert, title: 'Improves allocation, but transfers risk' }
+      : { color: 'text-slate-400', border: 'border-slate-700', Icon: MinusCircle, title: 'No demonstrated improvement' };
 
   return (
     <div className="flex flex-col gap-6">
@@ -41,15 +48,74 @@ export const RoutingComparison: React.FC<RoutingComparisonProps> = ({ result }) 
       </div>
 
       <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-5">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-slate-500 mb-2">Measurable Divergence</p>
-        <div className="flex items-center gap-4">
-          <div className={`text-2xl font-bold ${isResonanceBetter ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {isResonanceBetter ? '+' : ''}{deltaUtility.toFixed(2)}%
+        <p className="font-mono text-[10px] uppercase tracking-widest text-slate-500 mb-2">
+          Measurable Divergence — {result.ensembleSize} shock draws
+        </p>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center">
+          <div>
+            <div className={`text-2xl font-bold ${isResonanceBetter ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {isResonanceBetter ? '+' : ''}{deltaUtility.toFixed(2)} pp
+            </div>
+            <p className="font-mono text-[10px] text-slate-500 mt-1">
+              95% CI ±{result.deltaConfidence.toFixed(2)} · wins {(result.winRate * 100).toFixed(0)}% of draws
+            </p>
           </div>
-          <p className="text-sm text-slate-300 flex-1 leading-relaxed border-l border-slate-800 pl-4">
+          <p className="text-sm text-slate-300 flex-1 leading-relaxed border-slate-800 md:border-l md:pl-4">
             <span className="text-white font-medium">Primary driver:</span> {result.primaryDriver}
           </p>
         </div>
+      </div>
+
+      {/* Systemic risk ledger */}
+      <div className={`rounded-xl border ${verdictTheme.border} bg-slate-950/50 p-5`}>
+        <div className="flex items-start gap-3 mb-5">
+          <verdictTheme.Icon className={`w-5 h-5 shrink-0 mt-0.5 ${verdictTheme.color}`} />
+          <div>
+            <h3 className={`font-mono text-[11px] font-bold uppercase tracking-[0.2em] ${verdictTheme.color}`}>
+              {verdictTheme.title}
+            </h3>
+            <p className="mt-1.5 text-sm leading-relaxed text-slate-300">{result.verdictSummary}</p>
+          </div>
+        </div>
+
+        <div className="grid gap-px bg-slate-800 sm:grid-cols-2">
+          {result.riskChecks.map((check) => {
+            const fmt = (v: number) => (Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(3));
+            const delta = check.routed - check.baseline;
+            return (
+              <div key={check.id} className="bg-slate-950 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-medium text-slate-200">{check.label}</span>
+                  <span
+                    className={`font-mono text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 border ${
+                      check.passed
+                        ? 'text-emerald-400 border-emerald-500/40'
+                        : 'text-rose-400 border-rose-500/40'
+                    }`}
+                  >
+                    {check.passed ? 'within tolerance' : 'risk added'}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-baseline gap-2 font-mono text-[11px]">
+                  <span className="text-slate-500">A {fmt(check.baseline)}{check.unit}</span>
+                  <span className="text-slate-700">→</span>
+                  <span className="text-cyan-300">B {fmt(check.routed)}{check.unit}</span>
+                  <span className={delta <= check.tolerance ? 'text-emerald-500/80' : 'text-rose-400'}>
+                    ({delta >= 0 ? '+' : ''}{fmt(delta)})
+                  </span>
+                </div>
+                <p className="mt-2 text-[11px] leading-relaxed text-slate-500">{check.note}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="mt-4 border-t border-slate-800 pt-3 text-[11px] leading-relaxed text-slate-500">
+          Both mechanisms allocate the same seeded agent population under the same physical substitution
+          matrix and capacity constraints; only the ranking signal and its coordination cost differ.
+          A gain is only claimed when it clears its confidence band <em>and</em> every risk check stays
+          within tolerance.
+        </p>
       </div>
     </div>
   );

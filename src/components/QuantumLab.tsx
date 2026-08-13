@@ -44,6 +44,7 @@ import {
   toCSV,
   twoSiteModel,
 } from '@/lib/physics';
+import { Reveal } from '@/hooks/use-reveal';
 
 type ExperimentMode =
   | 'two_site_transfer'
@@ -331,7 +332,7 @@ export const QuantumLab: React.FC = () => {
   return (
     <main className="experience-background min-h-screen text-foreground">
       {/* Editorial masthead */}
-      <section className="mx-auto max-w-[1700px] px-4 pb-4 pt-16 sm:px-6 lg:px-8 lg:pt-24">
+      <Reveal as="section" variant="up" className="mx-auto max-w-[1700px] px-4 pb-4 pt-16 sm:px-6 lg:px-8 lg:pt-24">
         <div className="hero-rule pl-6 md:pl-12">
           <p className="section-eyebrow mb-6 flex flex-wrap items-center gap-x-3 gap-y-2">
             <span>Project Falsification // Woodyard 2026</span>
@@ -368,16 +369,21 @@ export const QuantumLab: React.FC = () => {
           </p>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 border-y border-foreground divide-y divide-foreground md:grid-cols-4 md:divide-x md:divide-y-0">
+        <Reveal
+          stagger
+          variant="up"
+          delay={120}
+          className="mt-8 grid grid-cols-1 border-y border-foreground divide-y divide-foreground md:grid-cols-4 md:divide-x md:divide-y-0"
+        >
           <Metric label="Imbalance z" value={eigenState.z.toFixed(3)} icon={Zap} tone="violet" kind="proposed" />
           <Metric label="Kernel χ" value={kernel.chi.toFixed(3)} icon={Waves} tone="lime" kind="proposed" />
           <Metric label="Phase Δφ_φ" value={`${phaseShift.toFixed(3)} rad`} icon={Target} tone="copper" kind="prediction" />
           <Metric label="Detuning δ" value={`${eigenState.detuning.toFixed(3)} eV`} icon={Activity} tone="primary" kind="proposed" />
-        </div>
-      </section>
+        </Reveal>
+      </Reveal>
 
       {/* ============================ THE CENTREPIECE ============================ */}
-      <section className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
+      <Reveal as="section" variant="scale" className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           <RealitySplitStage
             mode={splitMode}
@@ -561,10 +567,10 @@ export const QuantumLab: React.FC = () => {
             </Button>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* Numbers behind the split */}
-      <section className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
+      <Reveal as="section" variant="up" className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
         <ComparisonPanel
           experimentMode={comparisonKey}
           parameters={{
@@ -579,10 +585,10 @@ export const QuantumLab: React.FC = () => {
             decoherence: 1 - fieldIntensity[0] * 0.7,
           }}
         />
-      </section>
+      </Reveal>
 
       {/* Discovery Mode + Target Lock */}
-      <section className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
+      <Reveal as="section" variant="up" className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
         <DiscoveryModePanel
           onLoadParameters={loadCardParameters}
           onGenerateCatalyst={(artifact) => {
@@ -591,10 +597,10 @@ export const QuantumLab: React.FC = () => {
             document.getElementById('catalyst-panel')?.scrollIntoView({ behavior: 'smooth' });
           }}
         />
-      </section>
+      </Reveal>
 
       {/* ============================ INSTRUMENT BAY ============================ */}
-      <section id="instrument-bay" className="mx-auto mt-8 max-w-[1700px] px-4 sm:px-6 lg:px-8">
+      <Reveal as="section" variant="up" id="instrument-bay" className="mx-auto mt-8 max-w-[1700px] px-4 sm:px-6 lg:px-8">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
           <div>
             <p className="section-eyebrow text-cyan-400">Supporting instruments</p>
@@ -707,23 +713,23 @@ export const QuantumLab: React.FC = () => {
             </section>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* Teleportation bench (established-physics control case) */}
-      <section className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
+      <Reveal as="section" variant="up" className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
         <TeleportationWorkspace
           decoherence={1 - fieldIntensity[0] * 0.7}
           onSessionChange={setTeleportSession}
         />
-      </section>
+      </Reveal>
 
       {/* Analytical tool runner */}
-      <section className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
+      <Reveal as="section" variant="up" className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
         <PhysicsToolRunner />
-      </section>
+      </Reveal>
 
       {/* Catalyst verification */}
-      <div id="catalyst-panel" className="mt-6">
+      <Reveal id="catalyst-panel" variant="mask" className="mt-6">
         <CatalystRunPanel
           session={{
             mode: splitMode,
@@ -749,7 +755,7 @@ export const QuantumLab: React.FC = () => {
           }}
           customArtifact={customCatalystArtifact}
         />
-      </div>
+      </Reveal>
 
       <ReferencesFooter />
 

@@ -74,7 +74,7 @@ export function utf8(text: string): Uint8Array {
 export async function sha256Bytes(bytes: Uint8Array): Promise<string> {
   const digestInput =
     bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength ? bytes : bytes.slice();
-  const digest = await crypto.subtle.digest('SHA-256', digestInput);
+  const digest = await crypto.subtle.digest('SHA-256', digestInput as unknown as BufferSource);
 
   return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, '0')).join('');
 }

@@ -341,3 +341,88 @@
     .scene-canvas { min-height: 360px; }
   }
 }
+
+/* ============================================================
+   Kinetic scroll reveals (Webflow-style editorial motion)
+   ============================================================ */
+@layer components {
+  [data-reveal] {
+    transition-property: opacity, transform, clip-path;
+    transition-duration: 900ms;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+
+  [data-reveal='up'][data-visible='false'] {
+    opacity: 0;
+    transform: translate3d(0, 44px, 0);
+  }
+  [data-reveal='slide-left'][data-visible='false'] {
+    opacity: 0;
+    transform: translate3d(-48px, 0, 0);
+  }
+  [data-reveal='slide-right'][data-visible='false'] {
+    opacity: 0;
+    transform: translate3d(48px, 0, 0);
+  }
+  [data-reveal='scale'][data-visible='false'] {
+    opacity: 0;
+    transform: scale(0.965);
+  }
+  [data-reveal='mask'][data-visible='false'] {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+    transform: translate3d(0, 18px, 0);
+  }
+
+  [data-reveal][data-visible='true'] {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 0 0 0);
+  }
+
+  /* Staggered children: each direct child trails the previous one. */
+  .reveal-stagger > * {
+    transition: opacity 800ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal-stagger[data-visible='false'] > * {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0);
+  }
+  .reveal-stagger[data-visible='true'] > * {
+    opacity: 1;
+    transform: none;
+  }
+  .reveal-stagger[data-visible='true'] > *:nth-child(1) { transition-delay: 40ms; }
+  .reveal-stagger[data-visible='true'] > *:nth-child(2) { transition-delay: 130ms; }
+  .reveal-stagger[data-visible='true'] > *:nth-child(3) { transition-delay: 220ms; }
+  .reveal-stagger[data-visible='true'] > *:nth-child(4) { transition-delay: 310ms; }
+  .reveal-stagger[data-visible='true'] > *:nth-child(5) { transition-delay: 400ms; }
+  .reveal-stagger[data-visible='true'] > *:nth-child(6) { transition-delay: 490ms; }
+
+  /* Editorial rule that draws itself in on scroll. */
+  .kinetic-rule[data-visible='false']::before,
+  .kinetic-rule[data-visible='false'] .kinetic-rule-line {
+    transform: scaleX(0);
+  }
+  .kinetic-rule .kinetic-rule-line {
+    transform-origin: left center;
+    transition: transform 1100ms cubic-bezier(0.16, 1, 0.3, 1) 120ms;
+    display: block;
+    height: 1px;
+    width: 100%;
+    background: hsl(var(--foreground));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-reveal],
+    .reveal-stagger > *,
+    .kinetic-rule .kinetic-rule-line {
+      transition: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+      clip-path: none !important;
+    }
+  }
+}
