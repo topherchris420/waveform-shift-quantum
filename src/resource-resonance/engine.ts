@@ -60,15 +60,49 @@ export interface SimulationMetrics {
   routingLatency: number;
   unmetDemand: number;
   totalNetworkUtility: number;
-  concentration: number;
-  coordinationOverhead: number;
+  concentration: number;          // HHI of provider throughput share (0-1)
+  coordinationOverhead: number;   // fraction of utility spent on matching/verification
+  /** Std-dev of network utility across the shock ensemble (percentage points). */
+  utilityVolatility: number;
+  /** Utility lost (pp) when the largest provider fails mid-period. */
+  cascadeLoss: number;
+  /** Share of served volume that depends on an intermediary node (0-1). */
+  intermediationDepth: number;
+  /** Gini coefficient of unmet demand across requesters (0 = evenly shared shortfall). */
+  shortfallGini: number;
+}
+
+export type RiskVerdict = 'improves-safely' | 'improves-with-risk' | 'no-improvement';
+
+export interface RiskCheck {
+  id: string;
+  label: string;
+  /** Model A (monetary baseline) value. */
+  baseline: number;
+  /** Model B (resonance routing) value. */
+  routed: number;
+  /** How much worse B may be before the check fails. */
+  tolerance: number;
+  /** true when lower values are safer. */
+  lowerIsBetter: boolean;
+  passed: boolean;
+  unit: string;
+  note: string;
 }
 
 export interface SimulationResult {
   modelA: SimulationMetrics; // Monetary
   modelB: SimulationMetrics; // Resonance
   deltaUtility: number;
+  /** 95% CI half-width on ΔUtility from the shock ensemble (pp). */
+  deltaConfidence: number;
+  /** Fraction of ensemble draws in which B beat A. */
+  winRate: number;
   primaryDriver: string;
+  riskChecks: RiskCheck[];
+  verdict: RiskVerdict;
+  verdictSummary: string;
+  ensembleSize: number;
 }
 
 /**
@@ -128,45 +162,408 @@ export function calculateMonetaryScore(offer: ResourceVector, need: ResourceVect
   return priceMatch * Math.max(0, compatibility);
 }
 
-export function runSimulation(params: SimulationParams): SimulationResult {
-  let utilA = 0.65 - (params.renewableVolatility * 0.15) - (params.geographicalFriction * 0.1) + (params.participantReliability * 0.05);
-  let utilB = 0.70 + (params.renewableVolatility * 0.1) + (params.geographicalFriction * 0.1) - ((1 - params.participantReliability) * 0.25);
-  
-  utilA = Math.max(0, Math.min(1, utilA));
-  utilB = Math.max(0, Math.min(1, utilB));
+/* ------------------------------------------------------------------ *
+ *  Agent-based allocation core
+ * ------------------------------------------------------------------ */
 
-  const modelA: SimulationMetrics = {
-    fulfilledNeeds: utilA * 100,
-    resourceUtilization: utilA * 100,
-    wastedEnergy: (1 - utilA) * 0.5 * 100,
-    routingLatency: 20 + params.geographicalFriction * 50,
-    unmetDemand: (1 - utilA) * 100,
-    totalNetworkUtility: utilA * 100,
-    concentration: 0.8,
-    coordinationOverhead: 0.1
+/** Deterministic PRNG so every reported number is reproducible from (params, seed). */
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
 
-  const modelB: SimulationMetrics = {
-    fulfilledNeeds: utilB * 100,
-    resourceUtilization: utilB * 100,
-    wastedEnergy: (1 - utilB) * 0.2 * 100,
-    routingLatency: 10 + params.geographicalFriction * 20,
-    unmetDemand: (1 - utilB) * 100,
-    totalNetworkUtility: utilB * 100,
-    concentration: 0.3,
-    coordinationOverhead: 0.4 - (params.participantReliability * 0.2)
-  };
+interface Agent {
+  id: number;
+  type: string;
+  amount: number;
+  vector: ResourceVector;
+}
 
-  const deltaUtility = modelB.totalNetworkUtility - modelA.totalNetworkUtility;
+const TYPES = ['gpu', 'solar', 'storage', 'labor', 'code'];
+/** Physical substitutability: what fraction of need j a unit of offer i can actually serve. */
+const SUBSTITUTION: Record<string, Record<string, number>> = {
+  gpu:     { gpu: 1, code: 0.5, labor: 0.15, storage: 0.2, solar: 0 },
+  solar:   { solar: 1, gpu: 0.55, storage: 0.6, labor: 0, code: 0 },
+  storage: { storage: 1, solar: 0.5, gpu: 0.2, labor: 0, code: 0 },
+  labor:   { labor: 1, code: 0.6, gpu: 0.1, storage: 0.1, solar: 0 },
+  code:    { code: 1, labor: 0.5, gpu: 0.35, storage: 0.1, solar: 0 },
+};
 
-  let primaryDriver = "General efficiency improvements";
-  if (params.participantReliability < 0.4 && deltaUtility < 0) {
-    primaryDriver = "Monetary baseline outperforms direct routing under extreme information uncertainty.";
-  } else if (params.renewableVolatility > 0.7) {
-    primaryDriver = "Stranded renewable energy matched directly to flexible compute demand.";
-  } else if (params.geographicalFriction > 0.7) {
-    primaryDriver = "Local multi-dimensional routing avoids global market friction.";
+function buildAgents(params: SimulationParams, rand: () => number, shock: number) {
+  const n = Math.max(6, Math.min(160, Math.round(params.networkSize)));
+  const offers: Agent[] = [];
+  const needs: Agent[] = [];
+
+  const supplyBias = 1 - params.supplyDemandImbalance * 0.5;
+
+  for (let i = 0; i < n; i++) {
+    const type = TYPES[Math.floor(rand() * TYPES.length)];
+    const volatile = type === 'solar';
+    // Renewable output is shocked; firm resources are not.
+    const shockFactor = volatile ? 1 + shock * params.renewableVolatility : 1 + shock * 0.15;
+    offers.push({
+      id: i,
+      type,
+      amount: Math.max(0, (0.4 + rand() * 0.8) * supplyBias * shockFactor * (1 - params.resourceScarcity * 0.5)),
+      vector: {
+        scarcity: params.resourceScarcity * (0.6 + rand() * 0.8),
+        demand: rand(),
+        urgency: rand() * params.urgency * 2,
+        quality: 0.4 + rand() * 0.6,
+        locationCost: 1 - rand() * params.geographicalFriction,
+        energyCost: Math.max(0.05, Math.min(1, (volatile ? 0.4 + shock * 0.8 : 0.7) + rand() * 0.3)),
+        reliability: Math.max(0.05, Math.min(1, params.participantReliability * (0.7 + rand() * 0.6))),
+        compatibility: 0.5 + rand() * 0.5,
+      },
+    });
   }
 
-  return { modelA, modelB, deltaUtility, primaryDriver };
+  for (let i = 0; i < n; i++) {
+    const type = TYPES[Math.floor(rand() * TYPES.length)];
+    const hot = type === 'gpu';
+    needs.push({
+      id: i,
+      type,
+      amount: (0.4 + rand() * 0.8) * (hot ? 1 + params.computeDemand : 1) * (1 + params.supplyDemandImbalance * 0.5),
+      vector: {
+        scarcity: params.resourceScarcity,
+        demand: 0.3 + rand() * 0.7,
+        urgency: Math.min(1, rand() * params.urgency * 2),
+        quality: 0.3 + rand() * 0.7,
+        locationCost: 1 - rand() * params.geographicalFriction,
+        energyCost: 0.5 + rand() * 0.5,
+        reliability: 0.4 + rand() * 0.6,
+        compatibility: 0.5 + rand() * 0.5,
+      },
+    });
+  }
+
+  return { offers, needs };
+}
+
+interface AllocationOutcome {
+  utility: number;          // 0-1 delivered welfare / potential welfare
+  welfare: number;          // raw realised welfare (unnormalised)
+  unmet: number;            // 0-1
+  waste: number;            // 0-1 of supplied volume that is misallocated / spilled
+  hhi: number;
+  latency: number;          // ms
+  intermediation: number;   // 0-1
+  gini: number;
+  overhead: number;         // 0-1
+  providerFlow: number[];
+}
+
+/**
+ * Greedy constrained allocation. `mode` selects the price signal (Model A) or the
+ * multi-dimensional resonance signal (Model B). Both respect the same physical
+ * substitution matrix and the same capacity constraints, so the only difference
+ * is the ranking function and its coordination cost.
+ */
+function allocate(
+  offers: Agent[],
+  needs: Agent[],
+  params: SimulationParams,
+  mode: 'monetary' | 'resonance' | 'oracle',
+  rand: () => number,
+  failedProvider = -1,
+): AllocationOutcome {
+  const supply = offers.map((o) => (o.id === failedProvider ? 0 : o.amount));
+  const remaining = needs.map((nd) => nd.amount);
+  const providerFlow = offers.map(() => 0);
+  const requesterServed = needs.map(() => 0);
+
+  interface Edge { o: number; n: number; rank: number; value: number; sub: number; relay: boolean }
+  const edges: Edge[] = [];
+
+  // Telemetry noise: multi-dimensional matching depends on self-reported state,
+  // which is only as good as participant reliability. Prices need no telemetry.
+  const telemetryNoise = mode === 'resonance' ? (1 - params.participantReliability) * 1.2 : 0;
+
+  for (let i = 0; i < offers.length; i++) {
+    for (let j = 0; j < needs.length; j++) {
+      const o = offers[i];
+      const nd = needs[j];
+      const sub = SUBSTITUTION[o.type][nd.type] ?? 0;
+      if (sub <= 0) continue;
+      const relay = sub < 1; // cross-type transfers must pass through a relay/conversion node
+      // Ground-truth welfare per unit shipped. Identical for both mechanisms —
+      // they only differ in how well they can *see* it when ranking.
+      const value = calculateResonanceScore(o.vector, nd.vector, params) * sub;
+      if (value <= 0) continue;
+
+      let rank: number;
+      if (mode === 'monetary') {
+        // The price signal compresses eight dimensions into one bid, so it
+        // ranks by willingness-to-pay and is blind to urgency/energy/locality.
+        rank = calculateMonetaryScore(o.vector, nd.vector, params) * (sub >= 1 ? 1 : 0.4);
+      } else if (mode === 'oracle') {
+        rank = value;
+      } else {
+        rank = value * (1 + telemetryNoise * (rand() - 0.5));
+      }
+      if (rank <= 0) continue;
+      edges.push({ o: i, n: j, rank, value, sub, relay });
+    }
+  }
+  edges.sort((a, b) => b.rank - a.rank);
+
+  let delivered = 0;   // physical volume delivered (need-units)
+  let welfare = 0;     // realised welfare = Σ volume × ground-truth value
+  let relayed = 0;
+
+  for (const e of edges) {
+    const avail = supply[e.o];
+    const want = remaining[e.n];
+    if (avail <= 1e-9 || want <= 1e-9) continue;
+    const qty = Math.min(avail, want / Math.max(e.sub, 0.05));
+    if (qty <= 1e-9) continue;
+    const effective = qty * e.sub;
+    supply[e.o] -= qty;
+    remaining[e.n] -= effective;
+    providerFlow[e.o] += qty;
+    requesterServed[e.n] += effective;
+    delivered += effective;
+    welfare += effective * e.value;
+    if (e.relay) relayed += effective;
+  }
+
+  const totalNeed = needs.reduce((s, nd) => s + nd.amount, 0);
+  const totalSupply = offers.reduce((s, o, i) => s + (i === failedProvider ? 0 : o.amount), 0);
+  const spilled = supply.reduce((s, v) => s + v, 0);
+
+  const unmet = totalNeed > 0 ? Math.max(0, 1 - delivered / totalNeed) : 0;
+  const wasteFrac = totalSupply > 0 ? spilled / totalSupply : 0;
+
+  const flowTotal = providerFlow.reduce((s, v) => s + v, 0) || 1;
+  const hhi = providerFlow.reduce((s, v) => s + Math.pow(v / flowTotal, 2), 0);
+
+  // Gini of shortfall across requesters — measures whether the mechanism
+  // concentrates the pain on a few participants.
+  const shortfalls = needs.map((nd, j) => Math.max(0, nd.amount - requesterServed[j])).sort((a, b) => a - b);
+  const sSum = shortfalls.reduce((s, v) => s + v, 0);
+  let gini = 0;
+  if (sSum > 1e-9) {
+    let cum = 0;
+    shortfalls.forEach((v, i) => { cum += (i + 1) * v; });
+    gini = (2 * cum) / (shortfalls.length * sSum) - (shortfalls.length + 1) / shortfalls.length;
+  }
+
+  const intermediation = delivered > 0 ? relayed / delivered : 0;
+  const latency =
+    mode === 'monetary'
+      ? 24 + params.geographicalFriction * 60 + hhi * 30
+      : 12 + params.geographicalFriction * 22 + intermediation * 24;
+  const overhead =
+    mode === 'monetary'
+      ? 0.08 + params.supplyDemandImbalance * 0.06
+      : 0.14 + (1 - params.participantReliability) * 0.3 + intermediation * 0.08;
+
+  return {
+    utility: 0, // filled in by the caller against the oracle benchmark
+    welfare,
+    unmet,
+    waste: wasteFrac,
+    hhi,
+    latency,
+    intermediation,
+    gini,
+    overhead,
+    providerFlow,
+  };
+}
+
+function toMetrics(runs: AllocationOutcome[], cascade: number): SimulationMetrics {
+  const mean = (f: (r: AllocationOutcome) => number) => runs.reduce((s, r) => s + f(r), 0) / runs.length;
+  const utilPct = runs.map((r) => (r.utility * (1 - r.overhead)) * 100);
+  const mu = utilPct.reduce((s, v) => s + v, 0) / utilPct.length;
+  const sd = Math.sqrt(utilPct.reduce((s, v) => s + (v - mu) ** 2, 0) / utilPct.length);
+
+  return {
+    fulfilledNeeds: (1 - mean((r) => r.unmet)) * 100,
+    resourceUtilization: mean((r) => r.utility) * 100,
+    wastedEnergy: mean((r) => r.waste) * 100,
+    routingLatency: mean((r) => r.latency),
+    unmetDemand: mean((r) => r.unmet) * 100,
+    totalNetworkUtility: mu,
+    concentration: mean((r) => r.hhi),
+    coordinationOverhead: mean((r) => r.overhead),
+    utilityVolatility: sd,
+    cascadeLoss: cascade,
+    intermediationDepth: mean((r) => r.intermediation),
+    shortfallGini: mean((r) => r.gini),
+  };
+}
+
+const ENSEMBLE = 24;
+
+export function runSimulation(params: SimulationParams, seed = 20260813): SimulationResult {
+  const runsA: AllocationOutcome[] = [];
+  const runsB: AllocationOutcome[] = [];
+  const deltas: number[] = [];
+  let cascadeA = 0;
+  let cascadeB = 0;
+
+  for (let k = 0; k < ENSEMBLE; k++) {
+    const rand = mulberry32(seed + k * 7919);
+    // Symmetric supply shock; renewables get amplified by the volatility parameter.
+    const shock = (rand() * 2 - 1) * (0.15 + params.renewableVolatility * 0.55);
+    const { offers, needs } = buildAgents(params, rand, shock);
+
+    // Oracle = perfectly informed planner; both mechanisms are scored against it,
+    // so "utility" is the share of attainable welfare each one actually realises.
+    const oracle = allocate(offers, needs, params, 'oracle', mulberry32(seed + k));
+    const norm = (r: AllocationOutcome) => {
+      r.utility = oracle.welfare > 0 ? Math.min(1, r.welfare / oracle.welfare) : 0;
+      return r;
+    };
+
+    const a = norm(allocate(offers, needs, params, 'monetary', mulberry32(seed + k * 13)));
+    const b = norm(allocate(offers, needs, params, 'resonance', mulberry32(seed + k * 31)));
+    runsA.push(a);
+    runsB.push(b);
+    deltas.push((b.utility * (1 - b.overhead) - a.utility * (1 - a.overhead)) * 100);
+
+    // Stress test: knock out the single largest provider in each mechanism.
+    const topA = a.providerFlow.indexOf(Math.max(...a.providerFlow));
+    const topB = b.providerFlow.indexOf(Math.max(...b.providerFlow));
+    const aFail = allocate(offers, needs, params, 'monetary', mulberry32(seed + k * 13), topA);
+    const bFail = allocate(offers, needs, params, 'resonance', mulberry32(seed + k * 31), topB);
+    // Contagion = welfare lost *beyond* the failed node's own direct contribution.
+    const shareA = a.welfare > 0 ? (a.providerFlow[topA] ?? 0) / (a.providerFlow.reduce((s, v) => s + v, 0) || 1) : 0;
+    const shareB = b.welfare > 0 ? (b.providerFlow[topB] ?? 0) / (b.providerFlow.reduce((s, v) => s + v, 0) || 1) : 0;
+    const lossA = a.welfare > 0 ? 1 - aFail.welfare / a.welfare : 0;
+    const lossB = b.welfare > 0 ? 1 - bFail.welfare / b.welfare : 0;
+    cascadeA += Math.max(0, lossA - shareA) * 100;
+    cascadeB += Math.max(0, lossB - shareB) * 100;
+  }
+
+  cascadeA /= ENSEMBLE;
+  cascadeB /= ENSEMBLE;
+
+  const modelA = toMetrics(runsA, cascadeA);
+  const modelB = toMetrics(runsB, cascadeB);
+
+  const deltaUtility = modelB.totalNetworkUtility - modelA.totalNetworkUtility;
+  const dMu = deltas.reduce((s, v) => s + v, 0) / deltas.length;
+  const dSd = Math.sqrt(deltas.reduce((s, v) => s + (v - dMu) ** 2, 0) / deltas.length);
+  const deltaConfidence = 1.96 * (dSd / Math.sqrt(deltas.length));
+  const winRate = deltas.filter((d) => d > 0).length / deltas.length;
+
+  const riskChecks: RiskCheck[] = [
+    {
+      id: 'concentration',
+      label: 'Provider concentration (HHI)',
+      baseline: modelA.concentration,
+      routed: modelB.concentration,
+      tolerance: 0.02,
+      lowerIsBetter: true,
+      unit: '',
+      passed: modelB.concentration <= modelA.concentration + 0.02,
+      note: 'Routing must not funnel throughput into fewer providers than the price baseline.',
+    },
+    {
+      id: 'cascade',
+      label: 'Largest-provider failure loss',
+      baseline: modelA.cascadeLoss,
+      routed: modelB.cascadeLoss,
+      tolerance: 1,
+      lowerIsBetter: true,
+      unit: ' pp',
+      passed: modelB.cascadeLoss <= modelA.cascadeLoss + 1,
+      note: 'Utility lost when the top node drops out mid-period. Higher means a new single point of failure.',
+    },
+    {
+      id: 'volatility',
+      label: 'Utility volatility across shocks',
+      baseline: modelA.utilityVolatility,
+      routed: modelB.utilityVolatility,
+      tolerance: 0.5,
+      lowerIsBetter: true,
+      unit: ' pp',
+      passed: modelB.utilityVolatility <= modelA.utilityVolatility + 0.5,
+      note: `Standard deviation of network utility over ${ENSEMBLE} supply-shock draws.`,
+    },
+    {
+      id: 'gini',
+      label: 'Shortfall inequality (Gini)',
+      baseline: modelA.shortfallGini,
+      routed: modelB.shortfallGini,
+      tolerance: 0.03,
+      lowerIsBetter: true,
+      unit: '',
+      passed: modelB.shortfallGini <= modelA.shortfallGini + 0.03,
+      note: 'Gains must not be bought by pushing all unmet demand onto a minority of requesters.',
+    },
+    {
+      id: 'intermediation',
+      label: 'Relay dependence',
+      baseline: modelA.intermediationDepth,
+      routed: modelB.intermediationDepth,
+      tolerance: 0.2,
+      lowerIsBetter: true,
+      unit: '',
+      passed: modelB.intermediationDepth <= modelA.intermediationDepth + 0.2,
+      note: 'Share of delivered volume that requires a conversion/relay hop — new counterparty exposure.',
+    },
+    {
+      id: 'overhead',
+      label: 'Coordination overhead',
+      baseline: modelA.coordinationOverhead,
+      routed: modelB.coordinationOverhead,
+      tolerance: 0.25,
+      lowerIsBetter: true,
+      unit: '',
+      passed: modelB.coordinationOverhead <= modelA.coordinationOverhead + 0.25,
+      note: 'Verification and telemetry cost of running multi-dimensional matching.',
+    },
+  ];
+
+  const failed = riskChecks.filter((c) => !c.passed);
+  const significant = deltaUtility - deltaConfidence > 0;
+
+  let verdict: RiskVerdict;
+  let verdictSummary: string;
+  if (!significant) {
+    verdict = 'no-improvement';
+    verdictSummary =
+      deltaUtility <= 0
+        ? `Direct routing does not beat the price baseline here (Δ = ${deltaUtility.toFixed(2)} pp, wins ${(winRate * 100).toFixed(0)}% of draws).`
+        : `Δ = ${deltaUtility.toFixed(2)} pp is inside the ±${deltaConfidence.toFixed(2)} pp confidence band — not a demonstrated gain.`;
+  } else if (failed.length === 0) {
+    verdict = 'improves-safely';
+    verdictSummary = `Direct routing adds ${deltaUtility.toFixed(2)} ± ${deltaConfidence.toFixed(2)} pp of network utility (wins ${(winRate * 100).toFixed(0)}% of shock draws) while every systemic-risk check stays within tolerance.`;
+  } else {
+    verdict = 'improves-with-risk';
+    verdictSummary = `Allocation improves by ${deltaUtility.toFixed(2)} pp, but ${failed.length} risk check${failed.length > 1 ? 's' : ''} fail: ${failed.map((c) => c.label.toLowerCase()).join(', ')}. The gain is being financed by new systemic exposure.`;
+  }
+
+  let primaryDriver = 'Multi-dimensional matching recovers pairs the single price signal cannot rank.';
+  if (params.renewableVolatility > 0.7) {
+    primaryDriver = 'Stranded renewable output is matched directly to flexible compute demand before it is spilled.';
+  } else if (params.geographicalFriction > 0.7) {
+    primaryDriver = 'Local routing avoids the global market friction the price mechanism must pay.';
+  } else if (params.participantReliability < 0.45) {
+    primaryDriver = 'Telemetry noise degrades resonance scores, so the price baseline stays competitive.';
+  } else if (params.supplyDemandImbalance > 0.4) {
+    primaryDriver = 'Under scarcity the price signal rations by willingness-to-pay, leaving urgent low-bid needs unserved.';
+  }
+
+  return {
+    modelA,
+    modelB,
+    deltaUtility,
+    deltaConfidence,
+    winRate,
+    primaryDriver,
+    riskChecks,
+    verdict,
+    verdictSummary,
+    ensembleSize: ENSEMBLE,
+  };
 }
