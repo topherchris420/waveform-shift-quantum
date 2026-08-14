@@ -1,31 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Network, Activity, FileSignature, Clock } from 'lucide-react';
-import { SimulationParams, SimulationResult, runSimulation, ResourceOffer, ResourceNeed, MatchResult, calculateResonanceScore, GridStochasticEngine } from './engine';
+import { DEFAULT_SIMULATION_PARAMS, SCENARIO_PRESETS, SimulationParams, SimulationResult, runSimulation, ResourceOffer, ResourceNeed, MatchResult, calculateResonanceScore, GridStochasticEngine } from './engine';
 import { compileResonanceRun, ResonanceCatalystSession } from './resonanceCatalyst';
 import { ResourceNetwork, RelayNode } from './ResourceNetwork';
 import { RoutingComparison } from './RoutingComparison';
 import { SuperiorityProtocol } from './SuperiorityProtocol';
+import { CoordinationRegimeMap } from './CoordinationRegimeMap';
 import { MatchExplanation } from './MatchExplanation';
 import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 
 export const ResourceResonanceLab: React.FC = () => {
-  const [params, setParams] = useState<SimulationParams>({
-    resourceScarcity: 0.5,
-    networkSize: 10,
-    renewableVolatility: 0.6,
-    computeDemand: 0.8,
-    urgency: 0.5,
-    geographicalFriction: 0.3,
-    participantReliability: 0.8,
-    supplyDemandImbalance: 0.1,
-    flexibleComputeShare: 0.65,
-    marketOverhead: 0.08,
-    hybridOverhead: 0.11,
-    genesisOverhead: 0.14,
-    telemetryVerificationCost: 0.3
-  });
+  const [params, setParams] = useState<SimulationParams>({ ...DEFAULT_SIMULATION_PARAMS, networkSize: 18 });
 
   const [result, setResult] = useState<SimulationResult | null>(null);
   
@@ -229,9 +216,22 @@ export const ResourceResonanceLab: React.FC = () => {
                 <RoutingComparison result={result} />
               </section>
             )}
+            <CoordinationRegimeMap params={params} />
           </div>
 
           <div className="space-y-6">
+            <div className="rounded-xl border border-amber-900/40 bg-amber-950/10 p-4 sm:p-6">
+              <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-amber-300">Economic stress experiment</h3>
+              <p className="mt-2 text-[11px] text-slate-500">Purely financial presets leave physical scarcity, capacity, volatility, geography, and demand unchanged.</p>
+              <select className="mt-4 w-full rounded border border-slate-700 bg-slate-950 p-2 font-mono text-[10px] text-slate-300" defaultValue="normal" onChange={(e) => {
+                const preset=SCENARIO_PRESETS.find(s=>s.id===e.target.value); if(!preset)return;
+                const next={...params,...preset.patch}; setParams(next); setResult(runSimulation(next));
+              }}>{SCENARIO_PRESETS.map(s=><option key={s.id} value={s.id}>{s.name}{s.financialOnly?' · financial only':''}</option>)}</select>
+              <div className="mt-4 space-y-3">
+                {([['creditAvailability','Credit availability'],['liquidityStress','Liquidity stress'],['counterpartyRisk','Counterparty risk'],['collateralHaircut','Collateral haircut'],['settlementReliability','Settlement reliability'],['priceSignalNoise','Price-signal noise'],['telemetryReliability','Telemetry reliability'],['backstopCapacity','Backstop capacity']] as const).map(([key,label])=><label key={key} className="block"><span className="flex justify-between font-mono text-[9px] text-slate-400"><span>{label}</span><span>{(params[key]*100).toFixed(0)}%</span></span><input className="mt-1 h-1.5 w-full accent-amber-400" type="range" min="0" max="1" step=".01" value={params[key]} onChange={e=>{const next={...params,[key]:Number(e.target.value)};setParams(next);setResult(runSimulation(next));}}/></label>)}
+                <label className="flex items-center justify-between text-[11px] text-slate-400"><span>Central-bank lender of last resort</span><input type="checkbox" checked={params.centralBankBackstop} onChange={e=>{const next={...params,centralBankBackstop:e.target.checked};setParams(next);setResult(runSimulation(next));}}/></label>
+              </div>
+            </div>
             <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 sm:p-6">
               <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-slate-200">Cost assumptions</h3>
               <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
