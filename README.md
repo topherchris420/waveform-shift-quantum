@@ -6,6 +6,12 @@ Evaluating standard quantum mechanics alongside the proposed **Woodyard (2026)**
 
 ---
 
+## Demo Video
+
+[▶ Watch the R.A.I.N. Lab demo](docs/assets/rain-lab-demo.mp4)
+
+---
+
 ## Epistemic Classification Framework
 
 To ensure scientific rigor, all physics calculations and visual models are tagged under four explicit categories:
