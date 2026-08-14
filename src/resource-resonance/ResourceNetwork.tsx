@@ -168,13 +168,13 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
   const getRelayY = (index: number) => 25 + index * 30; // Center column
 
   return (
-    <div className="relative rounded-2xl border border-white/10 bg-black/50 p-6 overflow-hidden min-h-[500px] flex flex-col shadow-2xl backdrop-blur-md group">
+    <div className="relative flex min-h-[500px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/50 p-3 shadow-2xl backdrop-blur-md group sm:p-6">
       
       <div className="absolute inset-0 pointer-events-none opacity-30 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px] [transform:perspective(500px)_rotateX(60deg)_translateY(-100px)_scale(2.5)] origin-top z-0" />
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,_rgba(6,182,212,0.15)_0%,_transparent_70%)] z-0" />
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/20 via-transparent to-black/80 z-0" />
 
-      <div className="relative z-20 flex items-center justify-between mb-4">
+      <div className="relative z-20 mb-4 flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
         <h3 className="font-mono text-sm font-bold tracking-[0.2em] text-white uppercase drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] flex items-center gap-2">
           <Activity className="w-5 h-5 text-cyan-400" />
           Triangulation Engine
@@ -182,7 +182,7 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
         <button
           onClick={onRoute}
           disabled={isRouting}
-          className="relative overflow-hidden bg-white/10 hover:bg-white/20 border border-white/20 disabled:opacity-50 text-white font-mono text-[11px] uppercase tracking-wider px-6 py-3 rounded-lg transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] group-hover:border-cyan-500/50"
+          className="relative min-h-11 overflow-hidden rounded-lg border border-white/20 bg-white/10 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-white shadow-[0_0_20px_rgba(6,182,212,0.2)] transition-all duration-300 hover:bg-white/20 hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] disabled:opacity-50 group-hover:border-cyan-500/50 sm:px-6 sm:text-[11px]"
         >
           {isRouting ? (
             <span className="flex items-center gap-2">
@@ -197,7 +197,8 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
         </button>
       </div>
 
-      <div className="relative z-10 flex-1 flex justify-between items-stretch gap-4 mt-6">
+      <div className="relative z-10 -mx-3 flex-1 overflow-x-auto px-3 pb-2 sm:mx-0 sm:overflow-visible sm:px-0">
+      <div className="relative mt-6 flex min-h-[390px] min-w-[620px] flex-1 items-stretch justify-between gap-4 sm:min-w-0">
         
         {/* SVG Layer */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" style={{ overflow: 'visible' }}>
@@ -335,6 +336,7 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );
