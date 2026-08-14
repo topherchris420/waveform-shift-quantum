@@ -681,7 +681,7 @@ export const QuantumLab: React.FC = () => {
                         <Icon
                           className={`h-4 w-4 shrink-0 ${active ? 'text-cyan-400' : 'text-muted-foreground'}`}
                         />
-                        <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+                        <span className="min-w-0 flex-1 text-xs font-medium leading-relaxed text-foreground sm:truncate">
                           {definition.label}
                         </span>
                         <EpistemicTag kind={definition.epistemic} short hideIcon />
@@ -830,7 +830,7 @@ const PanelHeader: React.FC<PanelHeaderProps> = ({ eyebrow, title, icon: Icon })
     </div>
     <div className="min-w-0">
       <p className="section-eyebrow text-[10px] text-cyan-400">{eyebrow}</p>
-      <h3 className="mt-0.5 truncate text-sm font-semibold text-foreground">{title}</h3>
+      <h3 className="mt-0.5 text-sm font-semibold leading-snug text-foreground sm:truncate">{title}</h3>
     </div>
   </div>
 );
@@ -860,7 +860,7 @@ const LabSlider: React.FC<LabSliderProps> = ({
     <div className="mb-2 flex items-center justify-between gap-3">
       <label className="flex min-w-0 items-center gap-2 text-[11px] font-medium text-slate-200">
         <Icon className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
-        <span className="truncate">{label}</span>
+        <span className="leading-snug sm:truncate">{label}</span>
       </label>
       <span className="shrink-0 font-mono text-[11px] font-bold text-cyan-300">{display}</span>
     </div>

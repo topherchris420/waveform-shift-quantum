@@ -675,6 +675,50 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
         </div>
       </div>
 
+      {/* On narrow screens the canvas cannot hold full annotations without making
+          them illegible. Keep every label and reading in the normal document flow
+          so mobile readers can reach all of the information by scrolling. */}
+      <div className="space-y-2 border-t border-slate-800 bg-slate-950/80 px-4 py-3 sm:hidden">
+        <div className="flex items-start gap-2">
+          <EpistemicTag kind="established" />
+          <p className="font-mono text-[10px] leading-relaxed text-slate-300">
+            {isKernelMode
+              ? 'Standard QM · Born density P_B(x)'
+              : `Standard QM · P_B = ${currentFrame.standard.PB.toFixed(4)}`}
+          </p>
+        </div>
+        <div className="flex items-start gap-2">
+          <EpistemicTag kind="prediction" />
+          <p className="font-mono text-[10px] leading-relaxed text-slate-300">
+            Divergence field ρ_model(x,t) − ρ_standard(x,t) · ∫|Δρ|dx = {currentField.l1.toExponential(2)}
+          </p>
+        </div>
+        <div className="flex items-start gap-2">
+          <EpistemicTag kind="proposed" />
+          <p className="font-mono text-[10px] leading-relaxed text-slate-300">
+            {isKernelMode
+              ? 'Woodyard (2026) · P_loc(x) = χ(x)P_B / ∫χP_B'
+              : `Woodyard (2026) · P_B = ${currentFrame.model.PB.toFixed(4)}`}
+          </p>
+        </div>
+        <dl className="grid grid-cols-1 gap-1 border-t border-slate-800 pt-2 font-mono text-[10px] text-slate-300">
+          <div className="flex flex-wrap justify-between gap-2">
+            <dt className="text-slate-500">{isKernelMode ? 'D = ½∫|Δρ|dx' : 'D(t) = ½Σ|p−q|'}</dt>
+            <dd className="font-bold text-white">{separation.toExponential(3)}</dd>
+          </div>
+          <div className="flex flex-wrap justify-between gap-2">
+            <dt className="text-slate-500">vs {platform.label} floor</dt>
+            <dd className={`font-bold ${significance >= 1 ? 'text-emerald-300' : 'text-amber-300'}`}>
+              {significance.toFixed(2)}×
+            </dd>
+          </div>
+        </dl>
+        <p className="flex items-center gap-1.5 font-mono text-[10px] leading-relaxed text-violet-200">
+          <Hand className="h-3 w-3 shrink-0" />
+          Drag φA / φB handles · click the field to scrub
+        </p>
+      </div>
+
       {/* Transport */}
       <div className="flex flex-wrap items-center gap-3 border-t border-slate-800 bg-slate-900/50 px-4 py-3 sm:px-5">
         <Button

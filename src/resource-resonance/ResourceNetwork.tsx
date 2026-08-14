@@ -274,8 +274,8 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
                   <Icon className={`w-4 h-4 ${isMatched ? COLORS[offer.type] + ' animate-pulse' : 'text-slate-500'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[9px] uppercase font-mono tracking-widest text-slate-500 truncate mb-0.5">Offer</p>
-                  <p className={`text-xs font-bold truncate ${isMatched ? 'text-white' : 'text-slate-300'}`}>{offer.amount} {offer.type.toUpperCase()}</p>
+                  <p className="mb-0.5 font-mono text-[9px] uppercase tracking-widest text-slate-500">Offer</p>
+                  <p className={`break-words text-xs font-bold leading-snug ${isMatched ? 'text-white' : 'text-slate-300'}`}>{offer.amount} {offer.type.toUpperCase()}</p>
                 </div>
                 <div className={`absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${isMatched ? BG_COLORS[offer.type] : 'bg-slate-800'}`} />
               </div>
@@ -299,8 +299,8 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
                     <Icon className={`w-4 h-4 ${isMatched ? 'animate-bounce' : ''}`} />
                   </div>
                   <div className="text-center">
-                    <p className="text-[8px] uppercase font-mono tracking-widest text-slate-500 truncate">{relay.type} relay</p>
-                    <p className={`text-[10px] font-bold truncate ${isMatched ? 'text-white' : 'text-slate-400'}`}>{relay.name}</p>
+                    <p className="break-words font-mono text-[8px] uppercase leading-snug tracking-widest text-slate-500">{relay.type} relay</p>
+                    <p className={`break-words text-[10px] font-bold leading-snug ${isMatched ? 'text-white' : 'text-slate-400'}`}>{relay.name}</p>
                   </div>
                 </div>
               );
@@ -326,8 +326,8 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
               >
                 <div className={`absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${isMatched ? BG_COLORS[need.type] : 'bg-slate-800'}`} />
                 <div className="flex-1 min-w-0 text-right">
-                  <p className="text-[9px] uppercase font-mono tracking-widest text-slate-500 truncate mb-0.5">Need</p>
-                  <p className={`text-xs font-bold truncate ${isMatched ? 'text-white' : 'text-slate-300'}`}>{need.amount} {need.type.toUpperCase()}</p>
+                  <p className="mb-0.5 font-mono text-[9px] uppercase tracking-widest text-slate-500">Need</p>
+                  <p className={`break-words text-xs font-bold leading-snug ${isMatched ? 'text-white' : 'text-slate-300'}`}>{need.amount} {need.type.toUpperCase()}</p>
                 </div>
                 <div className={`p-2 rounded-lg border ${isMatched ? 'border-current shadow-lg' : 'border-transparent bg-black/40'}`}>
                   <Icon className={`w-4 h-4 ${isMatched ? COLORS[need.type] + ' animate-pulse' : 'text-slate-500'}`} />
