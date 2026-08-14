@@ -460,8 +460,12 @@ export function runSimulation(params: SimulationParams, seed = 20260813): Simula
     };
 
     const a = norm(allocate(offers, needs, params, 'monetary', mulberry32(seed + k * 13)));
-    const hybrid = norm(allocate(offers, needs, params, 'hybrid', mulberry32(seed + k * 23)));
-    const b = norm(allocate(offers, needs, params, 'resonance', mulberry32(seed + k * 31)));
+    // Use paired telemetry observations for the two telemetry-driven mechanisms.
+    // Reinitialising identical generators lets each allocation consume the same
+    // noise sample for every edge without sharing mutable PRNG state.
+    const telemetrySeed = seed + k * 23;
+    const hybrid = norm(allocate(offers, needs, params, 'hybrid', mulberry32(telemetrySeed)));
+    const b = norm(allocate(offers, needs, params, 'resonance', mulberry32(telemetrySeed)));
     runsA.push(a);
     runsHybrid.push(hybrid);
     runsB.push(b);
@@ -471,7 +475,7 @@ export function runSimulation(params: SimulationParams, seed = 20260813): Simula
     const topA = a.providerFlow.indexOf(Math.max(...a.providerFlow));
     const topB = b.providerFlow.indexOf(Math.max(...b.providerFlow));
     const aFail = allocate(offers, needs, params, 'monetary', mulberry32(seed + k * 13), topA);
-    const bFail = allocate(offers, needs, params, 'resonance', mulberry32(seed + k * 31), topB);
+    const bFail = allocate(offers, needs, params, 'resonance', mulberry32(telemetrySeed), topB);
     // Contagion = welfare lost *beyond* the failed node's own direct contribution.
     const shareA = a.welfare > 0 ? (a.providerFlow[topA] ?? 0) / (a.providerFlow.reduce((s, v) => s + v, 0) || 1) : 0;
     const shareB = b.welfare > 0 ? (b.providerFlow[topB] ?? 0) / (b.providerFlow.reduce((s, v) => s + v, 0) || 1) : 0;
@@ -627,6 +631,10 @@ export interface StageEvidence {
   deltaUtility: number;
   /** 95% CI half-width on the mean, pooled across seeds and draws. */
   deltaConfidence: number;
+  /** Mean paired Genesis-minus-hybrid utility (pp) across the seed bank. */
+  deltaVsHybrid: number;
+  /** 95% CI half-width on the paired Genesis-minus-hybrid mean. */
+  deltaVsHybridConfidence: number;
   /** Fraction of individual seed-runs in which routing beat the baseline. */
   winRate: number;
   /** Per-check averages over the seed bank, re-evaluated against tolerance. */
@@ -678,6 +686,12 @@ function aggregate(results: SimulationResult[], seeds: number[]): StageEvidence 
   const within = results.reduce((s, r) => s + r.deltaConfidence ** 2, 0) / results.length ** 2;
   const between = (sd * sd) / results.length;
   const deltaConfidence = 1.96 * Math.sqrt(Math.max(within / 1.96 ** 2, 0) + between);
+  const hybridDeltas = results.map((r) => r.deltaVsHybrid);
+  const hybridMu = hybridDeltas.reduce((s, v) => s + v, 0) / hybridDeltas.length;
+  const hybridSd = Math.sqrt(
+    hybridDeltas.reduce((s, v) => s + (v - hybridMu) ** 2, 0) / Math.max(1, hybridDeltas.length - 1),
+  );
+  const deltaVsHybridConfidence = 1.96 * hybridSd / Math.sqrt(hybridDeltas.length);
 
   const ids = results[0].riskChecks.map((c) => c.id);
   const riskChecks: RiskCheck[] = ids.map((id) => {
@@ -693,6 +707,8 @@ function aggregate(results: SimulationResult[], seeds: number[]): StageEvidence 
     seeds,
     deltaUtility: mu,
     deltaConfidence,
+    deltaVsHybrid: hybridMu,
+    deltaVsHybridConfidence,
     winRate: results.reduce((s, r) => s + r.winRate, 0) / results.length,
     riskChecks,
     draws: results.reduce((s, r) => s + r.ensembleSize, 0),
@@ -779,6 +795,7 @@ export function challengeClaim(claim: FrozenClaim): ChallengeOutcome {
   const sample = results[0];
 
   const lcb = holdout.deltaUtility - holdout.deltaConfidence;
+  const hybridLcb = holdout.deltaVsHybrid - holdout.deltaVsHybridConfidence;
   const failedRisk = holdout.riskChecks.filter((c) => !c.passed);
   const shrinkage = holdout.deltaUtility - claim.predictedDelta;
 
@@ -796,8 +813,8 @@ export function challengeClaim(claim: FrozenClaim): ChallengeOutcome {
     {
       id: 'hybrid',
       label: 'Beats price plus computation',
-      detail: `Genesis minus hybrid = ${sample.deltaVsHybrid.toFixed(2)} pp. The optimizer receives the same telemetry in both mechanisms.`,
-      passed: sample.deltaVsHybrid > 0,
+      detail: `Genesis minus hybrid = ${holdout.deltaVsHybrid.toFixed(2)} pp, 95% CI lower bound ${hybridLcb.toFixed(2)} pp over ${holdout.seeds.length} holdout seeds. The optimizer receives the same telemetry in both mechanisms.`,
+      passed: hybridLcb > 0,
     },
     {
       id: 'consistency',
