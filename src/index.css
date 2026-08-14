@@ -356,11 +356,13 @@
     .hero-title {
       max-width: 100%;
       padding-right: 0.12em;
-      font-size: clamp(1.9rem, 9.5vw, 3rem);
+      font-size: clamp(1.45rem, 7.2vw, 2.3rem);
+      hyphens: none;
       letter-spacing: -0.03em;
       line-height: 0.98;
-      overflow-wrap: break-word;
-      text-wrap: wrap;
+      overflow-wrap: normal;
+      text-wrap: balance;
+      word-break: keep-all;
     }
     .hero-rule { border-left-width: 1px; }
     .section-eyebrow { letter-spacing: 0.14em; }
