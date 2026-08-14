@@ -332,8 +332,8 @@ export const QuantumLab: React.FC = () => {
   return (
     <main className="experience-background min-h-screen text-foreground">
       {/* Editorial masthead */}
-      <Reveal as="section" variant="up" className="mx-auto max-w-[1700px] px-4 pb-4 pt-16 sm:px-6 lg:px-8 lg:pt-24">
-        <div className="hero-rule pl-6 md:pl-12">
+      <Reveal as="section" variant="up" className="mx-auto max-w-[1700px] px-3 pb-4 pt-10 sm:px-6 sm:pt-16 lg:px-8 lg:pt-24">
+        <div className="hero-rule pl-4 sm:pl-6 md:pl-12">
           <p className="section-eyebrow mb-6 flex flex-wrap items-center gap-x-3 gap-y-2">
             <span>Project Falsification // Woodyard 2026</span>
             <span className="inline-block h-1.5 w-1.5 bg-primary" aria-hidden="true" />
@@ -355,7 +355,7 @@ export const QuantumLab: React.FC = () => {
             </p>
             <a
               href="#reality-split"
-              className="shrink-0 border border-ink bg-foreground px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-background transition-colors duration-300 hover:bg-primary"
+              className="w-full border border-ink bg-foreground px-5 py-4 text-center font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-background transition-colors duration-300 hover:bg-primary sm:w-auto sm:shrink-0 sm:px-8 sm:tracking-[0.2em]"
             >
               Initiate sequence
             </a>
@@ -551,7 +551,7 @@ export const QuantumLab: React.FC = () => {
             </p>
             <p className="mt-1 text-xs leading-relaxed text-slate-200">{statusMessage}</p>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
             <Badge variant="outline" className="border-slate-700 font-mono text-[10px] text-slate-400">
               {measurements.length} recorded
             </Badge>

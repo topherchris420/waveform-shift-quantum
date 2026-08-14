@@ -79,6 +79,20 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'tnum';
+    overflow-x: hidden;
+  }
+
+  img,
+  svg,
+  canvas {
+    max-width: 100%;
+  }
+
+  button,
+  a,
+  input,
+  select {
+    touch-action: manipulation;
   }
 
   h1,
@@ -337,8 +351,11 @@
   .control-studio { align-items: start; }
 
   @media (max-width: 767px) {
-    .scene-showcase { min-height: 520px; }
-    .scene-canvas { min-height: 360px; }
+    .scene-showcase { min-height: 440px; }
+    .scene-canvas { min-height: 300px; }
+    .hero-title { font-size: clamp(2rem, 11vw, 3rem); line-height: 0.94; }
+    .hero-rule { border-left-width: 1px; }
+    .section-eyebrow { letter-spacing: 0.14em; }
   }
 }
 

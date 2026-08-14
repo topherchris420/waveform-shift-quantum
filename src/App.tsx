@@ -33,7 +33,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: "40px", backgroundColor: "#f5f3ee", color: "#0d0d0d", fontFamily: "monospace", minHeight: "100vh" }}>
+        <div style={{ padding: "clamp(20px, 6vw, 40px)", backgroundColor: "#f5f3ee", color: "#0d0d0d", fontFamily: "monospace", minHeight: "100vh", overflowWrap: "anywhere" }}>
           <h2 style={{ color: "#ef4444" }}>QUANTUM LABORATORY DIAGNOSTIC EXCEPTION</h2>
           <p style={{ color: "#6f6759" }}>A runtime exception was intercepted by the laboratory error boundary:</p>
           <pre style={{ backgroundColor: "#e8e4dd", padding: "16px", borderRadius: "8px", overflow: "auto", color: "#7f1d1d" }}>

@@ -9,8 +9,8 @@ export const GlobalNav = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 max-w-screen-2xl items-center justify-between">
-        <div className="flex items-center gap-6">
+      <div className="container flex min-h-14 max-w-screen-2xl flex-wrap items-center justify-between gap-x-3 px-3 py-2 sm:px-6 sm:py-0">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-6">
           <Link to="/" className="flex items-center gap-2 group">
             {isResonance ? (
               <Network className="h-5 w-5 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
@@ -22,23 +22,23 @@ export const GlobalNav = () => {
             </span>
           </Link>
           
-          <nav className="flex items-center gap-6 text-sm font-medium">
+          <nav aria-label="Primary navigation" className="flex items-center gap-3 text-xs font-medium sm:gap-6 sm:text-sm">
             <Link 
               to="/" 
               className={`transition-colors hover:text-foreground/80 ${!isResonance ? 'text-foreground' : 'text-foreground/60'}`}
             >
-              Physics Lab
+              <span className="sm:hidden">Physics</span><span className="hidden sm:inline">Physics Lab</span>
             </Link>
             <Link 
               to="/resonance" 
               className={`transition-colors hover:text-cyan-400 ${isResonance ? 'text-cyan-400' : 'text-foreground/60'}`}
             >
-              Economics Engine
+              <span className="sm:hidden">Economics</span><span className="hidden sm:inline">Economics Engine</span>
             </Link>
           </nav>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="hidden items-center gap-4 md:flex">
           <div className="hidden sm:flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5">
             <Activity className="w-3 h-3 text-emerald-500 animate-pulse" />
             <span className="text-muted-foreground tracking-widest">SYSTEM ONLINE</span>

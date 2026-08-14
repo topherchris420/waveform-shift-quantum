@@ -572,15 +572,15 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
     >
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/60 px-4 py-3 sm:px-5">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-start gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-500/40 bg-cyan-500/10 text-cyan-300">
             <Split className="h-5 w-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h2 className="font-mono text-sm font-bold uppercase tracking-[0.16em] text-slate-100">
               Reality Split
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs leading-relaxed text-slate-400">
               {isKernelMode
                 ? 'Both models read the same |ψ(x)|². Every difference below is caused by the response strength α alone.'
                 : 'Both models evolve from the same |ψ(0)⟩ = |A⟩. Every difference below is caused by the coupling g alone.'}
@@ -588,7 +588,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
           </div>
         </div>
         <div
-          className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 font-mono text-[11px] font-bold ${state.className}`}
+          className={`flex max-w-full items-center gap-2 rounded-lg border px-3 py-1.5 font-mono text-[10px] font-bold sm:text-[11px] ${state.className}`}
         >
           <Crosshair className="h-3.5 w-3.5" />
           {state.label}
@@ -621,7 +621,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
           style={{ top: `${(BAND_STD.top / H) * 100 - 4.6}%` }}
         >
           <EpistemicTag kind="established" />
-          <span className="font-mono text-[10px] text-slate-400">
+          <span className="hidden font-mono text-[10px] text-slate-400 sm:inline">
             {isKernelMode
               ? `Standard QM · Born density P_B(x)`
               : `Standard QM · P_B = ${currentFrame.standard.PB.toFixed(4)}`}
@@ -633,7 +633,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
           style={{ top: `${(BAND_DIV.top / H) * 100 - 3.4}%` }}
         >
           <EpistemicTag kind="prediction" />
-          <span className="font-mono text-[10px] text-slate-400">
+          <span className="hidden font-mono text-[10px] text-slate-400 sm:inline">
             Divergence field ρ_model(x,t) − ρ_standard(x,t) · ∫|Δρ|dx ={' '}
             {currentField.l1.toExponential(2)}
           </span>
@@ -644,14 +644,14 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
           style={{ top: `${(BAND_MOD.top / H) * 100 - 4.6}%` }}
         >
           <EpistemicTag kind="proposed" />
-          <span className="font-mono text-[10px] text-slate-400">
+          <span className="hidden font-mono text-[10px] text-slate-400 sm:inline">
             {isKernelMode
               ? `Woodyard (2026) · P_loc(x) = χ(x)P_B / ∫χP_B`
               : `Woodyard (2026) · P_B = ${currentFrame.model.PB.toFixed(4)}`}
           </span>
         </div>
 
-        <div className="pointer-events-none absolute right-3 top-3 flex flex-col items-end gap-1.5">
+        <div className="pointer-events-none absolute right-3 top-3 hidden flex-col items-end gap-1.5 sm:flex">
           <div className="rounded-md border border-slate-700 bg-slate-950/90 px-2.5 py-1 font-mono text-[10px] text-slate-300 backdrop-blur">
             <span className="text-slate-500">
               {isKernelMode ? 'D = ½∫|Δρ|dx' : 'D(t) = ½Σ|p−q|'}
@@ -669,7 +669,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
         </div>
 
         {/* Centred so it sits between the SITE A / SITE B labels rather than over them. */}
-        <div className="pointer-events-none absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-md border border-violet-500/40 bg-violet-500/10 px-2.5 py-1 font-mono text-[10px] text-violet-200 backdrop-blur">
+        <div className="pointer-events-none absolute bottom-2 left-1/2 hidden -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-md border border-violet-500/40 bg-violet-500/10 px-2.5 py-1 font-mono text-[10px] text-violet-200 backdrop-blur sm:flex">
           <Hand className="h-3 w-3" />
           Drag φA / φB handles · click the field to scrub
         </div>
@@ -696,7 +696,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
           t = 0
         </Button>
 
-        <div className="flex min-w-[220px] flex-1 items-center gap-3">
+        <div className="flex min-w-full flex-1 items-center gap-2 sm:min-w-[220px] sm:gap-3">
           <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">Scrub</span>
           <Slider
             aria-label="Scrub simulation time"
@@ -717,7 +717,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
         {/* The coupling that gates the split differs by sector: g is the
             two-site matter-scalar coupling; α is the kernel's response
             strength. Driving the wrong one would leave the split unchanged. */}
-        <div className="flex min-w-[220px] flex-1 items-center gap-3">
+        <div className="flex min-w-full flex-1 items-center gap-2 sm:min-w-[220px] sm:gap-3">
           <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-amber-400">
             <Zap className="h-3 w-3" /> {isKernelMode ? 'Response α' : 'Coupling g'}
           </span>

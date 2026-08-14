@@ -30,22 +30,22 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-cyan-500/30 bg-slate-950 text-slate-100 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-0 backdrop-blur-md animate-in fade-in duration-200 sm:p-4">
+      <div className="relative flex h-[100dvh] w-full max-w-5xl flex-col overflow-hidden border border-cyan-500/30 bg-slate-950 text-slate-100 shadow-2xl sm:h-[90vh] sm:rounded-2xl">
         {/* Header */}
-        <header className="flex items-center justify-between border-b border-white/10 bg-slate-900/80 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-cyan-400/40 bg-cyan-500/20 text-cyan-400">
+        <header className="flex items-start justify-between gap-2 border-b border-white/10 bg-slate-900/80 px-3 py-3 sm:items-center sm:px-6 sm:py-4">
+          <div className="flex min-w-0 items-start gap-2 sm:items-center sm:gap-3">
+            <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-cyan-400/40 bg-cyan-500/20 text-cyan-400 sm:flex">
               <BookOpen className="h-5 w-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xs uppercase tracking-wider text-cyan-400 font-semibold">Manuscript Explorer</span>
                 <Badge variant="outline" className="border-cyan-400/40 bg-cyan-400/10 text-cyan-200 text-[10px]">
                   April 16, 2026
                 </Badge>
               </div>
-              <h2 className="text-base font-bold text-white sm:text-lg">
+              <h2 className="text-sm font-bold leading-tight text-white sm:text-lg">
                 Field-Modulated Spatial Localization as a Dynamical Variable
               </h2>
             </div>
@@ -56,9 +56,9 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
         </header>
 
         {/* Content Body */}
-        <div className="grid flex-1 grid-cols-1 overflow-hidden md:grid-cols-[240px_1fr]">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:grid md:grid-cols-[240px_1fr]">
           {/* Sidebar Nav */}
-          <aside className="border-r border-white/10 bg-slate-900/40 p-4 space-y-1 overflow-y-auto">
+          <aside className="flex shrink-0 gap-1 overflow-x-auto border-b border-white/10 bg-slate-900/40 p-2 md:block md:space-y-1 md:overflow-y-auto md:border-b-0 md:border-r md:p-4">
             {sections.map((item) => {
               const Icon = item.icon;
               const active = activeSection === item.id;
@@ -66,7 +66,7 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
                 <button
                   key={item.id}
                   onClick={() => setActiveSection(item.id)}
-                  className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs transition ${
+                  className={`flex w-auto shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs transition md:w-full ${
                     active
                       ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-400/40 font-semibold'
                       : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
@@ -78,7 +78,7 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
               );
             })}
 
-            <div className="pt-4 border-t border-white/10 mt-4">
+            <div className="hidden pt-4 border-t border-white/10 mt-4 md:block">
               <p className="px-3 pb-2 text-[10px] font-mono uppercase tracking-widest text-slate-400">Author & Affiliation</p>
               <div className="px-3 text-xs text-slate-300">
                 <p className="font-semibold text-white">Christopher Woodyard</p>
@@ -89,7 +89,7 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
           </aside>
 
           {/* Main Reading Section */}
-          <main className="overflow-y-auto p-6 space-y-6 text-sm text-slate-300 leading-relaxed">
+          <main className="min-h-0 flex-1 overflow-y-auto p-4 space-y-6 text-sm text-slate-300 leading-relaxed sm:p-6">
             {activeSection === 'abstract' && (
               <div className="space-y-4">
                 <div className="rounded-xl border border-cyan-500/30 bg-cyan-950/20 p-5">
