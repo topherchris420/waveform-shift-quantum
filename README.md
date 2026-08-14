@@ -44,6 +44,10 @@ To ensure scientific rigor, all physics calculations and visual models are tagge
 
 The Genesis Protocol extends Waveform Shift's experimental philosophy into economic coordination: run monetary exchange and computational resource routing from equivalent starting conditions, measure where their outcomes diverge, and search for the conditions under which each coordination mechanism performs better.
 
+The laboratory now compares four architectures—Market, a lender-of-last-resort Stabilized Market, a telemetry-enabled Computational Market/Hybrid, and direct physical-resource Genesis routing—against one hidden oracle-welfare benchmark. Monetary trades must actually clear through balances, credit, collateral, counterparties, and settlement. The workstation reports feasible-but-unserved demand, stranded physical utility, a conserved unmet-demand decomposition, central-bank utilization, a transparent Thermodynamic Safety Valve, and a parameter-space Coordination Regime Map. Pure financial shocks preserve the physical world, while real-resource shocks bind every mechanism.
+
+Genesis is not an anti-money claim and cannot receive a hardcoded victory. Discovery and holdout seeds remain separate; superiority must beat the strongest monetary/hybrid comparator, clear confidence and oracle-gap requirements, pass systemic-risk gates, and survive overhead sensitivity. See [the monetary coordination model](docs/MONETARY_COORDINATION_MODEL.md) for mechanisms, assumptions, hypotheses, and falsification conditions.
+
 > **Core Principle:** Computation may outperform money for coordinating physically measurable resources (where the scarce information is how resources physically fit together), while markets remain superior where subjective preferences, price discovery, and financial risk carry the most valuable information.
 
 ### Key Simulation Components
