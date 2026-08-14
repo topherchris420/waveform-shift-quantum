@@ -30,7 +30,7 @@ To ensure scientific rigor, all physics calculations and visual models are tagge
 
 ---
 
-## Core Laboratory Features
+## Core Lab Features
 
 1. **Standard QM vs. Woodyard Model Comparison Mode**: Simultaneous dual predictions, numerical difference $\Delta P$, percentage deviation, and explicit "WHAT WOULD FALSIFY THIS?" controls.
 2. **Anomaly Engine**: Automated parameter space sweep searching for states that maximize measurable deviation from standard QM baseline, ranked by numerical stability, score, and experimental feasibility.
