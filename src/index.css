@@ -353,9 +353,6 @@
   @media (max-width: 767px) {
     .scene-showcase { min-height: 440px; }
     .scene-canvas { min-height: 300px; }
-    .hero-title { font-size: clamp(2rem, 11vw, 3rem); line-height: 0.94; }
-    .hero-rule { border-left-width: 1px; }
-    .section-eyebrow { letter-spacing: 0.14em; }
   }
 }
 
