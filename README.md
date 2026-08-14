@@ -4,16 +4,6 @@ Evaluating standard quantum mechanics alongside the proposed **Woodyard (2026)**
 
 > **Research Instrument Notice:** This application is designed as a rigorous scientific workstation. Established quantum mechanics and proposed physical extensions are strictly segregated, with explicit falsification conditions and cryptographically verifiable research artifacts.
 
----
-
-## Demo Video
-
-<video src="docs/assets/rain-lab-demo.mp4" controls width="100%">
-  Your browser does not support embedded videos.
-</video>
-
----
-
 ## Epistemic Classification Framework
 
 To ensure scientific rigor, all physics calculations and visual models are tagged under four explicit categories:
