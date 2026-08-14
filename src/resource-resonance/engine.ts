@@ -51,6 +51,13 @@ export interface SimulationParams {
   geographicalFriction: number;
   participantReliability: number;
   supplyDemandImbalance: number;
+  /** Share of compute jobs that may move in time or geography. */
+  flexibleComputeShare: number;
+  /** User-visible mechanism costs, expressed as fractions of realised welfare. */
+  marketOverhead: number;
+  hybridOverhead: number;
+  genesisOverhead: number;
+  telemetryVerificationCost: number;
 }
 
 export interface SimulationMetrics {
@@ -92,8 +99,10 @@ export interface RiskCheck {
 
 export interface SimulationResult {
   modelA: SimulationMetrics; // Monetary
+  modelHybrid: SimulationMetrics; // Monetary + computational routing
   modelB: SimulationMetrics; // Resonance
   deltaUtility: number;
+  deltaVsHybrid: number;
   /** 95% CI half-width on ΔUtility from the shock ensemble (pp). */
   deltaConfidence: number;
   /** Fraction of ensemble draws in which B beat A. */
@@ -184,14 +193,13 @@ interface Agent {
   vector: ResourceVector;
 }
 
-const TYPES = ['gpu', 'solar', 'storage', 'labor', 'code'];
+// Genesis v1 deliberately stays inside the measurable energy/compute/storage domain.
+const TYPES = ['gpu', 'solar', 'storage'];
 /** Physical substitutability: what fraction of need j a unit of offer i can actually serve. */
 const SUBSTITUTION: Record<string, Record<string, number>> = {
-  gpu:     { gpu: 1, code: 0.5, labor: 0.15, storage: 0.2, solar: 0 },
-  solar:   { solar: 1, gpu: 0.55, storage: 0.6, labor: 0, code: 0 },
-  storage: { storage: 1, solar: 0.5, gpu: 0.2, labor: 0, code: 0 },
-  labor:   { labor: 1, code: 0.6, gpu: 0.1, storage: 0.1, solar: 0 },
-  code:    { code: 1, labor: 0.5, gpu: 0.35, storage: 0.1, solar: 0 },
+  gpu:     { gpu: 1, storage: 0.15, solar: 0 },
+  solar:   { solar: 1, gpu: 0.72, storage: 0.9 },
+  storage: { storage: 1, solar: 0.82, gpu: 0.7 },
 };
 
 function buildAgents(params: SimulationParams, rand: () => number, shock: number) {
@@ -226,6 +234,7 @@ function buildAgents(params: SimulationParams, rand: () => number, shock: number
   for (let i = 0; i < n; i++) {
     const type = TYPES[Math.floor(rand() * TYPES.length)];
     const hot = type === 'gpu';
+    const flexible = hot && rand() < params.flexibleComputeShare;
     needs.push({
       id: i,
       type,
@@ -235,7 +244,9 @@ function buildAgents(params: SimulationParams, rand: () => number, shock: number
         demand: 0.3 + rand() * 0.7,
         urgency: Math.min(1, rand() * params.urgency * 2),
         quality: 0.3 + rand() * 0.7,
-        locationCost: 1 - rand() * params.geographicalFriction,
+        // Flexible compute may move toward energy; inflexible jobs retain a
+        // tighter locality constraint and therefore pay more physical loss.
+        locationCost: flexible ? 0.75 + rand() * 0.25 : 1 - rand() * params.geographicalFriction,
         energyCost: 0.5 + rand() * 0.5,
         reliability: 0.4 + rand() * 0.6,
         compatibility: 0.5 + rand() * 0.5,
@@ -269,7 +280,7 @@ function allocate(
   offers: Agent[],
   needs: Agent[],
   params: SimulationParams,
-  mode: 'monetary' | 'resonance' | 'oracle',
+  mode: 'monetary' | 'hybrid' | 'resonance' | 'oracle',
   rand: () => number,
   failedProvider = -1,
 ): AllocationOutcome {
@@ -283,7 +294,8 @@ function allocate(
 
   // Telemetry noise: multi-dimensional matching depends on self-reported state,
   // which is only as good as participant reliability. Prices need no telemetry.
-  const telemetryNoise = mode === 'resonance' ? (1 - params.participantReliability) * 1.2 : 0;
+  const usesTelemetry = mode === 'resonance' || mode === 'hybrid';
+  const telemetryNoise = usesTelemetry ? (1 - params.participantReliability) * 1.2 : 0;
 
   for (let i = 0; i < offers.length; i++) {
     for (let j = 0; j < needs.length; j++) {
@@ -292,20 +304,39 @@ function allocate(
       const sub = SUBSTITUTION[o.type][nd.type] ?? 0;
       if (sub <= 0) continue;
       const relay = sub < 1; // cross-type transfers must pass through a relay/conversion node
-      // Ground-truth welfare per unit shipped. Identical for both mechanisms —
-      // they only differ in how well they can *see* it when ranking.
-      const value = calculateResonanceScore(o.vector, nd.vector, params) * sub;
+      // Latent physical welfare is intentionally independent of both resonance
+      // and bids: useful work minus distance/loss, deadline, curtailment and
+      // reliability penalties. Only the oracle sees this exact value.
+      const deadlineCompletion = 1 - Math.max(0, nd.vector.urgency - o.vector.reliability) * 0.8;
+      const transmissionEfficiency = 0.72 + 0.28 * o.vector.locationCost * nd.vector.locationCost;
+      const conversionEfficiency = relay ? (o.type === 'storage' ? 0.86 : 0.78) : 1;
+      const usefulWork = o.vector.quality * nd.vector.demand * deadlineCompletion;
+      const avoidedCurtailment = o.type === 'solar' ? 0.25 * o.vector.energyCost : 0;
+      const criticalDemand = 0.2 * nd.vector.urgency;
+      const value = Math.max(0, (usefulWork + avoidedCurtailment + criticalDemand) *
+        transmissionEfficiency * conversionEfficiency * o.vector.reliability * sub);
       if (value <= 0) continue;
 
       let rank: number;
       if (mode === 'monetary') {
-        // The price signal compresses eight dimensions into one bid, so it
-        // ranks by willingness-to-pay and is blind to urgency/energy/locality.
-        rank = calculateMonetaryScore(o.vector, nd.vector, params) * (sub >= 1 ? 1 : 0.4);
+        // A strong market baseline: bids incorporate scarcity, deadlines,
+        // congestion, location and expected conversion loss.
+        const congestionPrice = params.geographicalFriction * (1 - o.vector.locationCost * nd.vector.locationCost);
+        const timeLocationBid = calculateMonetaryScore(o.vector, nd.vector, params) +
+          nd.vector.urgency * 0.25 + o.vector.energyCost * 0.15 - congestionPrice * 0.2;
+        rank = timeLocationBid * conversionEfficiency * sub;
       } else if (mode === 'oracle') {
         rank = value;
       } else {
-        rank = value * (1 + telemetryNoise * (rand() - 0.5));
+        // Telemetry contains observable forecasts and compatibility, never the
+        // oracle's realised physical-welfare value or its hidden loss terms.
+        const telemetryEstimate = calculateResonanceScore(o.vector, nd.vector, params) * sub;
+        const observed = telemetryEstimate * (1 + telemetryNoise * (rand() - 0.5));
+        // Hybrid receives exactly the same telemetry/optimizer as Genesis,
+        // while preserving bids and clearing constraints.
+        rank = mode === 'hybrid'
+          ? observed * 0.8 + calculateMonetaryScore(o.vector, nd.vector, params) * sub * 0.2
+          : observed;
       }
       if (rank <= 0) continue;
       edges.push({ o: i, n: j, rank, value, sub, relay });
@@ -358,11 +389,15 @@ function allocate(
   const latency =
     mode === 'monetary'
       ? 24 + params.geographicalFriction * 60 + hhi * 30
+      : mode === 'hybrid'
+      ? 20 + params.geographicalFriction * 28 + intermediation * 24
       : 12 + params.geographicalFriction * 22 + intermediation * 24;
   const overhead =
     mode === 'monetary'
-      ? 0.08 + params.supplyDemandImbalance * 0.06
-      : 0.14 + (1 - params.participantReliability) * 0.3 + intermediation * 0.08;
+      ? params.marketOverhead + params.supplyDemandImbalance * 0.04
+      : mode === 'hybrid'
+      ? params.hybridOverhead + params.telemetryVerificationCost * (1 - params.participantReliability) + intermediation * 0.05
+      : params.genesisOverhead + params.telemetryVerificationCost * (1 - params.participantReliability) + intermediation * 0.08;
 
   return {
     utility: 0, // filled in by the caller against the oracle benchmark
@@ -404,6 +439,7 @@ const ENSEMBLE = 24;
 
 export function runSimulation(params: SimulationParams, seed = 20260813): SimulationResult {
   const runsA: AllocationOutcome[] = [];
+  const runsHybrid: AllocationOutcome[] = [];
   const runsB: AllocationOutcome[] = [];
   const deltas: number[] = [];
   let cascadeA = 0;
@@ -424,8 +460,14 @@ export function runSimulation(params: SimulationParams, seed = 20260813): Simula
     };
 
     const a = norm(allocate(offers, needs, params, 'monetary', mulberry32(seed + k * 13)));
-    const b = norm(allocate(offers, needs, params, 'resonance', mulberry32(seed + k * 31)));
+    // Use paired telemetry observations for the two telemetry-driven mechanisms.
+    // Reinitialising identical generators lets each allocation consume the same
+    // noise sample for every edge without sharing mutable PRNG state.
+    const telemetrySeed = seed + k * 23;
+    const hybrid = norm(allocate(offers, needs, params, 'hybrid', mulberry32(telemetrySeed)));
+    const b = norm(allocate(offers, needs, params, 'resonance', mulberry32(telemetrySeed)));
     runsA.push(a);
+    runsHybrid.push(hybrid);
     runsB.push(b);
     deltas.push((b.utility * (1 - b.overhead) - a.utility * (1 - a.overhead)) * 100);
 
@@ -433,7 +475,7 @@ export function runSimulation(params: SimulationParams, seed = 20260813): Simula
     const topA = a.providerFlow.indexOf(Math.max(...a.providerFlow));
     const topB = b.providerFlow.indexOf(Math.max(...b.providerFlow));
     const aFail = allocate(offers, needs, params, 'monetary', mulberry32(seed + k * 13), topA);
-    const bFail = allocate(offers, needs, params, 'resonance', mulberry32(seed + k * 31), topB);
+    const bFail = allocate(offers, needs, params, 'resonance', mulberry32(telemetrySeed), topB);
     // Contagion = welfare lost *beyond* the failed node's own direct contribution.
     const shareA = a.welfare > 0 ? (a.providerFlow[topA] ?? 0) / (a.providerFlow.reduce((s, v) => s + v, 0) || 1) : 0;
     const shareB = b.welfare > 0 ? (b.providerFlow[topB] ?? 0) / (b.providerFlow.reduce((s, v) => s + v, 0) || 1) : 0;
@@ -447,9 +489,11 @@ export function runSimulation(params: SimulationParams, seed = 20260813): Simula
   cascadeB /= ENSEMBLE;
 
   const modelA = toMetrics(runsA, cascadeA);
+  const modelHybrid = toMetrics(runsHybrid, 0);
   const modelB = toMetrics(runsB, cascadeB);
 
   const deltaUtility = modelB.totalNetworkUtility - modelA.totalNetworkUtility;
+  const deltaVsHybrid = modelB.totalNetworkUtility - modelHybrid.totalNetworkUtility;
   const dMu = deltas.reduce((s, v) => s + v, 0) / deltas.length;
   const dSd = Math.sqrt(deltas.reduce((s, v) => s + (v - dMu) ** 2, 0) / deltas.length);
   const deltaConfidence = 1.96 * (dSd / Math.sqrt(deltas.length));
@@ -556,8 +600,10 @@ export function runSimulation(params: SimulationParams, seed = 20260813): Simula
 
   return {
     modelA,
+    modelHybrid,
     modelB,
     deltaUtility,
+    deltaVsHybrid,
     deltaConfidence,
     winRate,
     primaryDriver,
@@ -585,6 +631,10 @@ export interface StageEvidence {
   deltaUtility: number;
   /** 95% CI half-width on the mean, pooled across seeds and draws. */
   deltaConfidence: number;
+  /** Mean paired Genesis-minus-hybrid utility (pp) across the seed bank. */
+  deltaVsHybrid: number;
+  /** 95% CI half-width on the paired Genesis-minus-hybrid mean. */
+  deltaVsHybridConfidence: number;
   /** Fraction of individual seed-runs in which routing beat the baseline. */
   winRate: number;
   /** Per-check averages over the seed bank, re-evaluated against tolerance. */
@@ -636,6 +686,12 @@ function aggregate(results: SimulationResult[], seeds: number[]): StageEvidence 
   const within = results.reduce((s, r) => s + r.deltaConfidence ** 2, 0) / results.length ** 2;
   const between = (sd * sd) / results.length;
   const deltaConfidence = 1.96 * Math.sqrt(Math.max(within / 1.96 ** 2, 0) + between);
+  const hybridDeltas = results.map((r) => r.deltaVsHybrid);
+  const hybridMu = hybridDeltas.reduce((s, v) => s + v, 0) / hybridDeltas.length;
+  const hybridSd = Math.sqrt(
+    hybridDeltas.reduce((s, v) => s + (v - hybridMu) ** 2, 0) / Math.max(1, hybridDeltas.length - 1),
+  );
+  const deltaVsHybridConfidence = 1.96 * hybridSd / Math.sqrt(hybridDeltas.length);
 
   const ids = results[0].riskChecks.map((c) => c.id);
   const riskChecks: RiskCheck[] = ids.map((id) => {
@@ -651,6 +707,8 @@ function aggregate(results: SimulationResult[], seeds: number[]): StageEvidence 
     seeds,
     deltaUtility: mu,
     deltaConfidence,
+    deltaVsHybrid: hybridMu,
+    deltaVsHybridConfidence,
     winRate: results.reduce((s, r) => s + r.winRate, 0) / results.length,
     riskChecks,
     draws: results.reduce((s, r) => s + r.ensembleSize, 0),
@@ -675,6 +733,11 @@ function candidateRegions(base: SimulationParams): SimulationParams[] {
             geographicalFriction,
             participantReliability,
             supplyDemandImbalance,
+            flexibleComputeShare: base.flexibleComputeShare,
+            marketOverhead: base.marketOverhead,
+            hybridOverhead: base.hybridOverhead,
+            genesisOverhead: base.genesisOverhead,
+            telemetryVerificationCost: base.telemetryVerificationCost,
           });
         }
       }
@@ -732,6 +795,7 @@ export function challengeClaim(claim: FrozenClaim): ChallengeOutcome {
   const sample = results[0];
 
   const lcb = holdout.deltaUtility - holdout.deltaConfidence;
+  const hybridLcb = holdout.deltaVsHybrid - holdout.deltaVsHybridConfidence;
   const failedRisk = holdout.riskChecks.filter((c) => !c.passed);
   const shrinkage = holdout.deltaUtility - claim.predictedDelta;
 
@@ -742,9 +806,15 @@ export function challengeClaim(claim: FrozenClaim): ChallengeOutcome {
   const gates: SuperiorityGate[] = [
     {
       id: 'significance',
-      label: 'Holdout gain clears its confidence band',
-      detail: `Δ = ${holdout.deltaUtility.toFixed(2)} pp, 95% CI lower bound ${lcb.toFixed(2)} pp over ${holdout.draws} unseen draws.`,
-      passed: lcb > 0,
+      label: 'Holdout gain exceeds the preregistered minimum',
+      detail: `Δ = ${holdout.deltaUtility.toFixed(2)} pp, 95% CI lower bound ${lcb.toFixed(2)} pp over ${holdout.draws} unseen draws; ε = 1.00 pp.`,
+      passed: lcb > 1,
+    },
+    {
+      id: 'hybrid',
+      label: 'Beats price plus computation',
+      detail: `Genesis minus hybrid = ${holdout.deltaVsHybrid.toFixed(2)} pp, 95% CI lower bound ${hybridLcb.toFixed(2)} pp over ${holdout.seeds.length} holdout seeds. The optimizer receives the same telemetry in both mechanisms.`,
+      passed: hybridLcb > 0,
     },
     {
       id: 'consistency',

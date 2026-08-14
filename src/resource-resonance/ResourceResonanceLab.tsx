@@ -19,7 +19,12 @@ export const ResourceResonanceLab: React.FC = () => {
     urgency: 0.5,
     geographicalFriction: 0.3,
     participantReliability: 0.8,
-    supplyDemandImbalance: 0.1
+    supplyDemandImbalance: 0.1,
+    flexibleComputeShare: 0.65,
+    marketOverhead: 0.08,
+    hybridOverhead: 0.11,
+    genesisOverhead: 0.14,
+    telemetryVerificationCost: 0.3
   });
 
   const [result, setResult] = useState<SimulationResult | null>(null);
@@ -227,6 +232,35 @@ export const ResourceResonanceLab: React.FC = () => {
           </div>
 
           <div className="space-y-6">
+            <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 sm:p-6">
+              <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-slate-200">Cost assumptions</h3>
+              <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+                Welfare deductions are assumptions, not facts. Change them before discovery to run a sensitivity check.
+              </p>
+              <div className="mt-4 space-y-4">
+                {([
+                  ['marketOverhead', 'Market clearing'],
+                  ['hybridOverhead', 'Hybrid optimizer'],
+                  ['genesisOverhead', 'Genesis routing'],
+                  ['telemetryVerificationCost', 'Telemetry verification'],
+                ] as const).map(([key, label]) => (
+                  <label key={key} className="block">
+                    <span className="flex justify-between font-mono text-[10px] text-slate-400">
+                      <span>{label}</span><span>{(params[key] * 100).toFixed(0)}%</span>
+                    </span>
+                    <input
+                      type="range" min="0" max="0.4" step="0.01" value={params[key]}
+                      onChange={(event) => {
+                        const next = { ...params, [key]: Number(event.target.value) };
+                        setParams(next);
+                        setResult(runSimulation(next));
+                      }}
+                      className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-slate-800 accent-cyan-400"
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
             <SuperiorityProtocol onAdopt={handleDiscover} baseParams={params} />
             
             {matches.length > 0 && (

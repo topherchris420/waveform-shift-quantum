@@ -143,7 +143,7 @@ export const SuperiorityProtocol: React.FC<Props> = ({ onAdopt, baseParams }) =>
                   outcome.granted ? 'text-emerald-400' : 'text-rose-400'
                 }`}
               >
-                {outcome.granted ? 'Computational superiority granted' : 'Claim not upheld'}
+                {outcome.granted ? 'Computational superiority confirmed within this regime' : 'Claim not upheld'}
               </h4>
               <p className="mt-1.5 text-[11px] leading-relaxed text-slate-300">{outcome.summary}</p>
             </div>

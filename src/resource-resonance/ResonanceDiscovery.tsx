@@ -32,7 +32,12 @@ export const ResonanceDiscovery: React.FC<ResonanceDiscoveryProps> = ({ onDiscov
             urgency: 0.5,
             geographicalFriction: 0.8,
             participantReliability: 0.9,
-            supplyDemandImbalance: 0.2
+            supplyDemandImbalance: 0.2,
+            flexibleComputeShare: 0.7,
+            marketOverhead: 0.08,
+            hybridOverhead: 0.11,
+            genesisOverhead: 0.14,
+            telemetryVerificationCost: 0.3
           };
           onDiscover(interestingParams);
           return r;

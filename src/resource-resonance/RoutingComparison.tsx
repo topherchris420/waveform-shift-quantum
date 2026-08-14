@@ -19,17 +19,30 @@ export const RoutingComparison: React.FC<RoutingComparisonProps> = ({ result }) 
 
   return (
     <div className="flex flex-col gap-5 sm:gap-6">
-      <div className="grid grid-cols-1 divide-y divide-slate-800 border-y border-slate-800 md:grid-cols-2 md:divide-x md:divide-y-0">
+      <div className="grid grid-cols-1 divide-y divide-slate-800 border-y border-slate-800 md:grid-cols-3 md:divide-x md:divide-y-0">
         {/* Model A */}
         <div className="p-4 sm:p-6">
           <h3 className="mb-4 font-mono text-[11px] font-bold tracking-[0.2em] text-slate-400 uppercase">
             Model A — Monetary Routing
           </h3>
           <div className="space-y-4">
-            <ComparisonRow label="Network Utility" value={`${result.modelA.totalNetworkUtility.toFixed(1)}%`} />
+            <ComparisonRow label="Physical Welfare" value={`${result.modelA.totalNetworkUtility.toFixed(1)}%`} />
             <ComparisonRow label="Wasted Energy" value={`${result.modelA.wastedEnergy.toFixed(1)}%`} />
             <ComparisonRow label="Routing Latency" value={`${result.modelA.routingLatency.toFixed(0)} ms`} />
             <ComparisonRow label="Unmet Demand" value={`${result.modelA.unmetDemand.toFixed(1)}%`} />
+          </div>
+        </div>
+
+        {/* Hybrid control */}
+        <div className="p-4 sm:p-6 bg-indigo-950/10">
+          <h3 className="mb-4 font-mono text-[11px] font-bold tracking-[0.16em] text-indigo-300 uppercase">
+            Model H — Market + Optimizer
+          </h3>
+          <div className="space-y-4">
+            <ComparisonRow label="Physical Welfare" value={`${result.modelHybrid.totalNetworkUtility.toFixed(1)}%`} />
+            <ComparisonRow label="Wasted Energy" value={`${result.modelHybrid.wastedEnergy.toFixed(1)}%`} />
+            <ComparisonRow label="Routing Latency" value={`${result.modelHybrid.routingLatency.toFixed(0)} ms`} />
+            <ComparisonRow label="Unmet Demand" value={`${result.modelHybrid.unmetDemand.toFixed(1)}%`} />
           </div>
         </div>
 
@@ -39,10 +52,16 @@ export const RoutingComparison: React.FC<RoutingComparisonProps> = ({ result }) 
             Model B — Resource Resonance
           </h3>
           <div className="space-y-4">
-            <ComparisonRow label="Network Utility" value={`${result.modelB.totalNetworkUtility.toFixed(1)}%`} highlight={result.modelB.totalNetworkUtility > result.modelA.totalNetworkUtility} />
+            <ComparisonRow label="Physical Welfare" value={`${result.modelB.totalNetworkUtility.toFixed(1)}%`} highlight={result.modelB.totalNetworkUtility > Math.max(result.modelA.totalNetworkUtility, result.modelHybrid.totalNetworkUtility)} />
             <ComparisonRow label="Wasted Energy" value={`${result.modelB.wastedEnergy.toFixed(1)}%`} highlight={result.modelB.wastedEnergy < result.modelA.wastedEnergy} />
             <ComparisonRow label="Routing Latency" value={`${result.modelB.routingLatency.toFixed(0)} ms`} highlight={result.modelB.routingLatency < result.modelA.routingLatency} />
             <ComparisonRow label="Unmet Demand" value={`${result.modelB.unmetDemand.toFixed(1)}%`} highlight={result.modelB.unmetDemand < result.modelA.unmetDemand} />
+          </div>
+          <div className="border-slate-800 md:border-l md:pl-4">
+            <p className="font-mono text-[9px] uppercase tracking-widest text-slate-500">Genesis vs hybrid</p>
+            <p className={`mt-1 font-mono text-sm ${result.deltaVsHybrid > 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+              {result.deltaVsHybrid > 0 ? '+' : ''}{result.deltaVsHybrid.toFixed(2)} pp
+            </p>
           </div>
         </div>
       </div>
@@ -111,8 +130,9 @@ export const RoutingComparison: React.FC<RoutingComparisonProps> = ({ result }) 
         </div>
 
         <p className="mt-4 border-t border-slate-800 pt-3 text-[11px] leading-relaxed text-slate-500">
-          Both mechanisms allocate the same seeded agent population under the same physical substitution
-          matrix and capacity constraints; only the ranking signal and its coordination cost differ.
+          All three mechanisms allocate the same seeded energy/compute/storage world. The oracle alone sees
+          latent physical welfare; Genesis and the hybrid receive identical noisy telemetry, while the strengthened
+          market uses time/location bids and congestion prices. Overhead assumptions are explicit simulation inputs.
           A gain is only claimed when it clears its confidence band <em>and</em> every risk check stays
           within tolerance.
         </p>
