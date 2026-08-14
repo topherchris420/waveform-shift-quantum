@@ -18,10 +18,10 @@ export const RoutingComparison: React.FC<RoutingComparisonProps> = ({ result }) 
       : { color: 'text-slate-400', border: 'border-slate-700', Icon: MinusCircle, title: 'No demonstrated improvement' };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5 sm:gap-6">
       <div className="grid grid-cols-1 divide-y divide-slate-800 border-y border-slate-800 md:grid-cols-2 md:divide-x md:divide-y-0">
         {/* Model A */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <h3 className="mb-4 font-mono text-[11px] font-bold tracking-[0.2em] text-slate-400 uppercase">
             Model A — Monetary Routing
           </h3>
@@ -34,7 +34,7 @@ export const RoutingComparison: React.FC<RoutingComparisonProps> = ({ result }) 
         </div>
 
         {/* Model B */}
-        <div className="p-6 bg-slate-900/30">
+        <div className="p-4 sm:p-6 bg-slate-900/30">
           <h3 className="mb-4 font-mono text-[11px] font-bold tracking-[0.2em] text-cyan-400 uppercase">
             Model B — Resource Resonance
           </h3>
@@ -47,7 +47,7 @@ export const RoutingComparison: React.FC<RoutingComparisonProps> = ({ result }) 
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-5">
+      <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4 sm:p-5">
         <p className="font-mono text-[10px] uppercase tracking-widest text-slate-500 mb-2">
           Measurable Divergence — {result.ensembleSize} shock draws
         </p>
@@ -67,7 +67,7 @@ export const RoutingComparison: React.FC<RoutingComparisonProps> = ({ result }) 
       </div>
 
       {/* Systemic risk ledger */}
-      <div className={`rounded-xl border ${verdictTheme.border} bg-slate-950/50 p-5`}>
+      <div className={`rounded-xl border ${verdictTheme.border} bg-slate-950/50 p-4 sm:p-5`}>
         <div className="flex items-start gap-3 mb-5">
           <verdictTheme.Icon className={`w-5 h-5 shrink-0 mt-0.5 ${verdictTheme.color}`} />
           <div>

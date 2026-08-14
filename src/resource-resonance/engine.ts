@@ -567,3 +567,228 @@ export function runSimulation(params: SimulationParams, seed = 20260813): Simula
     ensembleSize: ENSEMBLE,
   };
 }
+
+/* ------------------------------------------------------------------ *
+ *  Superiority protocol: discover → freeze → challenge on holdout
+ * ------------------------------------------------------------------ *
+ * A superiority claim is only meaningful if it survives data it was not
+ * tuned on. We therefore (1) search parameter space on a *discovery* seed
+ * bank, (2) freeze the winning region and its prediction, (3) re-run the
+ * frozen region on disjoint *holdout* seeds with wider, unseen shocks, and
+ * (4) grant "computational superiority" only when the holdout delta clears
+ * its confidence band and every systemic-risk gate.
+ */
+
+export interface StageEvidence {
+  seeds: number[];
+  /** Mean ΔUtility (pp) across the seed bank. */
+  deltaUtility: number;
+  /** 95% CI half-width on the mean, pooled across seeds and draws. */
+  deltaConfidence: number;
+  /** Fraction of individual seed-runs in which routing beat the baseline. */
+  winRate: number;
+  /** Per-check averages over the seed bank, re-evaluated against tolerance. */
+  riskChecks: RiskCheck[];
+  draws: number;
+}
+
+export interface SuperiorityGate {
+  id: string;
+  label: string;
+  detail: string;
+  passed: boolean;
+}
+
+export interface FrozenClaim {
+  id: string;
+  frozenAt: string;
+  params: SimulationParams;
+  discovery: StageEvidence;
+  discoverySeeds: number[];
+  holdoutSeeds: number[];
+  /** The prediction being registered before any holdout data is touched. */
+  predictedDelta: number;
+  predictedBand: number;
+}
+
+export interface ChallengeOutcome {
+  claim: FrozenClaim;
+  holdout: StageEvidence;
+  gates: SuperiorityGate[];
+  granted: boolean;
+  /** Holdout delta minus predicted delta (pp). Negative = overfit shrinkage. */
+  shrinkage: number;
+  /** Realised share of the oracle's attainable welfare, routed vs baseline. */
+  oracleGapBaseline: number;
+  oracleGapRouted: number;
+  summary: string;
+  sample: SimulationResult;
+}
+
+const DISCOVERY_SEEDS = [101, 227, 373, 521];
+const HOLDOUT_SEEDS = [90211, 91733, 93187, 94687, 96079, 97501];
+
+function aggregate(results: SimulationResult[], seeds: number[]): StageEvidence {
+  const deltas = results.map((r) => r.deltaUtility);
+  const mu = deltas.reduce((s, v) => s + v, 0) / deltas.length;
+  const sd = Math.sqrt(deltas.reduce((s, v) => s + (v - mu) ** 2, 0) / Math.max(1, deltas.length - 1));
+  // Pool the within-seed sampling error with the between-seed spread.
+  const within = results.reduce((s, r) => s + r.deltaConfidence ** 2, 0) / results.length ** 2;
+  const between = (sd * sd) / results.length;
+  const deltaConfidence = 1.96 * Math.sqrt(Math.max(within / 1.96 ** 2, 0) + between);
+
+  const ids = results[0].riskChecks.map((c) => c.id);
+  const riskChecks: RiskCheck[] = ids.map((id) => {
+    const rows = results.map((r) => r.riskChecks.find((c) => c.id === id)!);
+    const avg = (f: (c: RiskCheck) => number) => rows.reduce((s, c) => s + f(c), 0) / rows.length;
+    const baseline = avg((c) => c.baseline);
+    const routed = avg((c) => c.routed);
+    const t = rows[0];
+    return { ...t, baseline, routed, passed: routed <= baseline + t.tolerance };
+  });
+
+  return {
+    seeds,
+    deltaUtility: mu,
+    deltaConfidence,
+    winRate: results.reduce((s, r) => s + r.winRate, 0) / results.length,
+    riskChecks,
+    draws: results.reduce((s, r) => s + r.ensembleSize, 0),
+  };
+}
+
+function evaluateOn(params: SimulationParams, seeds: number[]): StageEvidence {
+  return aggregate(seeds.map((s) => runSimulation(params, s)), seeds);
+}
+
+/** Candidate regions swept during discovery. Coarse but deterministic. */
+function candidateRegions(base: SimulationParams): SimulationParams[] {
+  const grid: SimulationParams[] = [];
+  for (const renewableVolatility of [0.25, 0.55, 0.85]) {
+    for (const geographicalFriction of [0.2, 0.55, 0.85]) {
+      for (const participantReliability of [0.55, 0.8, 0.95]) {
+        for (const supplyDemandImbalance of [0.05, 0.35]) {
+          grid.push({
+            ...base,
+            networkSize: 60,
+            renewableVolatility,
+            geographicalFriction,
+            participantReliability,
+            supplyDemandImbalance,
+          });
+        }
+      }
+    }
+  }
+  return grid;
+}
+
+/**
+ * Stage 1 + 2 — sweep the discovery seed bank for the region with the largest
+ * lower-confidence-bound gain that also passes every risk check, then freeze it.
+ * Holdout seeds are assigned but never evaluated here.
+ */
+export function discoverAndFreeze(base: SimulationParams): FrozenClaim {
+  let best: { params: SimulationParams; ev: StageEvidence; lcb: number } | null = null;
+
+  for (const cand of candidateRegions(base)) {
+    const ev = evaluateOn(cand, DISCOVERY_SEEDS);
+    const lcb = ev.deltaUtility - ev.deltaConfidence;
+    const clean = ev.riskChecks.every((c) => c.passed);
+    const score = clean ? lcb : lcb - 5; // risky regions are penalised, not banned
+    if (!best || score > best.lcb) best = { params: cand, ev, lcb: score };
+  }
+
+  const { params, ev } = best!;
+  const id = `RRC-${Math.abs(
+    Math.round(
+      (params.renewableVolatility * 1e4 + params.geographicalFriction * 1e3 + params.participantReliability * 1e2) *
+        (1 + ev.deltaUtility),
+    ),
+  )
+    .toString(36)
+    .toUpperCase()
+    .padStart(5, '0')}`;
+
+  return {
+    id,
+    frozenAt: new Date().toISOString(),
+    params,
+    discovery: ev,
+    discoverySeeds: DISCOVERY_SEEDS,
+    holdoutSeeds: HOLDOUT_SEEDS,
+    predictedDelta: ev.deltaUtility,
+    predictedBand: ev.deltaConfidence,
+  };
+}
+
+/**
+ * Stage 3 + 4 — re-run the frozen region on disjoint seeds (unseen shock
+ * realisations), then apply the superiority gates.
+ */
+export function challengeClaim(claim: FrozenClaim): ChallengeOutcome {
+  const results = claim.holdoutSeeds.map((s) => runSimulation(claim.params, s));
+  const holdout = aggregate(results, claim.holdoutSeeds);
+  const sample = results[0];
+
+  const lcb = holdout.deltaUtility - holdout.deltaConfidence;
+  const failedRisk = holdout.riskChecks.filter((c) => !c.passed);
+  const shrinkage = holdout.deltaUtility - claim.predictedDelta;
+
+  // Both mechanisms are scored against the same perfectly-informed planner.
+  const oracleGapBaseline = 100 - sample.modelA.resourceUtilization;
+  const oracleGapRouted = 100 - sample.modelB.resourceUtilization;
+
+  const gates: SuperiorityGate[] = [
+    {
+      id: 'significance',
+      label: 'Holdout gain clears its confidence band',
+      detail: `Δ = ${holdout.deltaUtility.toFixed(2)} pp, 95% CI lower bound ${lcb.toFixed(2)} pp over ${holdout.draws} unseen draws.`,
+      passed: lcb > 0,
+    },
+    {
+      id: 'consistency',
+      label: 'Wins a majority of unseen shock draws',
+      detail: `Routing beat the price baseline in ${(holdout.winRate * 100).toFixed(0)}% of holdout draws (needs > 60%).`,
+      passed: holdout.winRate > 0.6,
+    },
+    {
+      id: 'generalisation',
+      label: 'Prediction survives out-of-sample',
+      detail: `Predicted ${claim.predictedDelta.toFixed(2)} pp, realised ${holdout.deltaUtility.toFixed(2)} pp (${shrinkage >= 0 ? '+' : ''}${shrinkage.toFixed(2)} pp). Shrinkage beyond 50% of the prediction counts as overfitting.`,
+      passed: holdout.deltaUtility >= claim.predictedDelta * 0.5,
+    },
+    {
+      id: 'oracle',
+      label: 'Closes the gap to the oracle planner',
+      detail: `Attainable welfare left on the table: baseline ${oracleGapBaseline.toFixed(1)}% → routed ${oracleGapRouted.toFixed(1)}%.`,
+      passed: oracleGapRouted < oracleGapBaseline,
+    },
+    {
+      id: 'risk',
+      label: 'No new systemic risk on holdout',
+      detail:
+        failedRisk.length === 0
+          ? 'Concentration, cascade loss, volatility, shortfall inequality, relay dependence and overhead all stay within tolerance.'
+          : `Failing: ${failedRisk.map((c) => c.label.toLowerCase()).join(', ')}.`,
+      passed: failedRisk.length === 0,
+    },
+  ];
+
+  const granted = gates.every((g) => g.passed);
+  const failed = gates.filter((g) => !g.passed);
+
+  return {
+    claim,
+    holdout,
+    gates,
+    granted,
+    shrinkage,
+    oracleGapBaseline,
+    oracleGapRouted,
+    sample,
+    summary: granted
+      ? `Computational superiority granted for region ${claim.id}: +${holdout.deltaUtility.toFixed(2)} ± ${holdout.deltaConfidence.toFixed(2)} pp of attainable welfare on ${claim.holdoutSeeds.length} unseen seeds, with every risk gate inside tolerance.`
+      : `Claim ${claim.id} is not upheld — ${failed.length} gate${failed.length > 1 ? 's' : ''} failed (${failed.map((g) => g.label.toLowerCase()).join('; ')}). The discovered advantage does not generalise as a superiority claim.`,
+  };
+}

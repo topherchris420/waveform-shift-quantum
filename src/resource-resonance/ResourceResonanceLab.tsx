@@ -4,7 +4,7 @@ import { SimulationParams, SimulationResult, runSimulation, ResourceOffer, Resou
 import { compileResonanceRun, ResonanceCatalystSession } from './resonanceCatalyst';
 import { ResourceNetwork, RelayNode } from './ResourceNetwork';
 import { RoutingComparison } from './RoutingComparison';
-import { ResonanceDiscovery } from './ResonanceDiscovery';
+import { SuperiorityProtocol } from './SuperiorityProtocol';
 import { MatchExplanation } from './MatchExplanation';
 import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
@@ -145,7 +145,7 @@ export const ResourceResonanceLab: React.FC = () => {
   const handleDiscover = (newParams: SimulationParams) => {
     setParams(newParams);
     setResult(runSimulation(newParams));
-    toast.success("Resonance Window Discovered!");
+    toast.success("Region frozen — challenging on holdout seeds");
   };
 
   const handleGenerateCatalyst = async () => {
@@ -168,30 +168,30 @@ export const ResourceResonanceLab: React.FC = () => {
   return (
     <div className="min-h-screen bg-black text-foreground selection:bg-cyan-500/30">
       <Toaster theme="dark" />
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
         
         {/* TIME CONTROLLER */}
-        <div className="mb-8 p-6 rounded-2xl border border-cyan-900/30 bg-cyan-950/10 backdrop-blur-md flex items-center justify-between shadow-[0_0_30px_rgba(6,182,212,0.05)]">
-           <div className="flex items-center gap-4">
-              <div className="p-3 bg-cyan-900/40 rounded-full border border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+        <div className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl border border-cyan-900/30 bg-cyan-950/10 backdrop-blur-md flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between shadow-[0_0_30px_rgba(6,182,212,0.05)]">
+           <div className="flex items-center gap-3 sm:gap-4">
+              <div className="p-2.5 sm:p-3 shrink-0 bg-cyan-900/40 rounded-full border border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
                  <Clock className="w-6 h-6 text-cyan-400" />
               </div>
               <div>
-                 <h3 className="text-white font-bold font-mono tracking-wider">Simulated CAISO Grid Time</h3>
-                 <p className="text-sm text-cyan-400/80 font-mono mt-1">
+                 <h3 className="text-white text-sm sm:text-base font-bold font-mono tracking-wider">Simulated CAISO Grid Time</h3>
+                 <p className="text-xs sm:text-sm text-cyan-400/80 font-mono mt-1">
                    {simulatedTime.toString().padStart(2, '0')}:00 {simulatedTime < 12 ? 'AM' : 'PM'} 
-                   <span className="text-slate-500 ml-2 text-xs">(Energy Availability: {(GridStochasticEngine.getEnergyAvailability(simulatedTime) * 100).toFixed(0)}%)</span>
+                   <span className="block sm:inline text-slate-500 sm:ml-2 text-[10px] sm:text-xs">(Energy Availability: {(GridStochasticEngine.getEnergyAvailability(simulatedTime) * 100).toFixed(0)}%)</span>
                  </p>
               </div>
            </div>
-           <div className="flex-1 max-w-xl mx-8">
+           <div className="w-full lg:flex-1 lg:max-w-xl lg:mx-8">
               <input 
                 type="range" 
                 min="0" 
                 max="23" 
                 value={simulatedTime} 
                 onChange={(e) => setSimulatedTime(parseInt(e.target.value))}
-                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                className="w-full h-3 sm:h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
               />
               <div className="flex justify-between mt-2 text-[10px] font-mono text-slate-500">
                 <span>00:00 (Midnight)</span>
@@ -201,8 +201,8 @@ export const ResourceResonanceLab: React.FC = () => {
            </div>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
-          <div className="space-y-8">
+        <div className="grid gap-6 sm:gap-8 lg:grid-cols-[1fr_380px]">
+          <div className="space-y-6 sm:space-y-8">
             <section>
               <ResourceNetwork 
                 offers={offers}
@@ -227,13 +227,13 @@ export const ResourceResonanceLab: React.FC = () => {
           </div>
 
           <div className="space-y-6">
-            <ResonanceDiscovery onDiscover={handleDiscover} />
+            <SuperiorityProtocol onAdopt={handleDiscover} baseParams={params} />
             
             {matches.length > 0 && (
               <MatchExplanation match={matches[0]} />
             )}
             
-            <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-6">
+            <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-4 sm:p-6">
               <h3 className="font-mono text-xs font-bold tracking-widest text-slate-200 uppercase mb-4 flex items-center gap-2">
                 <FileSignature className="w-4 h-4 text-cyan-400" />
                 Epistemic Record
