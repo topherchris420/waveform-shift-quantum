@@ -8,7 +8,9 @@ Evaluating standard quantum mechanics alongside the proposed **Woodyard (2026)**
 
 ## Demo Video
 
-[▶ Watch the R.A.I.N. Lab demo](docs/assets/rain-lab-demo.mp4)
+<video src="docs/assets/rain-lab-demo.mp4" controls width="100%">
+  Your browser does not support embedded videos.
+</video>
 
 ---
 
