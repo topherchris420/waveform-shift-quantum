@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Shield, Activity, Network } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from './ui/button';
 
 export const GlobalNav = () => {
@@ -48,7 +49,16 @@ export const GlobalNav = () => {
                Multi-Hop Triangulation
              </div>
           ) : (
-             <Button variant="outline" size="sm" className="hidden sm:flex font-mono text-xs">
+             <Button
+               variant="outline"
+               size="sm"
+               aria-label="Initialize Quantum Laboratory System"
+               onClick={() => {
+                 document.getElementById('reality-split')?.scrollIntoView({ behavior: 'smooth' });
+                 toast.success('System initialization sequence active.');
+               }}
+               className="hidden sm:flex font-mono text-xs focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+             >
                INITIALIZE SYSTEM
              </Button>
           )}
