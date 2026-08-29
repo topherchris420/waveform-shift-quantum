@@ -32,6 +32,7 @@ import {
   TeleportationWorkspace,
   type TeleportationSessionState,
 } from '@/quantum/components/TeleportationWorkspace';
+import { QDPWorkspace } from '@/quantum/components/QDPWorkspace';
 import { TwoSiteExperiment } from '@/quantum/experiments/TwoSiteExperiment';
 import { SIMULATION_DISCLAIMER, type EpistemicClass } from '@/lib/epistemics';
 import { DEFAULT_SPLIT_PARAMS, type RealitySplitParams, type SplitMode } from '@/lib/realitySplit';
@@ -53,7 +54,8 @@ type ExperimentMode =
   | 'classical_limit'
   | 'teleportation'
   | 'interference'
-  | 'superposition';
+  | 'superposition'
+  | 'qdp';
 
 interface Measurement {
   id: number;
@@ -168,6 +170,19 @@ const experiments: Record<ExperimentMode, ExperimentDefinition> = {
     equationNote: 'Standard Born rule projective measurement.',
     epistemic: 'established',
   },
+  qdp: {
+    label: 'Quantum Dynamic Programming (RBC)',
+    eyebrow: 'Fernández-Villaverde & Hull (2022)',
+    icon: Gauge,
+    premise:
+      'Dynamic Programming on a Quantum Annealer: Solving the Real Business Cycle (RBC) economic model via QUBO formulation on D-Wave Pegasus architecture.',
+    instruction:
+      'Compare classical PPI, classical combinatorial QUBO, hybrid, and reverse annealing quantum solvers.',
+    equation:
+      'x_1 = \\frac{\\alpha\\beta x_3}{1 + \\alpha\\beta x_3},\\quad \\min_{q} q^T Q(x_1) q',
+    equationNote: 'Quantum annealing applied to economic policy iteration and valuation.',
+    epistemic: 'established',
+  },
 };
 
 const modeOrder: ExperimentMode[] = [
@@ -178,6 +193,7 @@ const modeOrder: ExperimentMode[] = [
   'teleportation',
   'interference',
   'superposition',
+  'qdp',
 ];
 
 const SPLIT_MODES: Array<{ id: SplitMode; label: string }> = [
@@ -721,6 +737,11 @@ export const QuantumLab: React.FC = () => {
           decoherence={1 - fieldIntensity[0] * 0.7}
           onSessionChange={setTeleportSession}
         />
+      </Reveal>
+
+      {/* Quantum Dynamic Programming Workspace */}
+      <Reveal as="section" variant="up" className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
+        <QDPWorkspace />
       </Reveal>
 
       {/* Analytical tool runner */}

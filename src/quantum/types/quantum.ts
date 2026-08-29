@@ -9,7 +9,8 @@ export type ExperimentType =
   | 'classical_limit'
   | 'teleportation'
   | 'interference'
-  | 'superposition';
+  | 'superposition'
+  | 'qdp';
 
 export interface QuantumLabParameters {
   g: number;
