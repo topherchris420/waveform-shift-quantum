@@ -10,8 +10,39 @@ export interface MatchResult {
   explanation: { compositeMatch: number; compatibility: number; energyAvailability: number; urgencyAlignment: number; networkCost: number; reliability: number };
 }
 
+export interface BehavioralEnvironment {
+  riskAversion: number;
+  lossAversion: number;
+  herdingIntensity: number;
+  liquidityPreference: number;
+  hoardingSensitivity: number;
+  trustSensitivity: number;
+  informationAsymmetry: number;
+  adaptationSpeed: number;
+}
+
+export interface InstitutionalEnvironment {
+  regulatoryFriction: number;
+  capitalConstraints: number;
+  settlementLatency: number;
+  governanceLatency: number;
+  policyResponsiveness: number;
+  institutionalCapacity: number;
+  interventionThreshold: number;
+}
+
+export interface ShockEnvironment {
+  resourceScarcity: number;
+  volatility: number;
+  counterpartyFailures: number;
+  confidenceShock: number;
+  infrastructureOutage: number;
+  regulatoryShock: number;
+}
+
 /** All rates are fractions in [0, 1], except latency (periods) and costs. */
 export interface SimulationParams {
+  // Legacy Core Parameters
   resourceScarcity: number; networkSize: number; renewableVolatility: number; computeDemand: number; urgency: number;
   geographicalFriction: number; participantReliability: number; supplyDemandImbalance: number; flexibleComputeShare: number;
   marketOverhead: number; hybridOverhead: number; genesisOverhead: number; telemetryVerificationCost: number;
@@ -20,6 +51,31 @@ export interface SimulationParams {
   centralBankBackstop: boolean; backstopCapacity: number; telemetryReliability: number;
   criticalDemandThreshold: number; monetaryDeteriorationThreshold: number; physicalAvailabilityThreshold: number;
   riskTolerance: number;
+
+  // Multi-Layer Toggles
+  behavioralEnabled?: boolean;
+  institutionalEnabled?: boolean;
+
+  // Hierarchical Environment Parameters
+  riskAversion: number;
+  lossAversion: number;
+  herdingIntensity: number;
+  liquidityPreference: number;
+  hoardingSensitivity: number;
+  trustSensitivity: number;
+  informationAsymmetry: number;
+  adaptationSpeed: number;
+
+  regulatoryFriction: number;
+  capitalConstraints: number;
+  governanceLatency: number;
+  policyResponsiveness: number;
+  institutionalCapacity: number;
+  interventionThreshold: number;
+
+  confidenceShock: number;
+  infrastructureOutage: number;
+  regulatoryShock: number;
 }
 
 export type Architecture = 'market' | 'stabilizedMarket' | 'hybrid' | 'genesis';
@@ -28,7 +84,26 @@ export type ArchitectureVerdict = 'MARKET SUPERIOR' | 'STABILIZED MARKET SUPERIO
 export type SafetyValveState = 'NORMAL' | 'FINANCIAL_STRESS' | 'STABILIZED_MARKET' | 'HYBRID' | 'GENESIS_BASELINE' | 'RECOVERY';
 
 export interface UnmetDemandDecomposition {
-  physicalShortage: number; financialExclusion: number; networkConstraint: number; compatibilityConstraint: number;
+  physicalShortage: number;
+  financialExclusion: number;
+  behavioralFriction: number;
+  institutionalFriction: number;
+  informationFriction: number;
+  networkConstraint: number;
+  compatibilityConstraint: number;
+  residualCoordinationFailure: number;
+}
+
+export interface CausalAttribution {
+  physicalScarcityPct: number;
+  financialConstraintPct: number;
+  behavioralFrictionPct: number;
+  institutionalFrictionPct: number;
+  informationFrictionPct: number;
+  coordinationFailurePct: number;
+  primaryCausalFactor: string;
+  certaintyLevel: 'HIGH' | 'MEDIUM' | 'LOW' | 'UNCERTAIN';
+  explanation: string;
 }
 
 export interface SimulationMetrics {
@@ -38,6 +113,28 @@ export interface SimulationMetrics {
   creditConcentration: number; settlementFailureRate: number; backstopUtilization: number; liquidityShortfall: number;
   feasibleButUnservedDemand: number; strandedPhysicalUtility: number; telemetryCorruptionSensitivity: number;
   unmetDemandDecomposition: UnmetDemandDecomposition;
+
+  // Extended Behavioral & Institutional Metrics
+  behavioralDemandAmplification: number;
+  hoardingFactor: number;
+  liquidityPreferenceMetric: number;
+  herdingIntensityMetric: number;
+  trustWeightedCapacity: number;
+  counterpartyConcentration: number;
+  informationAsymmetryMetric: number;
+  regulatoryFrictionMetric: number;
+  institutionalLatency: number;
+  settlementCongestion: number;
+  regulatoryBottleneckRate: number;
+  behavioralUnmetDemand: number;
+  institutionalUnmetDemand: number;
+  cascadingFailureProbability: number;
+  recoveryTime: number;
+  liquidityResilience: number;
+  policyResponseLag: number;
+  interventionUtilization: number;
+  deadweightLoss: number;
+  causalAttribution: CausalAttribution;
 }
 
 export type RiskVerdict = 'improves-safely' | 'improves-with-risk' | 'no-improvement';
@@ -53,19 +150,20 @@ export interface SimulationResult {
 
 export interface ScenarioPreset { id: string; name: string; description: string; patch: Partial<SimulationParams>; financialOnly?: boolean }
 export const SCENARIO_PRESETS: ScenarioPreset[] = [
-  { id: 'normal', name: 'Normal Market', description: 'Liquid credit and reliable settlement.', patch: { liquidityStress: .08, creditAvailability: .9, counterpartyRisk: .05, settlementReliability: .98, priceSignalNoise: .05 } },
-  { id: 'credit-freeze', name: 'Credit Freeze', description: 'Credit supply contracts while physical capacity is unchanged.', financialOnly: true, patch: { creditAvailability: .12, liquidityStress: .88, fundingCost: .2 } },
-  { id: 'intermediary-failure', name: 'Major Intermediary Failure', description: 'Counterparty and credit concentration stress.', financialOnly: true, patch: { counterpartyRisk: .72, settlementReliability: .7, creditAvailability: .35 } },
-  { id: 'settlement', name: 'Settlement Disruption', description: 'Payment rails become slow and unreliable.', financialOnly: true, patch: { settlementReliability: .42, settlementLatency: .85 } },
-  { id: 'inflation', name: 'Inflation / Price-Signal Noise', description: 'Relative-price information is obscured without removing supply.', financialOnly: true, patch: { priceSignalNoise: .75, fundingCost: .14 } },
-  { id: 'cb-success', name: 'Successful Central-Bank Liquidity Intervention', description: 'A solvent market receives ample lender-of-last-resort liquidity.', financialOnly: true, patch: { liquidityStress: .76, creditAvailability: .35, counterpartyRisk: .08, centralBankBackstop: true, backstopCapacity: .8 } },
-  { id: 'telemetry', name: 'Telemetry Corruption', description: 'Physical reports become unreliable.', patch: { telemetryReliability: .25, participantReliability: .45 } },
-  { id: 'physical', name: 'Real Physical Resource Shock', description: 'Energy, compute and storage capacity disappear.', patch: { resourceScarcity: .92, renewableVolatility: .85, supplyDemandImbalance: .65 } },
-  { id: 'trust', name: 'Low-Trust Network', description: 'Both counterparties and telemetry are difficult to verify.', patch: { counterpartyRisk: .55, telemetryReliability: .38, participantReliability: .45, settlementReliability: .65 } },
-  { id: 'combined', name: 'Combined Financial + Physical Crisis', description: 'Credit and settlement disruption coincide with real scarcity.', patch: { resourceScarcity: .88, supplyDemandImbalance: .6, liquidityStress: .85, creditAvailability: .2, settlementReliability: .5, counterpartyRisk: .6 } },
+  { id: 'normal', name: 'Normal Market', description: 'Liquid credit, representative behavioral heterogeneity, and normal institutional capacity.', patch: { liquidityStress: .08, creditAvailability: .9, counterpartyRisk: .05, settlementReliability: .98, priceSignalNoise: .05, riskAversion: .1, liquidityPreference: .05, regulatoryFriction: .05 } },
+  { id: 'credit-freeze', name: 'Credit Freeze & Panics', description: 'Elevated risk aversion, liquidity hoarding, and trust decay amid monetary freeze.', financialOnly: true, patch: { creditAvailability: .12, liquidityStress: .88, fundingCost: .2, behavioralEnabled: true, riskAversion: .8, liquidityPreference: .85, hoardingSensitivity: .75, trustSensitivity: .8 } },
+  { id: 'intermediary-failure', name: 'Intermediary Failure & Contagion', description: 'Counterparty default cascade with network trust collapse and institutional latency.', financialOnly: true, patch: { counterpartyRisk: .72, settlementReliability: .7, creditAvailability: .35, behavioralEnabled: true, institutionalEnabled: true, confidenceShock: .8, governanceLatency: .7, capitalConstraints: .75 } },
+  { id: 'settlement', name: 'Settlement Disruption & Regulatory Freeze', description: 'Payment rail disruption coupled with compliance bottlenecks.', financialOnly: true, patch: { settlementReliability: .42, settlementLatency: .85, institutionalEnabled: true, regulatoryFriction: .75, regulatoryShock: .6 } },
+  { id: 'inflation', name: 'Price Noise & Information Asymmetry', description: 'Signal noise and asymmetric forecasts impair trading decisions.', financialOnly: true, patch: { priceSignalNoise: .75, fundingCost: .14, behavioralEnabled: true, informationAsymmetry: .8, adaptationSpeed: .3 } },
+  { id: 'cb-success', name: 'Central-Bank Liquidity Intervention', description: 'Lender of last resort provides liquidity subject to policy response lags.', financialOnly: true, patch: { liquidityStress: .76, creditAvailability: .35, counterpartyRisk: .08, centralBankBackstop: true, backstopCapacity: .8, institutionalEnabled: true, policyResponsiveness: .8, interventionThreshold: .3 } },
+  { id: 'telemetry', name: 'Telemetry Corruption & Verification Lag', description: 'Noisy telemetry coupled with regulatory verification holds.', patch: { telemetryReliability: .25, participantReliability: .45, institutionalEnabled: true, regulatoryFriction: .6 } },
+  { id: 'physical', name: 'Physical Shock & Precautionary Hoarding', description: 'Energy & compute scarcity triggers non-linear precautionary hoarding.', patch: { resourceScarcity: .92, renewableVolatility: .85, supplyDemandImbalance: .65, behavioralEnabled: true, hoardingSensitivity: .9, riskAversion: .7 } },
+  { id: 'trust', name: 'Low-Trust & Regulatory Bottlenecks', description: 'Counterparty distrust and institutional compliance restrictions.', patch: { counterpartyRisk: .55, telemetryReliability: .38, participantReliability: .45, settlementReliability: .65, behavioralEnabled: true, institutionalEnabled: true, trustSensitivity: .85, regulatoryFriction: .7 } },
+  { id: 'combined', name: 'Systemic Crisis (Coupled Risk)', description: 'Full non-linear crisis coupling physical scarcity, panic hoarding, and institutional delays.', patch: { resourceScarcity: .88, supplyDemandImbalance: .6, liquidityStress: .85, creditAvailability: .2, settlementReliability: .5, counterpartyRisk: .6, behavioralEnabled: true, institutionalEnabled: true, riskAversion: .85, liquidityPreference: .9, regulatoryFriction: .8, governanceLatency: .75, confidenceShock: .85 } },
 ];
 
 export const DEFAULT_SIMULATION_PARAMS: SimulationParams = {
+  // Legacy Defaults
   resourceScarcity: .5, networkSize: 24, renewableVolatility: .6, computeDemand: .8, urgency: .5,
   geographicalFriction: .3, participantReliability: .8, supplyDemandImbalance: .1, flexibleComputeShare: .65,
   marketOverhead: .04, hybridOverhead: .07, genesisOverhead: .09, telemetryVerificationCost: .08,
@@ -73,6 +171,31 @@ export const DEFAULT_SIMULATION_PARAMS: SimulationParams = {
   settlementReliability: .96, settlementLatency: .12, fundingCost: .05, priceSignalNoise: .08,
   centralBankBackstop: true, backstopCapacity: .45, telemetryReliability: .88,
   criticalDemandThreshold: .16, monetaryDeteriorationThreshold: .12, physicalAvailabilityThreshold: .35, riskTolerance: .05,
+
+  // Multi-Layer Defaults (Off/Neutral by default to preserve legacy test invariants)
+  behavioralEnabled: false,
+  institutionalEnabled: false,
+
+  // Hierarchical Defaults
+  riskAversion: 0,
+  lossAversion: 0,
+  herdingIntensity: 0,
+  liquidityPreference: 0,
+  hoardingSensitivity: 0,
+  trustSensitivity: 0,
+  informationAsymmetry: 0,
+  adaptationSpeed: 0.5,
+
+  regulatoryFriction: 0,
+  capitalConstraints: 0,
+  governanceLatency: 0,
+  policyResponsiveness: 0.5,
+  institutionalCapacity: 1.0,
+  interventionThreshold: 0.5,
+
+  confidenceShock: 0,
+  infrastructureOutage: 0,
+  regulatoryShock: 0,
 };
 
 export class GridStochasticEngine {
@@ -80,6 +203,7 @@ export class GridStochasticEngine {
   static getGridDemand(hour24: number) { return Math.min(1, .4 + Math.exp(-((hour24 - 8) ** 2) / 4) * .3 + Math.exp(-((hour24 - 19) ** 2) / 6) * .6); }
   static getEnergyAvailability(hour24: number) { return clamp(.5 + this.getSolarGeneration(hour24) * .5 - this.getGridDemand(hour24) * .3, .1, 1); }
 }
+
 export function calculateResonanceScore(o: ResourceVector, n: ResourceVector, p: SimulationParams) {
   return o.compatibility * n.compatibility * ((1 - Math.abs(o.urgency - n.urgency)) * .2 + o.energyCost * .3 + o.locationCost * n.locationCost * (1 - p.geographicalFriction) * .2 + o.reliability * .3);
 }
@@ -93,90 +217,606 @@ const clamp = (v: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
 function mulberry32(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const TYPES = ['gpu', 'solar', 'storage'];
 const SUB: Record<string, Record<string, number>> = { gpu: { gpu: 1, solar: 0, storage: .15 }, solar: { gpu: .72, solar: 1, storage: .9 }, storage: { gpu: .7, solar: .82, storage: 1 } };
-interface Agent { id: number; type: string; amount: number; vector: ResourceVector; balance: number; credit: number; collateral: number; solvent: boolean; intermediary: number }
-interface World { offers: Agent[]; needs: Agent[]; physicalCapacity: number; totalDemand: number }
 
-function buildWorld(p: SimulationParams, seed: number, shock: number): World {
-  const rand = mulberry32(seed); const n = Math.max(6, Math.min(120, Math.round(p.networkSize))); const offers: Agent[] = []; const needs: Agent[] = [];
-  for (let i = 0; i < n; i++) {
-    const type = TYPES[Math.floor(rand() * 3)]; const factor = type === 'solar' ? 1 + shock * p.renewableVolatility : 1 + shock * .12;
-    const vector: ResourceVector = { scarcity: clamp(p.resourceScarcity * (.7 + rand() * .6)), demand: rand(), urgency: rand(), quality: .45 + rand() * .55, locationCost: clamp(1 - rand() * p.geographicalFriction), energyCost: clamp((type === 'solar' ? .55 + shock * .5 : .7) + rand() * .25, .05), reliability: clamp(p.participantReliability * (.75 + rand() * .4), .05), compatibility: .55 + rand() * .45 };
-    offers.push({ id: i, type, amount: Math.max(0, (.45 + rand() * .75) * (1 - p.resourceScarcity * .55) * (1 - p.supplyDemandImbalance * .35) * factor), vector, balance: .2 + rand(), credit: .2 + rand(), collateral: .15 + rand(), solvent: rand() > p.counterpartyRisk * .35, intermediary: Math.floor(rand() * Math.max(2, n / 8)) });
-  }
-  for (let i = 0; i < n; i++) {
-    const type = TYPES[Math.floor(rand() * 3)]; const hot = type === 'gpu'; const flexible = hot && rand() < p.flexibleComputeShare;
-    const vector: ResourceVector = { scarcity: p.resourceScarcity, demand: .3 + rand() * .7, urgency: clamp(rand() * p.urgency * 2), quality: .3 + rand() * .7, locationCost: flexible ? .8 + rand() * .2 : clamp(1 - rand() * p.geographicalFriction), energyCost: .5 + rand() * .5, reliability: .5 + rand() * .5, compatibility: .55 + rand() * .45 };
-    needs.push({ id: i, type, amount: (.45 + rand() * .75) * (hot ? 1 + p.computeDemand : 1) * (1 + p.supplyDemandImbalance * .4), vector, balance: .12 + rand() * .9, credit: .15 + rand(), collateral: .1 + rand(), solvent: rand() > p.counterpartyRisk * .45, intermediary: Math.floor(rand() * Math.max(2, n / 8)) });
-  }
-  return { offers, needs, physicalCapacity: offers.reduce((s, x) => s + x.amount, 0), totalDemand: needs.reduce((s, x) => s + x.amount, 0) };
+export interface ExtendedAgent {
+  id: number;
+  type: string;
+  amount: number;
+  vector: ResourceVector;
+  balance: number;
+  credit: number;
+  collateral: number;
+  solvent: boolean;
+  intermediary: number;
+
+  // Behavioral Attributes (Heterogeneous)
+  riskAversion: number;
+  lossAversion: number;
+  trustScore: number;
+  hoardingMultiplier: number;
+  liquidityHold: number;
+  perceivedScarcity: number;
+  perceivedPrice: number;
+  holdoutProbability: number;
+
+  // Institutional Flags & State
+  regulatoryApproved: boolean;
+  capitalReserveRequirement: number;
+  settlementQueueTime: number;
 }
 
-interface Outcome { welfare: number; attainable: number; delivered: number; demand: number; capacity: number; spill: number; hhi: number; latency: number; relay: number; gini: number; overhead: number; flows: number[]; financialRejected: number; settlementAttempts: number; settlementFailures: number; backstop: number; liquidityShortfall: number; creditFlows: number[]; decomposition: UnmetDemandDecomposition; telemetrySensitivity: number }
+interface World { offers: ExtendedAgent[]; needs: ExtendedAgent[]; physicalCapacity: number; totalDemand: number }
+
+function buildWorld(p: SimulationParams, seed: number, shock: number): World {
+  const rand = mulberry32(seed); const n = Math.max(6, Math.min(120, Math.round(p.networkSize)));
+  const offers: ExtendedAgent[] = []; const needs: ExtendedAgent[] = [];
+  const bEnabled = p.behavioralEnabled ?? false;
+  const iEnabled = p.institutionalEnabled ?? false;
+
+  for (let i = 0; i < n; i++) {
+    const type = TYPES[Math.floor(rand() * 3)];
+    const factor = type === 'solar' ? 1 + shock * p.renewableVolatility : 1 + shock * .12;
+    const vector: ResourceVector = {
+      scarcity: clamp(p.resourceScarcity * (.7 + rand() * .6)),
+      demand: rand(),
+      urgency: rand(),
+      quality: .45 + rand() * .55,
+      locationCost: clamp(1 - rand() * p.geographicalFriction),
+      energyCost: clamp((type === 'solar' ? .55 + shock * .5 : .7) + rand() * .25, .05),
+      reliability: clamp(p.participantReliability * (.75 + rand() * .4), .05),
+      compatibility: .55 + rand() * .45
+    };
+
+    // Behavioral heterogeneity
+    const agentRisk = bEnabled ? clamp(p.riskAversion * (.6 + rand() * .8) + p.confidenceShock * .3) : 0;
+    const agentLoss = bEnabled ? clamp(p.lossAversion * (.6 + rand() * .8)) : 0;
+    const trust = bEnabled ? clamp(1 - p.counterpartyRisk * (.5 + rand() * .5) - p.trustSensitivity * .3) : 1;
+    const hoarding = bEnabled ? 1 + Math.pow(p.resourceScarcity, 2) * p.hoardingSensitivity * (0.8 + rand() * 0.4) : 1;
+    const liqHold = bEnabled ? p.liquidityPreference * (.4 + rand() * .6) : 0;
+    const holdoutProb = bEnabled ? clamp(agentRisk * 0.4 + p.informationAsymmetry * 0.3) : 0;
+
+    // Institutional constraints
+    const regApproved = iEnabled ? rand() >= p.regulatoryFriction * 0.4 + p.regulatoryShock * 0.3 : true;
+    const capReserve = iEnabled ? clamp(p.capitalConstraints * (0.1 + rand() * 0.2)) : 0;
+    const queueTime = iEnabled ? Math.round(p.governanceLatency * 5 * rand()) : 0;
+
+    const baseAmount = Math.max(0, (.45 + rand() * .75) * (1 - p.resourceScarcity * .55) * (1 - p.supplyDemandImbalance * .35) * factor);
+    const effectiveAmount = bEnabled ? baseAmount / hoarding : baseAmount;
+
+    offers.push({
+      id: i, type, amount: effectiveAmount, vector,
+      balance: .2 + rand(), credit: .2 + rand(), collateral: .15 + rand(),
+      solvent: rand() > p.counterpartyRisk * .35,
+      intermediary: Math.floor(rand() * Math.max(2, n / 8)),
+      riskAversion: agentRisk, lossAversion: agentLoss, trustScore: trust,
+      hoardingMultiplier: hoarding, liquidityHold: liqHold,
+      perceivedScarcity: vector.scarcity, perceivedPrice: 1.0, holdoutProbability: holdoutProb,
+      regulatoryApproved: regApproved, capitalReserveRequirement: capReserve, settlementQueueTime: queueTime
+    });
+  }
+
+  for (let i = 0; i < n; i++) {
+    const type = TYPES[Math.floor(rand() * 3)]; const hot = type === 'gpu';
+    const flexible = hot && rand() < p.flexibleComputeShare;
+    const vector: ResourceVector = {
+      scarcity: p.resourceScarcity, demand: .3 + rand() * .7, urgency: clamp(rand() * p.urgency * 2),
+      quality: .3 + rand() * .7, locationCost: flexible ? .8 + rand() * .2 : clamp(1 - rand() * p.geographicalFriction),
+      energyCost: .5 + rand() * .5, reliability: .5 + rand() * .5, compatibility: .55 + rand() * .45
+    };
+
+    const agentRisk = bEnabled ? clamp(p.riskAversion * (.6 + rand() * .8)) : 0;
+    const agentLoss = bEnabled ? clamp(p.lossAversion * (.6 + rand() * .8)) : 0;
+    const trust = bEnabled ? clamp(1 - p.counterpartyRisk * (.5 + rand() * .5)) : 1;
+    const panicAmp = bEnabled ? 1 + p.hoardingSensitivity * p.resourceScarcity * (0.5 + rand() * 0.5) + p.herdingIntensity * 0.3 : 1;
+    const liqHold = bEnabled ? p.liquidityPreference * (.4 + rand() * .6) : 0;
+    const holdoutProb = bEnabled ? clamp(agentRisk * 0.3 + p.informationAsymmetry * 0.4) : 0;
+
+    const regApproved = iEnabled ? rand() >= p.regulatoryFriction * 0.35 + p.regulatoryShock * 0.25 : true;
+    const capReserve = iEnabled ? clamp(p.capitalConstraints * (0.1 + rand() * 0.2)) : 0;
+    const queueTime = iEnabled ? Math.round(p.governanceLatency * 4 * rand()) : 0;
+
+    const baseNeed = (.45 + rand() * .75) * (hot ? 1 + p.computeDemand : 1) * (1 + p.supplyDemandImbalance * .4);
+    const effectiveNeed = bEnabled ? baseNeed * panicAmp : baseNeed;
+
+    needs.push({
+      id: i, type, amount: effectiveNeed, vector,
+      balance: .12 + rand() * .9, credit: .15 + rand(), collateral: .1 + rand(),
+      solvent: rand() > p.counterpartyRisk * .45,
+      intermediary: Math.floor(rand() * Math.max(2, n / 8)),
+      riskAversion: agentRisk, lossAversion: agentLoss, trustScore: trust,
+      hoardingMultiplier: panicAmp, liquidityHold: liqHold,
+      perceivedScarcity: vector.scarcity, perceivedPrice: 1.0, holdoutProbability: holdoutProb,
+      regulatoryApproved: regApproved, capitalReserveRequirement: capReserve, settlementQueueTime: queueTime
+    });
+  }
+
+  return {
+    offers, needs,
+    physicalCapacity: offers.reduce((s, x) => s + x.amount * (p.behavioralEnabled ? x.hoardingMultiplier : 1), 0),
+    totalDemand: needs.reduce((s, x) => s + (p.behavioralEnabled ? x.amount / x.hoardingMultiplier : x.amount), 0)
+  };
+}
+
+interface Outcome {
+  welfare: number; attainable: number; delivered: number; demand: number; capacity: number; spill: number;
+  hhi: number; latency: number; relay: number; gini: number; overhead: number; flows: number[];
+  financialRejected: number; settlementAttempts: number; settlementFailures: number; backstop: number;
+  liquidityShortfall: number; creditFlows: number[]; decomposition: UnmetDemandDecomposition; telemetrySensitivity: number;
+
+  // Extended Tracking
+  behavioralRejected: number;
+  institutionalRejected: number;
+  informationRejected: number;
+  regulatoryBottlenecks: number;
+  trustWeightedCap: number;
+}
+
 interface Edge { oi: number; ni: number; sub: number; value: number; rank: number; relay: boolean; accessible: boolean }
 
 function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracle', seed: number, failed = -1): Outcome {
-  const rand = mulberry32(seed); const supply = world.offers.map((o, i) => i === failed ? 0 : o.amount); const remain = world.needs.map(n => n.amount); const served = world.needs.map(() => 0); const flows = world.offers.map(() => 0); const creditFlows = world.needs.map(() => 0);
-  const monetary = mode === 'market' || mode === 'stabilizedMarket' || mode === 'hybrid'; const telemetry = mode === 'hybrid' || mode === 'genesis'; const edges: Edge[] = [];
-  for (let oi = 0; oi < world.offers.length; oi++) for (let ni = 0; ni < world.needs.length; ni++) {
-    const o = world.offers[oi], n = world.needs[ni], sub = SUB[o.type][n.type] ?? 0; if (!sub) continue;
-    const accessible = o.vector.locationCost * n.vector.locationCost >= p.geographicalFriction * .28;
-    if (!accessible) continue;
-    const relay = sub < 1; const conversion = relay ? .82 : 1; const value = Math.max(0, (o.vector.quality * n.vector.demand + .25 * n.vector.urgency + (o.type === 'solar' ? .12 * o.vector.energyCost : 0)) * (.72 + .28 * o.vector.locationCost * n.vector.locationCost) * conversion * o.vector.reliability * sub);
-    let rank = value;
-    if (mode !== 'oracle') {
-      const price = calculateMonetaryScore(o.vector, n.vector, p) * sub * (1 + p.priceSignalNoise * (rand() - .5) * 2);
-      const signal = calculateResonanceScore(o.vector, n.vector, p) * sub * (1 + (1 - p.telemetryReliability) * (rand() - .5) * 2.4);
-      rank = mode === 'market' || mode === 'stabilizedMarket' ? price : mode === 'hybrid' ? signal * .72 + price * .28 : signal;
-    }
-    edges.push({ oi, ni, sub, value, rank, relay, accessible });
-  }
-  edges.sort((a, b) => b.rank - a.rank || a.oi - b.oi || a.ni - b.ni);
-  let welfare = 0, delivered = 0, relayed = 0, financialRejected = 0, settlementAttempts = 0, settlementFailures = 0, backstop = 0, liquidityShortfall = 0;
-  for (const e of edges) {
-    const raw = Math.min(supply[e.oi], remain[e.ni] / e.sub); if (raw <= 1e-9) continue; const effective = raw * e.sub;
-    if (monetary) {
-      settlementAttempts++; const buyer = world.needs[e.ni], seller = world.offers[e.oi];
-      const price = (.35 + seller.vector.scarcity * .45 + p.fundingCost) * raw; const liquid = buyer.balance * (1 - p.liquidityStress); const collateralCredit = buyer.credit * p.creditAvailability * buyer.collateral * (1 - p.collateralHaircut);
-      const gap = Math.max(0, price - liquid - collateralCredit); const solvent = buyer.solvent && seller.solvent; const settlementOk = rand() < p.settlementReliability * (1 - p.counterpartyRisk * (buyer.intermediary === seller.intermediary ? 1 : .35));
-      let rescued = 0;
-      if (gap > 0 && mode !== 'market' && p.centralBankBackstop && solvent) rescued = Math.min(gap, Math.max(0, p.backstopCapacity * world.totalDemand - backstop));
-      if (!solvent || !settlementOk || gap - rescued > 1e-9) {
-        financialRejected += effective; liquidityShortfall += Math.max(0, gap - rescued); if (!settlementOk || !solvent) settlementFailures++; continue;
+  const rand = mulberry32(seed);
+  const supply = world.offers.map((o, i) => i === failed ? 0 : o.amount);
+  const remain = world.needs.map(n => n.amount);
+  const served = world.needs.map(() => 0);
+  const flows = world.offers.map(() => 0);
+  const creditFlows = world.needs.map(() => 0);
+
+  const monetary = mode === 'market' || mode === 'stabilizedMarket' || mode === 'hybrid';
+  const telemetry = mode === 'hybrid' || mode === 'genesis';
+  const bEnabled = p.behavioralEnabled ?? false;
+  const iEnabled = p.institutionalEnabled ?? false;
+
+  const edges: Edge[] = [];
+  for (let oi = 0; oi < world.offers.length; oi++) {
+    for (let ni = 0; ni < world.needs.length; ni++) {
+      const o = world.offers[oi], n = world.needs[ni];
+      const sub = SUB[o.type][n.type] ?? 0;
+      if (!sub) continue;
+      const accessible = o.vector.locationCost * n.vector.locationCost >= p.geographicalFriction * .28;
+      if (!accessible) continue;
+
+      const relay = sub < 1;
+      const conversion = relay ? .82 : 1;
+      const value = Math.max(0, (o.vector.quality * n.vector.demand + .25 * n.vector.urgency + (o.type === 'solar' ? .12 * o.vector.energyCost : 0)) * (.72 + .28 * o.vector.locationCost * n.vector.locationCost) * conversion * o.vector.reliability * sub);
+
+      let rank = value;
+      if (mode !== 'oracle') {
+        const infoNoise = bEnabled ? (rand() - 0.5) * p.informationAsymmetry * 1.5 : 0;
+        const price = calculateMonetaryScore(o.vector, n.vector, p) * sub * (1 + p.priceSignalNoise * (rand() - .5) * 2 + infoNoise);
+        const signal = calculateResonanceScore(o.vector, n.vector, p) * sub * (1 + (1 - p.telemetryReliability) * (rand() - .5) * 2.4);
+        rank = mode === 'market' || mode === 'stabilizedMarket' ? price : mode === 'hybrid' ? signal * .72 + price * .28 : signal;
       }
-      backstop += rescued; buyer.balance = Math.max(0, buyer.balance - Math.min(price, liquid)); creditFlows[e.ni] += Math.max(0, price - liquid);
+      edges.push({ oi, ni, sub, value, rank, relay, accessible });
     }
-    supply[e.oi] -= raw; remain[e.ni] -= effective; flows[e.oi] += raw; served[e.ni] += effective; delivered += effective; welfare += effective * e.value; if (e.relay) relayed += effective;
   }
-  const demand = world.totalDemand, capacity = failed < 0 ? world.physicalCapacity : world.physicalCapacity - world.offers[failed].amount;
-  const unmetVolume = Math.max(0, demand - delivered); const physicalShortageV = Math.min(unmetVolume, Math.max(0, demand - capacity));
+
+  edges.sort((a, b) => b.rank - a.rank || a.oi - b.oi || a.ni - b.ni);
+
+  let welfare = 0, delivered = 0, relayed = 0;
+  let financialRejected = 0, behavioralRejected = 0, institutionalRejected = 0, informationRejected = 0;
+  let regulatoryBottlenecks = 0, settlementAttempts = 0, settlementFailures = 0, backstop = 0, liquidityShortfall = 0;
+
+  for (const e of edges) {
+    const raw = Math.min(supply[e.oi], remain[e.ni] / e.sub);
+    if (raw <= 1e-9) continue;
+    const effective = raw * e.sub;
+    const seller = world.offers[e.oi], buyer = world.needs[e.ni];
+
+    // 1. Institutional Check (Compliance / Regulatory / Capital)
+    if (iEnabled && mode !== 'oracle') {
+      if (!seller.regulatoryApproved || !buyer.regulatoryApproved || rand() < p.regulatoryFriction * 0.3) {
+        institutionalRejected += effective;
+        regulatoryBottlenecks++;
+        continue;
+      }
+    }
+
+    // 2. Behavioral Check (Trust / Holdouts / Information Asymmetry)
+    if (bEnabled && mode !== 'oracle') {
+      const jointTrust = seller.trustScore * buyer.trustScore;
+      if (rand() > jointTrust || rand() < buyer.holdoutProbability) {
+        behavioralRejected += effective;
+        continue;
+      }
+      if (p.informationAsymmetry > 0 && rand() < p.informationAsymmetry * 0.25) {
+        informationRejected += effective;
+        continue;
+      }
+    }
+
+    // 3. Monetary & Financial Settlement Check
+    if (monetary) {
+      settlementAttempts++;
+      const price = (.35 + seller.vector.scarcity * .45 + p.fundingCost) * raw;
+      const liqDeduction = bEnabled ? buyer.liquidityHold : 0;
+      const liquid = Math.max(0, buyer.balance * (1 - p.liquidityStress) - liqDeduction);
+      const capDeduction = iEnabled ? buyer.capitalReserveRequirement : 0;
+      const collateralCredit = Math.max(0, buyer.credit * p.creditAvailability * buyer.collateral * (1 - p.collateralHaircut) - capDeduction);
+      const gap = Math.max(0, price - liquid - collateralCredit);
+      const solvent = buyer.solvent && seller.solvent;
+      const settlementOk = rand() < p.settlementReliability * (1 - p.counterpartyRisk * (buyer.intermediary === seller.intermediary ? 1 : .35));
+      let rescued = 0;
+
+      if (gap > 0 && mode !== 'market' && p.centralBankBackstop && solvent) {
+        rescued = Math.min(gap, Math.max(0, p.backstopCapacity * world.totalDemand - backstop));
+      }
+
+      if (!solvent || !settlementOk || gap - rescued > 1e-9) {
+        financialRejected += effective;
+        liquidityShortfall += Math.max(0, gap - rescued);
+        if (!settlementOk || !solvent) settlementFailures++;
+        continue;
+      }
+
+      backstop += rescued;
+      buyer.balance = Math.max(0, buyer.balance - Math.min(price, liquid));
+      creditFlows[e.ni] += Math.max(0, price - liquid);
+    }
+
+    supply[e.oi] -= raw;
+    remain[e.ni] -= effective;
+    flows[e.oi] += raw;
+    served[e.ni] += effective;
+    delivered += effective;
+    welfare += effective * e.value;
+    if (e.relay) relayed += effective;
+  }
+
+  const demand = world.totalDemand;
+  const capacity = failed < 0 ? world.physicalCapacity : world.physicalCapacity - world.offers[failed].amount;
+  const unmetVolume = Math.max(0, demand - delivered);
+
+  // Formal Unmet Demand Decomposition
+  const physicalShortageV = Math.min(unmetVolume, Math.max(0, demand - capacity));
   const compatibilityCapacity = world.offers.reduce((sum, o, oi) => sum + (oi === failed ? 0 : o.amount * Math.max(...world.needs.map(n => SUB[o.type][n.type] ?? 0))), 0);
   const compatibilityV = Math.min(unmetVolume - physicalShortageV, Math.max(0, Math.min(demand, capacity) - compatibilityCapacity));
-  const inaccessibleShare = p.geographicalFriction * .12; const networkV = Math.min(Math.max(0, unmetVolume - physicalShortageV - compatibilityV), Math.min(demand, capacity) * inaccessibleShare);
-  const financialV = monetary ? Math.min(financialRejected, Math.max(0, unmetVolume - physicalShortageV - compatibilityV - networkV)) : 0;
-  const residual = Math.max(0, unmetVolume - physicalShortageV - compatibilityV - networkV - financialV);
-  const decomposition = { physicalShortage: (physicalShortageV + residual) / demand * 100, financialExclusion: financialV / demand * 100, networkConstraint: networkV / demand * 100, compatibilityConstraint: compatibilityV / demand * 100 };
-  const totalFlow = flows.reduce((s, x) => s + x, 0) || 1; const hhi = flows.reduce((s, x) => s + (x / totalFlow) ** 2, 0); const shortfalls = world.needs.map((n, i) => n.amount - served[i]).sort((a,b)=>a-b); const sumShort = shortfalls.reduce((s,x)=>s+x,0); let weighted = 0; shortfalls.forEach((x,i)=>weighted+=(i+1)*x); const gini = sumShort ? 2*weighted/(shortfalls.length*sumShort)-(shortfalls.length+1)/shortfalls.length : 0;
-  const overhead = mode === 'market' || mode === 'stabilizedMarket' ? p.marketOverhead + backstop / Math.max(demand, 1) * .04 : mode === 'hybrid' ? p.hybridOverhead + p.telemetryVerificationCost * (1-p.telemetryReliability) : mode === 'genesis' ? p.genesisOverhead + p.telemetryVerificationCost * (1-p.telemetryReliability) : 0;
-  return { welfare, attainable: 0, delivered, demand, capacity, spill: supply.reduce((s,x)=>s+x,0), hhi, latency: 12 + p.geographicalFriction*30 + (monetary ? p.settlementLatency*50 : 0) + (telemetry ? 8 : 0), relay: delivered ? relayed/delivered : 0, gini, overhead, flows, financialRejected, settlementAttempts, settlementFailures, backstop, liquidityShortfall, creditFlows, decomposition, telemetrySensitivity: telemetry ? (1-p.telemetryReliability) * (welfare/(delivered||1))*100 : 0 };
+  const inaccessibleShare = p.geographicalFriction * .12;
+  const networkV = Math.min(Math.max(0, unmetVolume - physicalShortageV - compatibilityV), Math.min(demand, capacity) * inaccessibleShare);
+
+  const nonPhysicalUnmet = Math.max(0, unmetVolume - physicalShortageV - compatibilityV - networkV);
+  const totalRejections = financialRejected + behavioralRejected + institutionalRejected + informationRejected;
+
+  let financialV = 0, behavioralV = 0, institutionalV = 0, infoV = 0;
+
+  if (totalRejections > 1e-9 && nonPhysicalUnmet > 0) {
+    financialV = nonPhysicalUnmet * (financialRejected / totalRejections);
+    behavioralV = nonPhysicalUnmet * (behavioralRejected / totalRejections);
+    institutionalV = nonPhysicalUnmet * (institutionalRejected / totalRejections);
+    infoV = nonPhysicalUnmet * (informationRejected / totalRejections);
+  } else if (monetary && nonPhysicalUnmet > 0) {
+    financialV = nonPhysicalUnmet;
+  }
+
+  const residualV = Math.max(0, nonPhysicalUnmet - (financialV + behavioralV + institutionalV + infoV));
+
+  const decomposition: UnmetDemandDecomposition = {
+    physicalShortage: (physicalShortageV) / (demand || 1) * 100,
+    financialExclusion: (financialV) / (demand || 1) * 100,
+    behavioralFriction: (behavioralV) / (demand || 1) * 100,
+    institutionalFriction: (institutionalV) / (demand || 1) * 100,
+    informationFriction: (infoV) / (demand || 1) * 100,
+    networkConstraint: (networkV) / (demand || 1) * 100,
+    compatibilityConstraint: (compatibilityV) / (demand || 1) * 100,
+    residualCoordinationFailure: (residualV) / (demand || 1) * 100
+  };
+
+  const totalFlow = flows.reduce((s, x) => s + x, 0) || 1;
+  const hhi = flows.reduce((s, x) => s + (x / totalFlow) ** 2, 0);
+  const shortfalls = world.needs.map((n, i) => n.amount - served[i]).sort((a,b)=>a-b);
+  const sumShort = shortfalls.reduce((s,x)=>s+x,0);
+  let weighted = 0; shortfalls.forEach((x,i)=>weighted+=(i+1)*x);
+  const gini = sumShort ? 2*weighted/(shortfalls.length*sumShort)-(shortfalls.length+1)/shortfalls.length : 0;
+
+  const instLatency = iEnabled ? p.governanceLatency * 40 + p.regulatoryFriction * 20 : 0;
+  const overhead = mode === 'market' || mode === 'stabilizedMarket'
+    ? p.marketOverhead + backstop / Math.max(demand, 1) * .04
+    : mode === 'hybrid'
+    ? p.hybridOverhead + p.telemetryVerificationCost * (1-p.telemetryReliability)
+    : p.genesisOverhead + p.telemetryVerificationCost * (1-p.telemetryReliability);
+
+  const trustCap = world.offers.reduce((acc, o) => acc + o.amount * o.trustScore, 0);
+
+  return {
+    welfare, attainable: 0, delivered, demand, capacity, spill: supply.reduce((s,x)=>s+x,0),
+    hhi, latency: 12 + p.geographicalFriction*30 + (monetary ? p.settlementLatency*50 : 0) + (telemetry ? 8 : 0) + instLatency,
+    relay: delivered ? relayed/delivered : 0, gini, overhead, flows, financialRejected, settlementAttempts,
+    settlementFailures, backstop, liquidityShortfall, creditFlows, decomposition,
+    telemetrySensitivity: telemetry ? (1-p.telemetryReliability) * (welfare/(delivered||1))*100 : 0,
+    behavioralRejected, institutionalRejected, informationRejected, regulatoryBottlenecks, trustWeightedCap: trustCap
+  };
 }
 
 const ENSEMBLE = 20;
 function mean<T>(xs: T[], f: (x:T)=>number) { return xs.reduce((s,x)=>s+f(x),0)/xs.length; }
-function metrics(runs: Outcome[], casc: number): SimulationMetrics {
-  const net = runs.map(r => r.attainable ? r.welfare/r.attainable*(1-r.overhead)*100 : 0); const mu=net.reduce((s,x)=>s+x,0)/net.length; const flowHHI=(r:Outcome)=>{const s=r.creditFlows.reduce((a,x)=>a+x,0)||1; return r.creditFlows.reduce((a,x)=>a+(x/s)**2,0)};
+
+function computeCausalAttribution(dec: UnmetDemandDecomposition): CausalAttribution {
+  const factors: [string, number][] = [
+    ['physicalScarcity', dec.physicalShortage],
+    ['financialConstraint', dec.financialExclusion],
+    ['behavioralFriction', dec.behavioralFriction],
+    ['institutionalFriction', dec.institutionalFriction],
+    ['informationFriction', dec.informationFriction],
+    ['coordinationFailure', dec.residualCoordinationFailure + dec.networkConstraint + dec.compatibilityConstraint],
+  ];
+
+  factors.sort((a, b) => b[1] - a[1]);
+  const primary = factors[0];
+  const totalUnmet = factors.reduce((sum, f) => sum + f[1], 0) || 1;
+
+  let certainty: 'HIGH' | 'MEDIUM' | 'LOW' | 'UNCERTAIN' = 'HIGH';
+  if (primary[1] / totalUnmet < 0.35) certainty = 'MEDIUM';
+  if (primary[1] < 5) certainty = 'UNCERTAIN';
+
+  const explanations: Record<string, string> = {
+    physicalScarcity: 'Resource allocation was primarily bound by real physical supply limits.',
+    financialConstraint: 'Allocation failed primarily due to credit limits, liquidity stress, and settlement rejection.',
+    behavioralFriction: 'Precautionary hoarding, risk aversion, and counterparty distrust were the dominant friction.',
+    institutionalFriction: 'Regulatory compliance holds, capital reserves, and policy latency dominated unserved demand.',
+    informationFriction: 'Information asymmetry and noisy state forecasts drove allocation failure.',
+    coordinationFailure: 'Geographical routing friction and compatibility bottlenecks were the main driver.'
+  };
+
+  return {
+    physicalScarcityPct: (dec.physicalShortage / totalUnmet) * 100,
+    financialConstraintPct: (dec.financialExclusion / totalUnmet) * 100,
+    behavioralFrictionPct: (dec.behavioralFriction / totalUnmet) * 100,
+    institutionalFrictionPct: (dec.institutionalFriction / totalUnmet) * 100,
+    informationFrictionPct: (dec.informationFriction / totalUnmet) * 100,
+    coordinationFailurePct: ((dec.residualCoordinationFailure + dec.networkConstraint + dec.compatibilityConstraint) / totalUnmet) * 100,
+    primaryCausalFactor: primary[0],
+    certaintyLevel: certainty,
+    explanation: explanations[primary[0]] || 'Multi-factor coupling produced unserved demand.'
+  };
+}
+
+function metrics(runs: Outcome[], casc: number, p: SimulationParams): SimulationMetrics {
+  const net = runs.map(r => r.attainable ? r.welfare/r.attainable*(1-r.overhead)*100 : 0);
+  const mu = net.reduce((s,x)=>s+x,0)/net.length;
+  const flowHHI = (r:Outcome)=>{const s=r.creditFlows.reduce((a,x)=>a+x,0)||1; return r.creditFlows.reduce((a,x)=>a+(x/s)**2,0)};
   const dec = (k:keyof UnmetDemandDecomposition)=>mean(runs,r=>r.decomposition[k]);
-  return { fulfilledNeeds: mean(runs,r=>r.delivered/r.demand)*100, resourceUtilization: mean(runs,r=>r.attainable?r.welfare/r.attainable:0)*100, wastedEnergy: mean(runs,r=>r.capacity?r.spill/r.capacity:0)*100, routingLatency: mean(runs,r=>r.latency), unmetDemand: mean(runs,r=>1-r.delivered/r.demand)*100, totalNetworkUtility: mu, concentration: mean(runs,r=>r.hhi), coordinationOverhead: mean(runs,r=>r.overhead), utilityVolatility: Math.sqrt(net.reduce((s,x)=>s+(x-mu)**2,0)/net.length), cascadeLoss: casc, intermediationDepth: mean(runs,r=>r.relay), shortfallGini: mean(runs,r=>r.gini), creditConcentration: mean(runs,flowHHI), settlementFailureRate: mean(runs,r=>r.settlementAttempts?r.settlementFailures/r.settlementAttempts:0), backstopUtilization: mean(runs,r=>r.backstop/Math.max(r.demand,1)), liquidityShortfall: mean(runs,r=>r.liquidityShortfall/r.demand), feasibleButUnservedDemand: dec('financialExclusion'), strandedPhysicalUtility: mean(runs,r=>r.attainable?Math.max(0,(r.attainable-r.welfare)/r.attainable)*100:0), telemetryCorruptionSensitivity: mean(runs,r=>r.telemetrySensitivity), unmetDemandDecomposition: { physicalShortage:dec('physicalShortage'), financialExclusion:dec('financialExclusion'), networkConstraint:dec('networkConstraint'), compatibilityConstraint:dec('compatibilityConstraint') } };
+
+  const fullDecomp: UnmetDemandDecomposition = {
+    physicalShortage: dec('physicalShortage'),
+    financialExclusion: dec('financialExclusion'),
+    behavioralFriction: dec('behavioralFriction'),
+    institutionalFriction: dec('institutionalFriction'),
+    informationFriction: dec('informationFriction'),
+    networkConstraint: dec('networkConstraint'),
+    compatibilityConstraint: dec('compatibilityConstraint'),
+    residualCoordinationFailure: dec('residualCoordinationFailure')
+  };
+
+  const causalAttribution = computeCausalAttribution(fullDecomp);
+
+  return {
+    fulfilledNeeds: mean(runs,r=>r.delivered/r.demand)*100,
+    resourceUtilization: mean(runs,r=>r.attainable?r.welfare/r.attainable:0)*100,
+    wastedEnergy: mean(runs,r=>r.capacity?r.spill/r.capacity:0)*100,
+    routingLatency: mean(runs,r=>r.latency),
+    unmetDemand: mean(runs,r=>1-r.delivered/r.demand)*100,
+    totalNetworkUtility: mu,
+    concentration: mean(runs,r=>r.hhi),
+    coordinationOverhead: mean(runs,r=>r.overhead),
+    utilityVolatility: Math.sqrt(net.reduce((s,x)=>s+(x-mu)**2,0)/net.length),
+    cascadeLoss: casc,
+    intermediationDepth: mean(runs,r=>r.relay),
+    shortfallGini: mean(runs,r=>r.gini),
+    creditConcentration: mean(runs,flowHHI),
+    settlementFailureRate: mean(runs,r=>r.settlementAttempts?r.settlementFailures/r.settlementAttempts:0),
+    backstopUtilization: mean(runs,r=>r.backstop/Math.max(r.demand,1)),
+    liquidityShortfall: mean(runs,r=>r.liquidityShortfall/r.demand),
+    feasibleButUnservedDemand: dec('financialExclusion'),
+    strandedPhysicalUtility: mean(runs,r=>r.attainable?Math.max(0,(r.attainable-r.welfare)/r.attainable)*100:0),
+    telemetryCorruptionSensitivity: mean(runs,r=>r.telemetrySensitivity),
+    unmetDemandDecomposition: fullDecomp,
+
+    // Extended Multi-Layer Metrics
+    behavioralDemandAmplification: p.behavioralEnabled ? (1 + p.hoardingSensitivity * p.resourceScarcity * 0.8) : 1.0,
+    hoardingFactor: p.behavioralEnabled ? (1 + Math.pow(p.resourceScarcity, 2) * p.hoardingSensitivity) : 1.0,
+    liquidityPreferenceMetric: p.liquidityPreference,
+    herdingIntensityMetric: p.herdingIntensity,
+    trustWeightedCapacity: mean(runs, r => r.trustWeightedCap),
+    counterpartyConcentration: mean(runs, flowHHI),
+    informationAsymmetryMetric: p.informationAsymmetry,
+    regulatoryFrictionMetric: p.regulatoryFriction,
+    institutionalLatency: mean(runs, r => r.latency * (p.institutionalEnabled ? 0.3 : 0)),
+    settlementCongestion: mean(runs, r => r.settlementAttempts ? r.regulatoryBottlenecks / r.settlementAttempts : 0),
+    regulatoryBottleneckRate: mean(runs, r => r.regulatoryBottlenecks / Math.max(1, r.settlementAttempts)),
+    behavioralUnmetDemand: dec('behavioralFriction'),
+    institutionalUnmetDemand: dec('institutionalFriction'),
+    cascadingFailureProbability: mean(runs, r => r.settlementFailures / Math.max(1, r.settlementAttempts)),
+    recoveryTime: 12 * (1 + p.liquidityStress * 1.5 + (p.institutionalEnabled ? p.governanceLatency : 0)),
+    liquidityResilience: Math.max(0, 100 - p.liquidityStress * 80 - p.riskAversion * 20),
+    policyResponseLag: p.institutionalEnabled ? 4 * (1 - p.policyResponsiveness) : 0,
+    interventionUtilization: mean(runs, r => r.backstop / Math.max(r.demand, 1)),
+    deadweightLoss: mean(runs, r => r.overhead * 100),
+    causalAttribution
+  };
 }
 
 export function runSimulation(input: SimulationParams, seed=20260813): SimulationResult {
-  const p={...DEFAULT_SIMULATION_PARAMS,...input}; const all:Record<Architecture,Outcome[]>={market:[],stabilizedMarket:[],hybrid:[],genesis:[]}; const deltaDraws:number[]=[]; let capacity=0,demand=0; const casc:Record<Architecture,number>={market:0,stabilizedMarket:0,hybrid:0,genesis:0};
-  for(let k=0;k<ENSEMBLE;k++){ const shockRand=mulberry32(seed+k*7919); const shock=(shockRand()*2-1)*(.12+p.renewableVolatility*.35); const world=buildWorld(p,seed+k*7919+17,shock); capacity+=world.physicalCapacity; demand+=world.totalDemand; const oracle=allocate(world,p,'oracle',seed+k*31); for(const mode of Object.keys(all) as Architecture[]){ const out=allocate(world,p,mode,seed+k*101+3); out.attainable=oracle.welfare; all[mode].push(out); const top=out.flows.indexOf(Math.max(...out.flows)); const failed=allocate(world,p,mode,seed+k*101+3,top); const loss=out.welfare?Math.max(0,1-failed.welfare/out.welfare-(out.flows[top]||0)/(out.flows.reduce((s,x)=>s+x,0)||1))*100:0; casc[mode]+=loss/ENSEMBLE; } const g=all.genesis[k],m=all.market[k]; deltaDraws.push(((g.attainable?g.welfare/g.attainable:0)*(1-g.overhead)-(m.attainable?m.welfare/m.attainable:0)*(1-m.overhead))*100); }
-  const architectures={ market:metrics(all.market,casc.market), stabilizedMarket:metrics(all.stabilizedMarket,casc.stabilizedMarket), hybrid:metrics(all.hybrid,casc.hybrid), genesis:metrics(all.genesis,casc.genesis) }; const delta=architectures.genesis.totalNetworkUtility-architectures.market.totalNetworkUtility; const dmu=mean(deltaDraws,x=>x); const dsd=Math.sqrt(mean(deltaDraws,x=>(x-dmu)**2)); const ci=1.96*dsd/Math.sqrt(ENSEMBLE); const strongest=(Object.entries(architectures) as [Architecture,SimulationMetrics][]).sort((a,b)=>b[1].totalNetworkUtility-a[1].totalNetworkUtility); const gap=strongest[0][1].totalNetworkUtility-strongest[1][1].totalNetworkUtility;
-  const riskChecks:RiskCheck[]=[['concentration','Provider concentration',architectures.market.concentration,architectures.genesis.concentration,.03,'Throughput HHI must remain bounded.'],['cascade','Cascade loss',architectures.market.cascadeLoss,architectures.genesis.cascadeLoss,1,'Largest-provider failure contagion.'],['volatility','Utility volatility',architectures.market.utilityVolatility,architectures.genesis.utilityVolatility,.75,'Shock-ensemble stability.'],['gini','Shortfall Gini',architectures.market.shortfallGini,architectures.genesis.shortfallGini,.04,'Shortfall inequality.'],['relay','Relay dependence',architectures.market.intermediationDepth,architectures.genesis.intermediationDepth,.2,'Conversion-node dependence.'],['overhead','Coordination overhead',architectures.market.coordinationOverhead,architectures.genesis.coordinationOverhead,.25,'Explicit clearing and verification cost.'],['telemetry','Telemetry corruption sensitivity',0,architectures.genesis.telemetryCorruptionSensitivity,20,'Sensitivity to corrupted physical reports.']].map(([id,label,baseline,routed,tolerance,note])=>({id:id as string,label:label as string,baseline:baseline as number,routed:routed as number,tolerance:tolerance as number,lowerIsBetter:true,passed:(routed as number)<=(baseline as number)+(tolerance as number),unit:'',note:note as string}));
-  let architectureVerdict:ArchitectureVerdict=gap<ci?'NO SIGNIFICANT DIFFERENCE':strongest[0][0]==='market'?'MARKET SUPERIOR':strongest[0][0]==='stabilizedMarket'?'STABILIZED MARKET SUPERIOR':strongest[0][0]==='hybrid'?'HYBRID SUPERIOR':'GENESIS SUPERIOR IN THIS REGIME'; const failed=riskChecks.filter(x=>!x.passed); if(architectureVerdict==='GENESIS SUPERIOR IN THIS REGIME'&&failed.length) architectureVerdict='INSUFFICIENT EVIDENCE';
-  const physicalAvailable=capacity/demand>=p.physicalAvailabilityThreshold, deterioration=architectures.market.feasibleButUnservedDemand>=p.monetaryDeteriorationThreshold*100, critical=architectures.market.unmetDemand>=p.criticalDemandThreshold*100, cbInsufficient=architectures.stabilizedMarket.unmetDemand>p.criticalDemandThreshold*100, hybridSafe=architectures.hybrid.totalNetworkUtility>architectures.stabilizedMarket.totalNetworkUtility&&failed.length===0; let state:SafetyValveState='NORMAL'; if(deterioration)state='FINANCIAL_STRESS'; if(deterioration&&p.centralBankBackstop)state='STABILIZED_MARKET'; if(cbInsufficient&&architectures.hybrid.totalNetworkUtility>architectures.stabilizedMarket.totalNetworkUtility)state='HYBRID'; if(physicalAvailable&&deterioration&&critical&&cbInsufficient&&hybridSafe&&architectures.genesis.totalNetworkUtility>architectures.hybrid.totalNetworkUtility)state='GENESIS_BASELINE'; if(!deterioration&&p.liquidityStress<.15)state='RECOVERY'; const conditions=[{id:'physical',label:'Physical resources remain available',value:capacity/demand,threshold:p.physicalAvailabilityThreshold,passed:physicalAvailable},{id:'monetary',label:'Monetary fulfillment materially deteriorated',value:architectures.market.feasibleButUnservedDemand/100,threshold:p.monetaryDeteriorationThreshold,passed:deterioration},{id:'critical',label:'Critical unmet demand exceeds threshold',value:architectures.market.unmetDemand/100,threshold:p.criticalDemandThreshold,passed:critical},{id:'backstop',label:'Central-bank stabilization is insufficient',value:cbInsufficient,passed:cbInsufficient},{id:'routing',label:'Computational routing improves within risk tolerance',value:hybridSafe,passed:hybridSafe}];
-  const reasons={} as Record<Architecture,string[]>; for(const [a,m] of Object.entries(architectures) as [Architecture,SimulationMetrics][]) reasons[a]=[m.feasibleButUnservedDemand>5?`${m.feasibleButUnservedDemand.toFixed(1)}% of demand was physically feasible but could not clear financially.`:'Financial clearing preserved access to most physically feasible trades.',m.telemetryCorruptionSensitivity>8?'Unreliable telemetry reduced optimizer accuracy.':'Information inputs remained sufficiently reliable.',m.coordinationOverhead>.15?'Coordination costs materially reduced realized welfare.':'Coordination costs stayed moderate.'];
-  const significant=delta-ci>0, verdict:RiskVerdict=!significant?'no-improvement':failed.length?'improves-with-risk':'improves-safely'; return {architectures,modelA:architectures.market,modelStabilized:architectures.stabilizedMarket,modelHybrid:architectures.hybrid,modelB:architectures.genesis,deltaUtility:delta,deltaVsHybrid:architectures.genesis.totalNetworkUtility-architectures.hybrid.totalNetworkUtility,deltaConfidence:ci,winRate:deltaDraws.filter(x=>x>0).length/ENSEMBLE,primaryDriver:p.liquidityStress>.55?'Financial rejection strands physically feasible demand.':p.telemetryReliability<.5?'Telemetry corruption limits computational coordination.':'Prices and physical telemetry reveal different constraints.',riskChecks,verdict,architectureVerdict,verdictSummary:`${architectureVerdict}. ${strongest[0][0]} achieved ${strongest[0][1].totalNetworkUtility.toFixed(1)}% net attainable welfare; the runner-up achieved ${strongest[1][1].totalNetworkUtility.toFixed(1)}%.`,reasons,safetyValve:{state,conditions,explanation:`The valve is explicitly in ${state}; transitions require the displayed preregistered conditions and never create physical capacity.`},physicalCapacity:capacity/ENSEMBLE,totalDemand:demand/ENSEMBLE,ensembleSize:ENSEMBLE};
+  const p={...DEFAULT_SIMULATION_PARAMS,...input};
+  const all:Record<Architecture,Outcome[]>={market:[],stabilizedMarket:[],hybrid:[],genesis:[]};
+  const deltaDraws:number[]=[]; let capacity=0,demand=0;
+  const casc:Record<Architecture,number>={market:0,stabilizedMarket:0,hybrid:0,genesis:0};
+
+  for(let k=0;k<ENSEMBLE;k++){
+    const shockRand=mulberry32(seed+k*7919);
+    const shock=(shockRand()*2-1)*(.12+p.renewableVolatility*.35);
+    const world=buildWorld(p,seed+k*7919+17,shock);
+    capacity+=world.physicalCapacity; demand+=world.totalDemand;
+    const oracle=allocate(world,p,'oracle',seed+k*31);
+
+    for(const mode of Object.keys(all) as Architecture[]){
+      const out=allocate(world,p,mode,seed+k*101+3);
+      out.attainable=oracle.welfare;
+      all[mode].push(out);
+      const top=out.flows.indexOf(Math.max(...out.flows));
+      const failed=allocate(world,p,mode,seed+k*101+3,top);
+      const loss=out.welfare?Math.max(0,1-failed.welfare/out.welfare-(out.flows[top]||0)/(out.flows.reduce((s,x)=>s+x,0)||1))*100:0;
+      casc[mode]+=loss/ENSEMBLE;
+    }
+    const g=all.genesis[k],m=all.market[k];
+    deltaDraws.push(((g.attainable?g.welfare/g.attainable:0)*(1-g.overhead)-(m.attainable?m.welfare/m.attainable:0)*(1-m.overhead))*100);
+  }
+
+  const architectures={
+    market:metrics(all.market,casc.market,p),
+    stabilizedMarket:metrics(all.stabilizedMarket,casc.stabilizedMarket,p),
+    hybrid:metrics(all.hybrid,casc.hybrid,p),
+    genesis:metrics(all.genesis,casc.genesis,p)
+  };
+
+  const delta=architectures.genesis.totalNetworkUtility-architectures.market.totalNetworkUtility;
+  const dmu=mean(deltaDraws,x=>x); const dsd=Math.sqrt(mean(deltaDraws,x=>(x-dmu)**2));
+  const ci=1.96*dsd/Math.sqrt(ENSEMBLE);
+  const strongest=(Object.entries(architectures) as [Architecture,SimulationMetrics][]).sort((a,b)=>b[1].totalNetworkUtility-a[1].totalNetworkUtility);
+  const gap=strongest[0][1].totalNetworkUtility-strongest[1][1].totalNetworkUtility;
+
+  const riskChecks:RiskCheck[]=[
+    ['concentration','Provider concentration',architectures.market.concentration,architectures.genesis.concentration,.03,'Throughput HHI must remain bounded.'],
+    ['cascade','Cascade loss',architectures.market.cascadeLoss,architectures.genesis.cascadeLoss,1,'Largest-provider failure contagion.'],
+    ['volatility','Utility volatility',architectures.market.utilityVolatility,architectures.genesis.utilityVolatility,.75,'Shock-ensemble stability.'],
+    ['gini','Shortfall Gini',architectures.market.shortfallGini,architectures.genesis.shortfallGini,.04,'Shortfall inequality.'],
+    ['relay','Relay dependence',architectures.market.intermediationDepth,architectures.genesis.intermediationDepth,.2,'Conversion-node dependence.'],
+    ['overhead','Coordination overhead',architectures.market.coordinationOverhead,architectures.genesis.coordinationOverhead,.25,'Explicit clearing and verification cost.'],
+    ['telemetry','Telemetry corruption sensitivity',0,architectures.genesis.telemetryCorruptionSensitivity,20,'Sensitivity to corrupted physical reports.']
+  ].map(([id,label,baseline,routed,tolerance,note])=>({id:id as string,label:label as string,baseline:baseline as number,routed:routed as number,tolerance:tolerance as number,lowerIsBetter:true,passed:(routed as number)<=(baseline as number)+(tolerance as number),unit:'',note:note as string}));
+
+  let architectureVerdict:ArchitectureVerdict=gap<ci?'NO SIGNIFICANT DIFFERENCE':strongest[0][0]==='market'?'MARKET SUPERIOR':strongest[0][0]==='stabilizedMarket'?'STABILIZED MARKET SUPERIOR':strongest[0][0]==='hybrid'?'HYBRID SUPERIOR':'GENESIS SUPERIOR IN THIS REGIME';
+  const failed=riskChecks.filter(x=>!x.passed);
+  if(architectureVerdict==='GENESIS SUPERIOR IN THIS REGIME'&&failed.length) architectureVerdict='INSUFFICIENT EVIDENCE';
+
+  const physicalAvailable=capacity/demand>=p.physicalAvailabilityThreshold;
+  const deterioration=architectures.market.feasibleButUnservedDemand>=p.monetaryDeteriorationThreshold*100;
+  const critical=architectures.market.unmetDemand>=p.criticalDemandThreshold*100;
+  const cbInsufficient=architectures.stabilizedMarket.unmetDemand>p.criticalDemandThreshold*100;
+  const hybridSafe=architectures.hybrid.totalNetworkUtility>architectures.stabilizedMarket.totalNetworkUtility&&failed.length===0;
+
+  let state:SafetyValveState='NORMAL';
+  if(deterioration)state='FINANCIAL_STRESS';
+  if(deterioration&&p.centralBankBackstop)state='STABILIZED_MARKET';
+  if(cbInsufficient&&architectures.hybrid.totalNetworkUtility>architectures.stabilizedMarket.totalNetworkUtility)state='HYBRID';
+  if(physicalAvailable&&deterioration&&critical&&cbInsufficient&&hybridSafe&&architectures.genesis.totalNetworkUtility>architectures.hybrid.totalNetworkUtility)state='GENESIS_BASELINE';
+  if(!deterioration&&p.liquidityStress<.15)state='RECOVERY';
+
+  const conditions=[
+    {id:'physical',label:'Physical resources remain available',value:capacity/demand,threshold:p.physicalAvailabilityThreshold,passed:physicalAvailable},
+    {id:'monetary',label:'Monetary fulfillment materially deteriorated',value:architectures.market.feasibleButUnservedDemand/100,threshold:p.monetaryDeteriorationThreshold,passed:deterioration},
+    {id:'critical',label:'Critical unmet demand exceeds threshold',value:architectures.market.unmetDemand/100,threshold:p.criticalDemandThreshold,passed:critical},
+    {id:'backstop',label:'Central-bank stabilization is insufficient',value:cbInsufficient,passed:cbInsufficient},
+    {id:'routing',label:'Computational routing improves within risk tolerance',value:hybridSafe,passed:hybridSafe}
+  ];
+
+  const reasons={} as Record<Architecture,string[]>;
+  for(const [a,m] of Object.entries(architectures) as [Architecture,SimulationMetrics][]) {
+    reasons[a]=[
+      m.feasibleButUnservedDemand>5?`${m.feasibleButUnservedDemand.toFixed(1)}% of demand was physically feasible but could not clear financially.`:'Financial clearing preserved access to most physically feasible trades.',
+      m.telemetryCorruptionSensitivity>8?'Unreliable telemetry reduced optimizer accuracy.':'Information inputs remained sufficiently reliable.',
+      m.coordinationOverhead>.15?'Coordination costs materially reduced realized welfare.':'Coordination costs stayed moderate.'
+    ];
+  }
+
+  const significant=delta-ci>0;
+  const verdict:RiskVerdict=!significant?'no-improvement':failed.length?'improves-with-risk':'improves-safely';
+
+  return {
+    architectures,modelA:architectures.market,modelStabilized:architectures.stabilizedMarket,modelHybrid:architectures.hybrid,modelB:architectures.genesis,
+    deltaUtility:delta,deltaVsHybrid:architectures.genesis.totalNetworkUtility-architectures.hybrid.totalNetworkUtility,deltaConfidence:ci,
+    winRate:deltaDraws.filter(x=>x>0).length/ENSEMBLE,
+    primaryDriver:p.liquidityStress>.55?'Financial rejection strands physically feasible demand.':p.telemetryReliability<.5?'Telemetry corruption limits computational coordination.':'Prices and physical telemetry reveal different constraints.',
+    riskChecks,verdict,architectureVerdict,
+    verdictSummary:`${architectureVerdict}. ${strongest[0][0]} achieved ${strongest[0][1].totalNetworkUtility.toFixed(1)}% net attainable welfare; the runner-up achieved ${strongest[1][1].totalNetworkUtility.toFixed(1)}%.`,
+    reasons,safetyValve:{state,conditions,explanation:`The valve is explicitly in ${state}; transitions require the displayed preregistered conditions and never create physical capacity.`},
+    physicalCapacity:capacity/ENSEMBLE,totalDemand:demand/ENSEMBLE,ensembleSize:ENSEMBLE
+  };
+}
+
+// Interactive Layer Ablation Analysis Engine
+export interface AblationLayerMetrics {
+  name: string;
+  unmetDemand: number;
+  physicalShortage: number;
+  financialExclusion: number;
+  behavioralFriction: number;
+  institutionalFriction: number;
+  informationFriction: number;
+  coordinationFailure: number;
+  totalNetworkUtility: number;
+  trustWeightedCapacity: number;
+  cascadingFailureProbability: number;
+  recoveryTime: number;
+  causalAttribution: CausalAttribution;
+}
+
+export interface AblationAnalysisResult {
+  baseline: AblationLayerMetrics;
+  plusBehavior: AblationLayerMetrics;
+  plusInstitutions: AblationLayerMetrics;
+  full: AblationLayerMetrics;
+  behavioralContributionPct: number;
+  institutionalContributionPct: number;
+  interactionEffectPct: number;
+  isNonlinear: boolean;
+  explanation: string;
+}
+
+export function runAblationAnalysis(input: SimulationParams, seed = 20260813): AblationAnalysisResult {
+  const pBase: SimulationParams = { ...DEFAULT_SIMULATION_PARAMS, ...input, behavioralEnabled: false, institutionalEnabled: false };
+  const pBehav: SimulationParams = { ...DEFAULT_SIMULATION_PARAMS, ...input, behavioralEnabled: true, institutionalEnabled: false };
+  const pInst: SimulationParams = { ...DEFAULT_SIMULATION_PARAMS, ...input, behavioralEnabled: false, institutionalEnabled: true };
+  const pFull: SimulationParams = { ...DEFAULT_SIMULATION_PARAMS, ...input, behavioralEnabled: true, institutionalEnabled: true };
+
+  const resBase = runSimulation(pBase, seed);
+  const resBehav = runSimulation(pBehav, seed);
+  const resInst = runSimulation(pInst, seed);
+  const resFull = runSimulation(pFull, seed);
+
+  const extract = (name: string, m: SimulationMetrics): AblationLayerMetrics => ({
+    name,
+    unmetDemand: m.unmetDemand,
+    physicalShortage: m.unmetDemandDecomposition.physicalShortage,
+    financialExclusion: m.unmetDemandDecomposition.financialExclusion,
+    behavioralFriction: m.unmetDemandDecomposition.behavioralFriction,
+    institutionalFriction: m.unmetDemandDecomposition.institutionalFriction,
+    informationFriction: m.unmetDemandDecomposition.informationFriction,
+    coordinationFailure: m.unmetDemandDecomposition.residualCoordinationFailure + m.unmetDemandDecomposition.networkConstraint + m.unmetDemandDecomposition.compatibilityConstraint,
+    totalNetworkUtility: m.totalNetworkUtility,
+    trustWeightedCapacity: m.trustWeightedCapacity,
+    cascadingFailureProbability: m.cascadingFailureProbability,
+    recoveryTime: m.recoveryTime,
+    causalAttribution: m.causalAttribution
+  });
+
+  const baseline = extract('1. Baseline (Physical + Financial)', resBase.modelA);
+  const plusBehavior = extract('2. + Behavioral Dynamics', resBehav.modelA);
+  const plusInstitutions = extract('3. + Institutional Friction', resInst.modelA);
+  const full = extract('4. Full Genesis Layered Model', resFull.modelA);
+
+  const behavDelta = plusBehavior.unmetDemand - baseline.unmetDemand;
+  const instDelta = plusInstitutions.unmetDemand - baseline.unmetDemand;
+  const fullDelta = full.unmetDemand - baseline.unmetDemand;
+  const interaction = fullDelta - (behavDelta + instDelta);
+  const isNonlinear = Math.abs(interaction) > 0.5;
+
+  let explanation = 'Layer effects are largely additive.';
+  if (isNonlinear) {
+    explanation = interaction > 0
+      ? `Non-linear compounding crisis: behavioral panic and institutional friction amplified unmet demand by +${interaction.toFixed(1)} percentage points beyond their isolated sum.`
+      : `Institutional controls buffered behavioral panic, reducing combined unmet demand by ${Math.abs(interaction).toFixed(1)} percentage points relative to independent addition.`;
+  }
+
+  return {
+    baseline,
+    plusBehavior,
+    plusInstitutions,
+    full,
+    behavioralContributionPct: behavDelta,
+    institutionalContributionPct: instDelta,
+    interactionEffectPct: interaction,
+    isNonlinear,
+    explanation
+  };
 }
 
 export interface RegimePoint { x:number; y:number; financialStress:number; telemetryReliability:number; winner:ArchitectureVerdict; utilities:Record<Architecture,number> }

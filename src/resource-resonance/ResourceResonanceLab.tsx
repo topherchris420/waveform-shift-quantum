@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Network, Activity, FileSignature, Clock } from 'lucide-react';
+import { Network, Activity, FileSignature, Clock, Users, Building, ShieldAlert } from 'lucide-react';
 import { DEFAULT_SIMULATION_PARAMS, SCENARIO_PRESETS, SimulationParams, SimulationResult, runSimulation, ResourceOffer, ResourceNeed, MatchResult, calculateResonanceScore, GridStochasticEngine } from './engine';
 import { compileResonanceRun, ResonanceCatalystSession } from './resonanceCatalyst';
 import { ResourceNetwork, RelayNode } from './ResourceNetwork';
@@ -78,11 +78,9 @@ export const ResourceResonanceLab: React.FC = () => {
       const currentGridEnergy = GridStochasticEngine.getEnergyAvailability(simulatedTime);
 
       offers.forEach(offer => {
-        // Adjust offer energy cost vector dynamically based on Grid CAISO model
         const adjustedOffer = { ...offer };
         if (offer.type === 'solar') {
           adjustedOffer.vector.energyCost = currentGridEnergy; 
-          // At noon, energyCost is high (abundant). At night, it's low (scarce).
         }
 
         needs.forEach(need => {
@@ -90,23 +88,19 @@ export const ResourceResonanceLab: React.FC = () => {
           let routeType: 'direct' | 'multi-hop' = 'direct';
           let relayNodeId: string | undefined = undefined;
 
-          // If it's a weak match, see if a multi-hop relay fixes it.
-          // e.g. Solar -> GPU is weak at 19:00 because solar is gone. But if solar is generated at 12:00, it can route through a battery relay.
           if (score < 0.5) {
              if (offer.type === 'solar' && need.type === 'gpu') {
-                // If it's noon, we can store it in battery for the evening compute.
-                // If it's evening, maybe we draw from battery.
-                score += 0.4; // Multi-hop boost
+                score += 0.4;
                 routeType = 'multi-hop';
-                relayNodeId = 'r1'; // Battery relay
+                relayNodeId = 'r1';
              } else if (offer.type === 'code' && need.type === 'labor') {
                 score += 0.3; 
                 routeType = 'multi-hop';
-                relayNodeId = 'r2'; // Compute broker
+                relayNodeId = 'r2';
              }
           }
 
-          if (score > 0.45) { // Threshold
+          if (score > 0.45) {
             newMatches.push({
               offerId: offer.id,
               needId: need.id,
@@ -127,7 +121,6 @@ export const ResourceResonanceLab: React.FC = () => {
         });
       });
       
-      // Sort matches by score desc
       newMatches.sort((a, b) => b.score - a.score);
       setMatches(newMatches.slice(0, 3));
       setIsRouting(false);
@@ -220,9 +213,116 @@ export const ResourceResonanceLab: React.FC = () => {
           </div>
 
           <div className="space-y-6">
+            {/* Hierarchical Controls: Multi-Layer Toggles */}
+            <div className="rounded-xl border border-indigo-900/50 bg-indigo-950/20 p-4 sm:p-6 space-y-4">
+              <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-indigo-300 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-indigo-400" />
+                Multi-Layer Engine Architecture
+              </h3>
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <label className="flex items-center gap-2 text-[11px] font-mono text-slate-300 bg-slate-900/60 p-2.5 rounded border border-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={params.behavioralEnabled ?? false}
+                    onChange={(e) => {
+                      const next = { ...params, behavioralEnabled: e.target.checked };
+                      setParams(next);
+                      setResult(runSimulation(next));
+                    }}
+                    className="accent-rose-400"
+                  />
+                  <span>Behavioral Layer</span>
+                </label>
+                <label className="flex items-center gap-2 text-[11px] font-mono text-slate-300 bg-slate-900/60 p-2.5 rounded border border-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={params.institutionalEnabled ?? false}
+                    onChange={(e) => {
+                      const next = { ...params, institutionalEnabled: e.target.checked };
+                      setParams(next);
+                      setResult(runSimulation(next));
+                    }}
+                    className="accent-indigo-400"
+                  />
+                  <span>Institutional Layer</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Behavioral Environment Controls */}
+            {params.behavioralEnabled && (
+              <div className="rounded-xl border border-rose-900/40 bg-rose-950/10 p-4 sm:p-6 space-y-3">
+                <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-rose-300 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-rose-400" />
+                  Behavioral Environment
+                </h3>
+                {([
+                  ['riskAversion', 'Risk aversion'],
+                  ['lossAversion', 'Loss aversion'],
+                  ['herdingIntensity', 'Herding intensity'],
+                  ['liquidityPreference', 'Liquidity preference'],
+                  ['hoardingSensitivity', 'Precautionary hoarding'],
+                  ['trustSensitivity', 'Trust sensitivity'],
+                  ['informationAsymmetry', 'Information asymmetry'],
+                ] as const).map(([key, label]) => (
+                  <label key={key} className="block">
+                    <span className="flex justify-between font-mono text-[9px] text-slate-400">
+                      <span>{label}</span>
+                      <span>{(params[key] * 100).toFixed(0)}%</span>
+                    </span>
+                    <input
+                      className="mt-1 h-1.5 w-full accent-rose-400"
+                      type="range" min="0" max="1" step=".01"
+                      value={params[key]}
+                      onChange={e => {
+                        const next = { ...params, [key]: Number(e.target.value) };
+                        setParams(next);
+                        setResult(runSimulation(next));
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {/* Institutional Environment Controls */}
+            {params.institutionalEnabled && (
+              <div className="rounded-xl border border-indigo-900/40 bg-indigo-950/10 p-4 sm:p-6 space-y-3">
+                <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-indigo-300 flex items-center gap-2">
+                  <Building className="w-4 h-4 text-indigo-400" />
+                  Institutional Environment
+                </h3>
+                {([
+                  ['regulatoryFriction', 'Regulatory friction'],
+                  ['capitalConstraints', 'Capital constraints'],
+                  ['governanceLatency', 'Governance latency'],
+                  ['policyResponsiveness', 'Policy responsiveness'],
+                  ['confidenceShock', 'Confidence shock'],
+                  ['regulatoryShock', 'Regulatory shock'],
+                ] as const).map(([key, label]) => (
+                  <label key={key} className="block">
+                    <span className="flex justify-between font-mono text-[9px] text-slate-400">
+                      <span>{label}</span>
+                      <span>{(params[key] * 100).toFixed(0)}%</span>
+                    </span>
+                    <input
+                      className="mt-1 h-1.5 w-full accent-indigo-400"
+                      type="range" min="0" max="1" step=".01"
+                      value={params[key]}
+                      onChange={e => {
+                        const next = { ...params, [key]: Number(e.target.value) };
+                        setParams(next);
+                        setResult(runSimulation(next));
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
+            )}
+
             <div className="rounded-xl border border-amber-900/40 bg-amber-950/10 p-4 sm:p-6">
               <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-amber-300">Economic stress experiment</h3>
-              <p className="mt-2 text-[11px] text-slate-500">Purely financial presets leave physical scarcity, capacity, volatility, geography, and demand unchanged.</p>
+              <p className="mt-2 text-[11px] text-slate-500">Preset experiment regimes configure coupled physical, monetary, behavioral, and institutional parameters.</p>
               <select className="mt-4 w-full rounded border border-slate-700 bg-slate-950 p-2 font-mono text-[10px] text-slate-300" defaultValue="normal" onChange={(e) => {
                 const preset=SCENARIO_PRESETS.find(s=>s.id===e.target.value); if(!preset)return;
                 const next={...params,...preset.patch}; setParams(next); setResult(runSimulation(next));
