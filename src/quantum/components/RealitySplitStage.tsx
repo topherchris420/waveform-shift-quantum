@@ -681,7 +681,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
       <div className="space-y-2 border-t border-slate-800 bg-slate-950/80 px-4 py-3 sm:hidden">
         <div className="flex items-start gap-2">
           <EpistemicTag kind="established" />
-          <p className="font-mono text-[10px] leading-relaxed text-slate-300">
+          <p className="break-words font-mono text-[10px] leading-relaxed text-slate-300">
             {isKernelMode
               ? 'Standard QM · Born density P_B(x)'
               : `Standard QM · P_B = ${currentFrame.standard.PB.toFixed(4)}`}
@@ -689,13 +689,13 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
         </div>
         <div className="flex items-start gap-2">
           <EpistemicTag kind="prediction" />
-          <p className="font-mono text-[10px] leading-relaxed text-slate-300">
+          <p className="break-words font-mono text-[10px] leading-relaxed text-slate-300">
             Divergence field ρ_model(x,t) − ρ_standard(x,t) · ∫|Δρ|dx = {currentField.l1.toExponential(2)}
           </p>
         </div>
         <div className="flex items-start gap-2">
           <EpistemicTag kind="proposed" />
-          <p className="font-mono text-[10px] leading-relaxed text-slate-300">
+          <p className="break-words font-mono text-[10px] leading-relaxed text-slate-300">
             {isKernelMode
               ? 'Woodyard (2026) · P_loc(x) = χ(x)P_B / ∫χP_B'
               : `Woodyard (2026) · P_B = ${currentFrame.model.PB.toFixed(4)}`}

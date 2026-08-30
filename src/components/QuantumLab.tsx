@@ -356,10 +356,10 @@ export const QuantumLab: React.FC = () => {
             <span>Vers3Dynamics</span>
           </p>
           <h1 className="hero-title max-w-5xl">
-            Two theories.
-            <br />
-            One initial condition.
-            <br />
+            Two theories.{' '}
+            <br className="hidden sm:inline" />
+            One initial condition.{' '}
+            <br className="hidden sm:inline" />
             <span className="text-primary">Find the experiment</span> that decides.
           </h1>
           <div className="mt-10 flex flex-col items-start gap-8 md:flex-row md:items-end">
