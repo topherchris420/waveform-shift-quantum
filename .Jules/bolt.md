@@ -1,0 +1,3 @@
+## 2026-04-16 - RealitySplitStage Performance and Static Field Re-calculations
+**Learning:** In the `RealitySplitStage` component, the `scalar_kernel` mode produces a divergence field that is completely static over time. However, it was being re-calculated on every single frame inside a 60Hz loop (in `draw`) and repeatedly inside a `columns` loop in `computeDivergenceMap`. Redundant computations in hot paths (like a render loop) directly impact performance.
+**Action:** When a computed field or state is static based on the application mode (like `scalar_kernel` mode), calculate it once (e.g., using `useMemo` or caching it outside a loop) and reuse the reference rather than re-computing it on every tick or render cycle.

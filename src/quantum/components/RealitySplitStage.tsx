@@ -137,12 +137,24 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
 
   const currentFrame = useMemo(() => sampleTrajectory(trajectory, time), [trajectory, time]);
 
-  const currentField = useMemo(
-    () => computeDivergenceField(mode, params, currentFrame, 220),
-    [mode, params, currentFrame]
-  );
-
   const isKernelMode = mode === 'scalar_kernel';
+
+  const staticField220 = useMemo(() => {
+    if (!isKernelMode) return null;
+    const dummyFrame = {
+      t: 0,
+      standard: { PA: 1, PB: 0, norm: 1 },
+      model: { PA: 1, PB: 0, norm: 1 },
+      deltaPB: 0,
+      traceDistance: 0,
+    };
+    return computeDivergenceField(mode, params, dummyFrame, 220);
+  }, [isKernelMode, mode, params]);
+
+  const currentField = useMemo(
+    () => staticField220 || computeDivergenceField(mode, params, currentFrame, 220),
+    [staticField220, mode, params, currentFrame]
+  );
 
   /**
    * Distinguishability statistic for the mode actually on screen.
@@ -273,7 +285,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
       if (!ctx) return;
 
       const frame = sampleTrajectory(trajectory, t);
-      const field = computeDivergenceField(mode, params, frame, 220);
+      const field = staticField220 || computeDivergenceField(mode, params, frame, 220);
       const peak = Math.max(
         ...field.rhoStandard,
         ...field.rhoModel,
@@ -440,7 +452,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
         );
       }
     },
-    [divergenceMap.maxAbs, drawBandDensity, hoverHandle, mode, params, trajectory]
+    [divergenceMap.maxAbs, drawBandDensity, hoverHandle, mode, params, trajectory, staticField220]
   );
 
   useEffect(() => {
