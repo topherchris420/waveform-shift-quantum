@@ -67,7 +67,7 @@ export const ResourceResonanceLab: React.FC = () => {
     setRelays(initialRelays);
     
     setResult(runSimulation(params));
-  }, []);
+  }, [params]);
 
   const handleRoute = useCallback(() => {
     setIsRouting(true);

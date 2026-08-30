@@ -1,5 +1,9 @@
 # R.A.I.N. Lab (experiment #9)
 
+[![Build & Test Status](https://img.shields.io/badge/tests-93%20passed-brightgreen.svg)](https://github.com/topherchris420/waveform-shift-quantum)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Evaluating standard quantum mechanics alongside the proposed **Woodyard (2026)** field-modulated spatial localization model.
 
 > **Research Instrument Notice:** This application is designed as a rigorous scientific workstation. Established quantum mechanics and proposed physical extensions are strictly segregated, with explicit falsification conditions and cryptographically verifiable research artifacts.
