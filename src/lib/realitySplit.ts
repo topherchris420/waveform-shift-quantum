@@ -500,10 +500,23 @@ export function computeDivergenceMap(
   const times: number[] = [];
   let maxAbs = 0;
 
+  let staticField: DivergenceField | null = null;
+  if (mode === 'scalar_kernel') {
+    // The scalar kernel field is static; compute it once instead of per-column.
+    const dummyFrame: SplitFrame = {
+      t: 0,
+      standard: { PA: 1, PB: 0, norm: 1 },
+      model: { PA: 1, PB: 0, norm: 1 },
+      deltaPB: 0,
+      traceDistance: 0,
+    };
+    staticField = computeDivergenceField(mode, params, dummyFrame, gridSize);
+  }
+
   for (let c = 0; c < columns; c += 1) {
     const t = (c / Math.max(1, columns - 1)) * trajectory.duration;
     const frame = sampleTrajectory(trajectory, t);
-    const field = computeDivergenceField(mode, params, frame, gridSize);
+    const field = staticField || computeDivergenceField(mode, params, frame, gridSize);
     cols.push(field.divergence);
     times.push(t);
     if (field.maxAbs > maxAbs) maxAbs = field.maxAbs;
