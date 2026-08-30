@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Network, Activity, FileSignature, Clock, Users, Building, ShieldAlert } from 'lucide-react';
+import { Network, Activity, FileSignature, Clock, Users, Building, ShieldAlert, Layers } from 'lucide-react';
 import { DEFAULT_SIMULATION_PARAMS, SCENARIO_PRESETS, SimulationParams, SimulationResult, runSimulation, ResourceOffer, ResourceNeed, MatchResult, calculateResonanceScore, GridStochasticEngine } from './engine';
 import { compileResonanceRun, ResonanceCatalystSession } from './resonanceCatalyst';
 import { ResourceNetwork, RelayNode } from './ResourceNetwork';
