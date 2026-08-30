@@ -12,7 +12,7 @@ export const GlobalNav = () => {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex min-h-14 max-w-screen-2xl flex-col items-stretch gap-2 px-3 py-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-6">
-          <Link to="/" className="flex shrink-0 items-center gap-2 group">
+          <Link to="/" className="flex shrink-0 items-center gap-2 group rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
             {isResonance ? (
               <Network className="h-5 w-5 shrink-0 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
             ) : (
@@ -26,13 +26,15 @@ export const GlobalNav = () => {
           <nav aria-label="Primary navigation" className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium sm:gap-x-6 sm:text-sm">
             <Link 
               to="/" 
-              className={`shrink-0 transition-colors hover:text-foreground/80 ${!isResonance ? 'text-foreground' : 'text-foreground/60'}`}
+              aria-current={!isResonance ? "page" : undefined}
+              className={`shrink-0 transition-colors hover:text-foreground/80 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${!isResonance ? 'text-foreground' : 'text-foreground/60'}`}
             >
               Physics Lab
             </Link>
             <Link 
               to="/resonance" 
-              className={`shrink-0 transition-colors hover:text-cyan-400 ${isResonance ? 'text-cyan-400' : 'text-foreground/60'}`}
+              aria-current={isResonance ? "page" : undefined}
+              className={`shrink-0 transition-colors hover:text-cyan-400 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${isResonance ? 'text-cyan-400' : 'text-foreground/60'}`}
             >
               Economics Engine
             </Link>
