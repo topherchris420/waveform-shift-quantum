@@ -328,6 +328,32 @@ export function scalarFieldProfile(
 const gaussian = (x: number, mu: number, sigma: number) =>
   Math.exp(-((x - mu) ** 2) / (2 * sigma * sigma));
 
+interface SpatialBasis {
+  x: Float64Array;
+  gaussA: Float64Array;
+  gaussB: Float64Array;
+}
+const basisCache = new Map<string, SpatialBasis>();
+
+function getSpatialBasis(gridSize: number, dx: number): SpatialBasis {
+  const cacheKey = `${gridSize}-${dx}`;
+  if (basisCache.has(cacheKey)) {
+    return basisCache.get(cacheKey)!;
+  }
+  const x = new Float64Array(gridSize);
+  const gaussA = new Float64Array(gridSize);
+  const gaussB = new Float64Array(gridSize);
+  for (let i = 0; i < gridSize; i += 1) {
+    const xi = -1 + i * dx;
+    x[i] = xi;
+    gaussA[i] = gaussian(xi, SITE_A_X, SITE_WIDTH);
+    gaussB[i] = gaussian(xi, SITE_B_X, SITE_WIDTH);
+  }
+  const basis = { x, gaussA, gaussB };
+  basisCache.set(cacheKey, basis);
+  return basis;
+}
+
 const normalizeInPlace = (values: number[], dx: number) => {
   let total = 0;
   for (const v of values) total += v;
@@ -396,15 +422,11 @@ export function computeDivergenceField(
       rhoModel[i] = Ploc[i] / dx;
     }
   } else {
+    const basis = getSpatialBasis(gridSize, dx);
     for (let i = 0; i < gridSize; i += 1) {
-      const xi = -1 + i * dx;
-      x[i] = xi;
-      rhoStandard[i] =
-        frame.standard.PA * gaussian(xi, SITE_A_X, SITE_WIDTH) +
-        frame.standard.PB * gaussian(xi, SITE_B_X, SITE_WIDTH);
-      rhoModel[i] =
-        frame.model.PA * gaussian(xi, SITE_A_X, SITE_WIDTH) +
-        frame.model.PB * gaussian(xi, SITE_B_X, SITE_WIDTH);
+      x[i] = basis.x[i];
+      rhoStandard[i] = frame.standard.PA * basis.gaussA[i] + frame.standard.PB * basis.gaussB[i];
+      rhoModel[i] = frame.model.PA * basis.gaussA[i] + frame.model.PB * basis.gaussB[i];
     }
     normalizeInPlace(rhoStandard, dx);
     normalizeInPlace(rhoModel, dx);
