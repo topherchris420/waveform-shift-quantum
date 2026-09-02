@@ -216,6 +216,12 @@ export function calculateMonetaryScore(o: ResourceVector, n: ResourceVector, p: 
 const clamp = (v: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
 function mulberry32(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const TYPES = ['gpu', 'solar', 'storage'];
+const TYPE_INDEX: Record<string, number> = { gpu: 0, solar: 1, storage: 2 };
+const SUB_MATRIX = [
+  [1, 0, 0.15],
+  [0.72, 1, 0.9],
+  [0.7, 0.82, 1]
+];
 const SUB: Record<string, Record<string, number>> = { gpu: { gpu: 1, solar: 0, storage: .15 }, solar: { gpu: .72, solar: 1, storage: .9 }, storage: { gpu: .7, solar: .82, storage: 1 } };
 
 export interface ExtendedAgent {
@@ -243,6 +249,12 @@ export interface ExtendedAgent {
   regulatoryApproved: boolean;
   capitalReserveRequirement: number;
   settlementQueueTime: number;
+
+  // Fast pre-computed attributes for simulation inner loops
+  typeIdx: number;
+  solarEnergyBonus: number;
+  monetaryPrice: number;
+  monetaryBid: number;
 }
 
 interface World { offers: ExtendedAgent[]; needs: ExtendedAgent[]; physicalCapacity: number; totalDemand: number }
@@ -255,6 +267,7 @@ function buildWorld(p: SimulationParams, seed: number, shock: number): World {
 
   for (let i = 0; i < n; i++) {
     const type = TYPES[Math.floor(rand() * 3)];
+    const typeIdx = TYPE_INDEX[type] ?? 0;
     const factor = type === 'solar' ? 1 + shock * p.renewableVolatility : 1 + shock * .12;
     const vector: ResourceVector = {
       scarcity: clamp(p.resourceScarcity * (.7 + rand() * .6)),
@@ -283,6 +296,9 @@ function buildWorld(p: SimulationParams, seed: number, shock: number): World {
     const baseAmount = Math.max(0, (.45 + rand() * .75) * (1 - p.resourceScarcity * .55) * (1 - p.supplyDemandImbalance * .35) * factor);
     const effectiveAmount = bEnabled ? baseAmount / hoarding : baseAmount;
 
+    const solarEnergyBonus = typeIdx === 1 ? 0.12 * vector.energyCost : 0;
+    const monetaryPrice = (vector.scarcity * .45 + vector.quality * .35 + (1 - vector.locationCost) * .2) * (1 + p.supplyDemandImbalance);
+
     offers.push({
       id: i, type, amount: effectiveAmount, vector,
       balance: .2 + rand(), credit: .2 + rand(), collateral: .15 + rand(),
@@ -291,12 +307,15 @@ function buildWorld(p: SimulationParams, seed: number, shock: number): World {
       riskAversion: agentRisk, lossAversion: agentLoss, trustScore: trust,
       hoardingMultiplier: hoarding, liquidityHold: liqHold,
       perceivedScarcity: vector.scarcity, perceivedPrice: 1.0, holdoutProbability: holdoutProb,
-      regulatoryApproved: regApproved, capitalReserveRequirement: capReserve, settlementQueueTime: queueTime
+      regulatoryApproved: regApproved, capitalReserveRequirement: capReserve, settlementQueueTime: queueTime,
+      typeIdx, solarEnergyBonus, monetaryPrice, monetaryBid: 0
     });
   }
 
   for (let i = 0; i < n; i++) {
-    const type = TYPES[Math.floor(rand() * 3)]; const hot = type === 'gpu';
+    const type = TYPES[Math.floor(rand() * 3)];
+    const typeIdx = TYPE_INDEX[type] ?? 0;
+    const hot = type === 'gpu';
     const flexible = hot && rand() < p.flexibleComputeShare;
     const vector: ResourceVector = {
       scarcity: p.resourceScarcity, demand: .3 + rand() * .7, urgency: clamp(rand() * p.urgency * 2),
@@ -318,6 +337,8 @@ function buildWorld(p: SimulationParams, seed: number, shock: number): World {
     const baseNeed = (.45 + rand() * .75) * (hot ? 1 + p.computeDemand : 1) * (1 + p.supplyDemandImbalance * .4);
     const effectiveNeed = bEnabled ? baseNeed * panicAmp : baseNeed;
 
+    const monetaryBid = vector.demand * .45 + vector.urgency * .55;
+
     needs.push({
       id: i, type, amount: effectiveNeed, vector,
       balance: .12 + rand() * .9, credit: .15 + rand(), collateral: .1 + rand(),
@@ -326,7 +347,8 @@ function buildWorld(p: SimulationParams, seed: number, shock: number): World {
       riskAversion: agentRisk, lossAversion: agentLoss, trustScore: trust,
       hoardingMultiplier: panicAmp, liquidityHold: liqHold,
       perceivedScarcity: vector.scarcity, perceivedPrice: 1.0, holdoutProbability: holdoutProb,
-      regulatoryApproved: regApproved, capitalReserveRequirement: capReserve, settlementQueueTime: queueTime
+      regulatoryApproved: regApproved, capitalReserveRequirement: capReserve, settlementQueueTime: queueTime,
+      typeIdx, solarEnergyBonus: 0, monetaryPrice: 0, monetaryBid
     });
   }
 
@@ -355,38 +377,74 @@ interface Edge { oi: number; ni: number; sub: number; value: number; rank: numbe
 
 function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracle', seed: number, failed = -1): Outcome {
   const rand = mulberry32(seed);
-  const supply = world.offers.map((o, i) => i === failed ? 0 : o.amount);
-  const remain = world.needs.map(n => n.amount);
-  const served = world.needs.map(() => 0);
-  const flows = world.offers.map(() => 0);
-  const creditFlows = world.needs.map(() => 0);
+  const nOffers = world.offers.length;
+  const nNeeds = world.needs.length;
+
+  const supply = new Array<number>(nOffers);
+  const flows = new Array<number>(nOffers);
+  for (let i = 0; i < nOffers; i++) {
+    supply[i] = i === failed ? 0 : world.offers[i].amount;
+    flows[i] = 0;
+  }
+  const remain = new Array<number>(nNeeds);
+  const served = new Array<number>(nNeeds);
+  const creditFlows = new Array<number>(nNeeds);
+  for (let i = 0; i < nNeeds; i++) {
+    remain[i] = world.needs[i].amount;
+    served[i] = 0;
+    creditFlows[i] = 0;
+  }
 
   const monetary = mode === 'market' || mode === 'stabilizedMarket' || mode === 'hybrid';
   const telemetry = mode === 'hybrid' || mode === 'genesis';
   const bEnabled = p.behavioralEnabled ?? false;
   const iEnabled = p.institutionalEnabled ?? false;
 
+  const geoFrictionThreshold = p.geographicalFriction * .28;
+  const oneMinusGeoFriction = 1 - p.geographicalFriction;
+
   const edges: Edge[] = [];
-  for (let oi = 0; oi < world.offers.length; oi++) {
-    for (let ni = 0; ni < world.needs.length; ni++) {
-      const o = world.offers[oi], n = world.needs[ni];
-      const sub = SUB[o.type][n.type] ?? 0;
-      if (!sub) continue;
-      const accessible = o.vector.locationCost * n.vector.locationCost >= p.geographicalFriction * .28;
-      if (!accessible) continue;
+  for (let oi = 0; oi < nOffers; oi++) {
+    const o = world.offers[oi];
+    const oVec = o.vector;
+    const oTypeIdx = o.typeIdx;
+    const oLoc = oVec.locationCost;
+    const oQual = oVec.quality;
+    const oRel = oVec.reliability;
+    const oComp = oVec.compatibility;
+    const oUrg = oVec.urgency;
+    const oPrice = o.monetaryPrice;
+    const oSolarBonus = o.solarEnergyBonus;
+
+    for (let ni = 0; ni < nNeeds; ni++) {
+      const n = world.needs[ni];
+      const nTypeIdx = n.typeIdx;
+      const sub = SUB_MATRIX[oTypeIdx][nTypeIdx];
+      if (sub === 0) continue;
+
+      const nVec = n.vector;
+      const nLoc = nVec.locationCost;
+      const locProduct = oLoc * nLoc;
+      if (locProduct < geoFrictionThreshold) continue;
 
       const relay = sub < 1;
       const conversion = relay ? .82 : 1;
-      const value = Math.max(0, (o.vector.quality * n.vector.demand + .25 * n.vector.urgency + (o.type === 'solar' ? .12 * o.vector.energyCost : 0)) * (.72 + .28 * o.vector.locationCost * n.vector.locationCost) * conversion * o.vector.reliability * sub);
+      const value = Math.max(0, (oQual * nVec.demand + .25 * nVec.urgency + oSolarBonus) * (.72 + .28 * locProduct) * conversion * oRel * sub);
 
       let rank = value;
       if (mode !== 'oracle') {
         const infoNoise = bEnabled ? (rand() - 0.5) * p.informationAsymmetry * 1.5 : 0;
-        const price = calculateMonetaryScore(o.vector, n.vector, p) * sub * (1 + p.priceSignalNoise * (rand() - .5) * 2 + infoNoise);
-        const signal = calculateResonanceScore(o.vector, n.vector, p) * sub * (1 + (1 - p.telemetryReliability) * (rand() - .5) * 2.4);
+        const nComp = nVec.compatibility;
+        const compProd = oComp * nComp;
+        const priceScore = Math.max(0, 1 - Math.abs(oPrice - n.monetaryBid)) * (compProd > .5 ? 1 : .1);
+        const price = priceScore * sub * (1 + p.priceSignalNoise * (rand() - .5) * 2 + infoNoise);
+
+        const resScore = compProd * ((1 - Math.abs(oUrg - nVec.urgency)) * .2 + oVec.energyCost * .3 + locProduct * oneMinusGeoFriction * .2 + oRel * .3);
+        const signal = resScore * sub * (1 + (1 - p.telemetryReliability) * (rand() - .5) * 2.4);
+
         rank = mode === 'market' || mode === 'stabilizedMarket' ? price : mode === 'hybrid' ? signal * .72 + price * .28 : signal;
       }
-      edges.push({ oi, ni, sub, value, rank, relay, accessible });
+      edges.push({ oi, ni, sub, value, rank, relay, accessible: true });
     }
   }
 
@@ -396,7 +454,8 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
   let financialRejected = 0, behavioralRejected = 0, institutionalRejected = 0, informationRejected = 0;
   let regulatoryBottlenecks = 0, settlementAttempts = 0, settlementFailures = 0, backstop = 0, liquidityShortfall = 0;
 
-  for (const e of edges) {
+  for (let ei = 0; ei < edges.length; ei++) {
+    const e = edges[ei];
     const raw = Math.min(supply[e.oi], remain[e.ni] / e.sub);
     if (raw <= 1e-9) continue;
     const effective = raw * e.sub;
@@ -468,7 +527,7 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
 
   // Formal Unmet Demand Decomposition
   const physicalShortageV = Math.min(unmetVolume, Math.max(0, demand - capacity));
-  const compatibilityCapacity = world.offers.reduce((sum, o, oi) => sum + (oi === failed ? 0 : o.amount * Math.max(...world.needs.map(n => SUB[o.type][n.type] ?? 0))), 0);
+  const compatibilityCapacity = world.offers.reduce((sum, o, oi) => sum + (oi === failed ? 0 : o.amount * Math.max(...world.needs.map(n => SUB_MATRIX[o.typeIdx][n.typeIdx]))), 0);
   const compatibilityV = Math.min(unmetVolume - physicalShortageV, Math.max(0, Math.min(demand, capacity) - compatibilityCapacity));
   const inaccessibleShare = p.geographicalFriction * .12;
   const networkV = Math.min(Math.max(0, unmetVolume - physicalShortageV - compatibilityV), Math.min(demand, capacity) * inaccessibleShare);
@@ -502,26 +561,31 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
 
   const totalFlow = flows.reduce((s, x) => s + x, 0) || 1;
   const hhi = flows.reduce((s, x) => s + (x / totalFlow) ** 2, 0);
-  const shortfalls = world.needs.map((n, i) => n.amount - served[i]).sort((a,b)=>a-b);
-  const sumShort = shortfalls.reduce((s,x)=>s+x,0);
-  let weighted = 0; shortfalls.forEach((x,i)=>weighted+=(i+1)*x);
-  const gini = sumShort ? 2*weighted/(shortfalls.length*sumShort)-(shortfalls.length+1)/shortfalls.length : 0;
+
+  const shortfalls = new Array<number>(nNeeds);
+  for (let i = 0; i < nNeeds; i++) shortfalls[i] = world.needs[i].amount - served[i];
+  shortfalls.sort((a, b) => a - b);
+  let sumShort = 0;
+  for (let i = 0; i < nNeeds; i++) sumShort += shortfalls[i];
+  let weighted = 0;
+  for (let i = 0; i < nNeeds; i++) weighted += (i + 1) * shortfalls[i];
+  const gini = sumShort ? 2 * weighted / (nNeeds * sumShort) - (nNeeds + 1) / nNeeds : 0;
 
   const instLatency = iEnabled ? p.governanceLatency * 40 + p.regulatoryFriction * 20 : 0;
   const overhead = mode === 'market' || mode === 'stabilizedMarket'
     ? p.marketOverhead + backstop / Math.max(demand, 1) * .04
     : mode === 'hybrid'
-    ? p.hybridOverhead + p.telemetryVerificationCost * (1-p.telemetryReliability)
-    : p.genesisOverhead + p.telemetryVerificationCost * (1-p.telemetryReliability);
+    ? p.hybridOverhead + p.telemetryVerificationCost * (1 - p.telemetryReliability)
+    : p.genesisOverhead + p.telemetryVerificationCost * (1 - p.telemetryReliability);
 
   const trustCap = world.offers.reduce((acc, o) => acc + o.amount * o.trustScore, 0);
 
   return {
-    welfare, attainable: 0, delivered, demand, capacity, spill: supply.reduce((s,x)=>s+x,0),
-    hhi, latency: 12 + p.geographicalFriction*30 + (monetary ? p.settlementLatency*50 : 0) + (telemetry ? 8 : 0) + instLatency,
-    relay: delivered ? relayed/delivered : 0, gini, overhead, flows, financialRejected, settlementAttempts,
+    welfare, attainable: 0, delivered, demand, capacity, spill: supply.reduce((s, x) => s + x, 0),
+    hhi, latency: 12 + p.geographicalFriction * 30 + (monetary ? p.settlementLatency * 50 : 0) + (telemetry ? 8 : 0) + instLatency,
+    relay: delivered ? relayed / delivered : 0, gini, overhead, flows, financialRejected, settlementAttempts,
     settlementFailures, backstop, liquidityShortfall, creditFlows, decomposition,
-    telemetrySensitivity: telemetry ? (1-p.telemetryReliability) * (welfare/(delivered||1))*100 : 0,
+    telemetrySensitivity: telemetry ? (1 - p.telemetryReliability) * (welfare / (delivered || 1)) * 100 : 0,
     behavioralRejected, institutionalRejected, informationRejected, regulatoryBottlenecks, trustWeightedCap: trustCap
   };
 }
