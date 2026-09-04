@@ -1,6 +1,6 @@
 # R.A.I.N. Lab (experiment #9)
 
-[![Build & Test Status](https://img.shields.io/badge/tests-112%20passed-brightgreen.svg)](https://github.com/topherchris420/waveform-shift-quantum)
+[![Build & Test Status](https://img.shields.io/badge/tests-116%20passed-brightgreen.svg)](https://github.com/topherchris420/waveform-shift-quantum)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -73,16 +73,15 @@ Genesis is not an anti-money claim and cannot receive a hardcoded victory. Disco
 ## Verification & Build Suite
 
 ```bash
-# Run scientific invariant test suite (12 test suites, 112 automated vitest invariant checks)
-npm test
+# Run scientific invariant test suite (12 test suites, 116 automated vitest invariant checks)
+pnpm test
 
 # Run strict TypeScript compiler verification
 npx tsc --noEmit
 
 # Run ESLint linter
-npm run lint
+pnpm lint
 
 # Build production bundle (optimized vendor chunks)
-npm run build
+pnpm build
 ```
-
