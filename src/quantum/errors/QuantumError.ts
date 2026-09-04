@@ -19,3 +19,18 @@ export class HermitianError extends QuantumError {
     this.name = 'HermitianError';
   }
 }
+
+export class DensityMatrixError extends QuantumError {
+  constructor(message: string = 'Invalid quantum density matrix', code = 'DENSITY_MATRIX_ERROR') {
+    super(message, code);
+    this.name = 'DensityMatrixError';
+  }
+}
+
+export class PositiveSemiDefiniteError extends QuantumError {
+  constructor(message: string = 'Density matrix must be positive semi-definite (eigenvalues >= 0)') {
+    super(message, 'PSD_ERROR');
+    this.name = 'PositiveSemiDefiniteError';
+  }
+}
+

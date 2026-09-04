@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { QuantumError, NormalizationError, HermitianError } from '../quantum/errors/QuantumError';
+import {
+  QuantumError,
+  NormalizationError,
+  HermitianError,
+  DensityMatrixError,
+  PositiveSemiDefiniteError,
+} from '../quantum/errors/QuantumError';
 import { validateNormalization, validateHermitian2x2 } from '../quantum/validation/validateParameters';
 
 describe('Quantum Errors & Parameter Validation', () => {
@@ -17,6 +23,14 @@ describe('Quantum Errors & Parameter Validation', () => {
     const hermErr = new HermitianError();
     expect(hermErr).toBeInstanceOf(QuantumError);
     expect(hermErr.code).toBe('HERM_ERROR');
+
+    const dmErr = new DensityMatrixError('Invalid rho');
+    expect(dmErr).toBeInstanceOf(QuantumError);
+    expect(dmErr.code).toBe('DENSITY_MATRIX_ERROR');
+
+    const psdErr = new PositiveSemiDefiniteError();
+    expect(psdErr).toBeInstanceOf(QuantumError);
+    expect(psdErr.code).toBe('PSD_ERROR');
   });
 
   it('should validate probability normalization', () => {

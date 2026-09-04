@@ -1,6 +1,6 @@
 # R.A.I.N. Lab (experiment #9)
 
-[![Build & Test Status](https://img.shields.io/badge/tests-93%20passed-brightgreen.svg)](https://github.com/topherchris420/waveform-shift-quantum)
+[![Build & Test Status](https://img.shields.io/badge/tests-112%20passed-brightgreen.svg)](https://github.com/topherchris420/waveform-shift-quantum)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -17,6 +17,7 @@ To ensure scientific rigor, all physics calculations and visual models are tagge
 - **Barrier Tunneling**: 1D rectangular potential barrier transmission $T(E, V_0, a)$.
 - **Quantum Teleportation**: Bennett et al. (1993) 3-qubit discrete protocol via pre-shared entanglement and classical communication.
 - **Werner States & Entanglement**: Entanglement concurrence $C(\rho) = \max\left(0, \frac{3p-1}{2}\right)$ and Massar–Popescu classical limit $F \le \frac{2}{3}$.
+- **Density Matrix Formalism**: Invariant verification for $\text{Tr}(\rho) = 1$, Hermiticity $\rho = \rho^\dagger$, positive semi-definiteness $\lambda_i \ge 0$, and Uhlmann state fidelity $F(\rho, \sigma)$.
 
 ### 2. PROPOSED MODEL (Woodyard 2026)
 - **Field-Modulated Two-Site System**: Hamiltonian
@@ -33,6 +34,8 @@ To ensure scientific rigor, all physics calculations and visual models are tagge
 ### 4. TESTABLE PREDICTIONS & FALSIFICATION CONDITIONS
 - **Interferometric Phase Shift**:
   $$\Delta\varphi_\phi = \frac{g}{\hbar} \int_0^T \left[\phi(x_1(t),t) - \phi(x_2(t),t)\right] \mathrm{d}t$$
+- **Atomic Clock Differential Frequency Shift**:
+  $$\Delta f = \frac{\eta\,\delta\phi}{2\pi}$$
 - **Falsification Rule**: If precision atom interferometry or optical clock experiments show zero phase deviation within modeled uncertainty ($\sigma < 10^{-4}$), the proposed field coupling parameter region is falsified and excluded.
 
 ---
@@ -40,10 +43,13 @@ To ensure scientific rigor, all physics calculations and visual models are tagge
 ## Core Lab Features
 
 1. **Standard QM vs. Woodyard Model Comparison Mode**: Simultaneous dual predictions, numerical difference $\Delta P$, percentage deviation, and explicit "WHAT WOULD FALSIFY THIS?" controls.
-2. **Anomaly Engine**: Automated parameter space sweep searching for states that maximize measurable deviation from standard QM baseline, ranked by numerical stability, score, and experimental feasibility.
-3. **Catalyst OS Integration**: Generate exportable JSON research artifacts with SHA-256 canonical hash chains, source commit SHA, parameter digests, and root artifact verification.
-4. **Numerical Two-Site Time Evolution**: Live propagation of $|\psi(t)\rangle$ displaying $P_A(t)$ and $P_B(t)$ oscillations, avoided crossings, and exact norm preservation.
-5. **Model Context Protocol (MCP) Tools**: Expose quantum physics calculation endpoints over Deno/Supabase Edge Functions.
+2. **2x2 Density Matrix Workspace**: Full quantum state tomography visualizer $\rho = |\psi\rangle\langle\psi|$, displaying complex phase color map, purity $\text{Tr}(\rho^2)$, von Neumann entropy $S(\rho)$, off-diagonal coherence, eigenvalue spectrum, trace normalization verification, and Uhlmann fidelity under environmental $T_2^*$ dephasing.
+3. **Matter-Wave Interferometry & Ramsey Clock Signatures**: Dual-mode precision testing suite featuring Mach-Zehnder atom interferometry fringe simulation and differential Ramsey spectroscopy with live fringe plots, visibility contrast analysis, and detection limits against state-of-the-art optical clocks.
+4. **Anomaly Engine**: Automated parameter space sweep searching for states that maximize measurable deviation from standard QM baseline, ranked by numerical stability, score, and experimental feasibility.
+5. **Catalyst OS Integration**: Generate exportable JSON research artifacts with SHA-256 canonical hash chains, source commit SHA, parameter digests, and root artifact verification.
+6. **Numerical Two-Site Time Evolution**: Live propagation of $|\psi(t)\rangle$ displaying $P_A(t)$ and $P_B(t)$ oscillations, avoided crossings, and exact norm preservation.
+7. **Model Context Protocol (MCP) Suite (10 Tools)**: Standardized analytical tools exposed both over self-contained Deno/Supabase Edge Functions and via interactive browser-based client tool runners with local compute fallbacks.
+8. **Optimized Production Bundling & CI Pipeline**: Sub-500 kB vendor chunk splitting (`vendor-react`, `vendor-ui`, `vendor-math`) and automated GitHub Actions CI pipeline running lint, type checks, invariant test suite, and production build.
 
 ---
 
@@ -62,18 +68,21 @@ Genesis is not an anti-money claim and cannot receive a hardcoded victory. Disco
 2. **CAISO Duck Curve Engine**: A 24-hour stochastic power grid simulator that models real-world energy availability anomalies.
 3. **Multi-Hop Triangulation**: Dynamic routing through intermediary relay nodes (Battery Storage, Compute Brokers, Data Hubs) to perform time-shifting and form-shifting resource allocation.
 
-
 ---
 
 ## Verification & Build Suite
 
 ```bash
-# Run scientific invariant test suite (10 automated vitest invariant checks)
-pnpm test
+# Run scientific invariant test suite (12 test suites, 112 automated vitest invariant checks)
+npm test
+
+# Run strict TypeScript compiler verification
+npx tsc --noEmit
 
 # Run ESLint linter
-pnpm run lint
+npm run lint
 
-# Build production bundle
-pnpm run build
+# Build production bundle (optimized vendor chunks)
+npm run build
 ```
+

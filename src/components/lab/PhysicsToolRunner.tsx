@@ -2,15 +2,27 @@ import { useMemo, useState } from 'react';
 import { Loader2, Play, Terminal, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { twoSiteModel, localizationKernel } from '@/lib/physics';
+import {
+  twoSiteModel,
+  localizationKernel,
+  barrierTransmission,
+  doubleSlitIntensity,
+  bornProbabilities,
+  teleportationFidelity,
+  wernerConcurrence,
+  computeInterferometerFringes,
+  compareModels,
+} from '@/lib/physics';
+import { searchAnomalies } from '@/lib/anomalyEngine';
 
-type FieldType = 'number' | 'bit';
+type FieldType = 'number' | 'bit' | 'select';
 
 interface ToolField {
   name: string;
   label: string;
   type: FieldType;
-  default: number;
+  default: number | string;
+  options?: string[];
   min?: number;
   max?: number;
   step?: number;
@@ -24,6 +36,7 @@ interface ToolDef {
   summary: string;
   fields: ToolField[];
   visualize: (out: Record<string, unknown>) => React.ReactNode;
+  localCompute?: (inputs: Record<string, unknown>) => { structured: Record<string, unknown>; text: string };
 }
 
 /** Structured MCP output is untyped JSON; these narrow it at the render edge. */
@@ -67,7 +80,20 @@ const TOOLS: ToolDef[] = [
       { name: 'coupling_g', label: 'Coupling g', type: 'number', default: 0.8, step: 0.1 },
       { name: 'mixing_delta', label: 'Mixing Δ', type: 'number', default: 0.2, min: 0.01, step: 0.05, unit: 'eV' },
     ],
-
+    localCompute: (inputs) => {
+      const res = twoSiteModel({
+        EA: num(inputs.bare_EA),
+        EB: num(inputs.bare_EB),
+        phiA: num(inputs.field_phiA),
+        phiB: num(inputs.field_phiB),
+        g: num(inputs.coupling_g),
+        delta: num(inputs.mixing_delta),
+      });
+      return {
+        structured: { ...res },
+        text: `PA = ${res.PA.toFixed(4)}, PB = ${res.PB.toFixed(4)}, z = ${res.z.toFixed(4)} (detuning δ = ${res.detuning.toFixed(3)} eV)`,
+      };
+    },
     visualize: (o) => {
       const res = twoSiteModel({
         EA: (o.bare_EA as number) ?? 1.0,
@@ -106,6 +132,22 @@ const TOOLS: ToolDef[] = [
       { name: 'gamma', label: 'Linewidth Γ', type: 'number', default: 1.5, min: 0.1, step: 0.1 },
       { name: 'alpha', label: 'Strength α', type: 'number', default: 1.0, step: 0.1 },
     ],
+    localCompute: (inputs) => {
+      const res = localizationKernel({
+        omega0: num(inputs.omega0),
+        beta: num(inputs.beta),
+        kappa: 0,
+        phi: num(inputs.phi),
+        d2phi: 0,
+        omega_w: num(inputs.drive_w),
+        gamma: num(inputs.gamma),
+        alpha: num(inputs.alpha),
+      });
+      return {
+        structured: { ...res },
+        text: `χ(x) = ${res.chi.toFixed(4)}, L(x) = ${res.L.toFixed(4)}, ω_loc = ${res.omega_loc.toFixed(2)} GHz`,
+      };
+    },
     visualize: (o) => {
       const res = localizationKernel({
         omega0: (o.omega0 as number) ?? 10.0,
@@ -134,6 +176,118 @@ const TOOLS: ToolDef[] = [
     },
   },
   {
+    name: 'interferometry_phase_shift',
+    title: 'Matter-Wave Interferometry Phase Shift',
+    summary: 'Calculates the predicted matter-wave interferometric phase shift Δφ and fringe visibility.',
+    fields: [
+      { name: 'armSeparation_um', label: 'Arm Separation Δx', type: 'number', default: 10.0, step: 0.5, unit: 'µm' },
+      { name: 'interrogationTime_ms', label: 'Interrogation Time T', type: 'number', default: 2.5, step: 0.1, unit: 'ms' },
+      { name: 'fieldGradient_per_um', label: 'Field Gradient ∇φ', type: 'number', default: 0.8, step: 0.05 },
+      { name: 'coupling_g', label: 'Coupling g', type: 'number', default: 0.85, step: 0.05 },
+      { name: 'dephasingNoise', label: 'Dephasing Noise γ', type: 'number', default: 0.05, step: 0.01 },
+    ],
+    localCompute: (inputs) => {
+      const res = computeInterferometerFringes({
+        armSeparation_um: num(inputs.armSeparation_um),
+        interrogationTime_ms: num(inputs.interrogationTime_ms),
+        fieldGradient_per_um: num(inputs.fieldGradient_per_um),
+        coupling_g: num(inputs.coupling_g),
+        dephasingNoise: num(inputs.dephasingNoise),
+      });
+      return {
+        structured: { ...res },
+        text: `Phase Shift Δφ = ${res.phaseShift_rad.toFixed(4)} rad (${res.phaseShift_deg.toFixed(2)}°), Visibility = ${(res.visibility * 100).toFixed(1)}%`,
+      };
+    },
+    visualize: (o) => (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="border-cyan-500/40 bg-cyan-500/10 text-cyan-200">
+            Δφ = {num(o.phaseShift_rad).toFixed(4)} rad ({num(o.phaseShift_deg).toFixed(1)}°)
+          </Badge>
+          <span className="font-mono text-xs text-slate-400">Visibility: {(num(o.visibility) * 100).toFixed(1)}%</span>
+        </div>
+        <Bar value={num(o.visibility)} label="Fringe Contrast Visibility" tone="cyan" />
+        <Bar value={num(o.maxDelta)} label="Max Intensity Deviation ΔI" tone="amber" />
+      </div>
+    ),
+  },
+  {
+    name: 'compare_models',
+    title: 'Dual Model Comparison & Falsification',
+    summary: 'Compares Standard QM vs Woodyard Model with explicit falsification conditions.',
+    fields: [
+      { name: 'g', label: 'Coupling g', type: 'number', default: 0.8, step: 0.05 },
+      { name: 'phiA', label: 'Field φA', type: 'number', default: -0.6, step: 0.1 },
+      { name: 'phiB', label: 'Field φB', type: 'number', default: 0.6, step: 0.1 },
+      { name: 'delta', label: 'Mixing Δ', type: 'number', default: 0.25, step: 0.05, unit: 'eV' },
+      { name: 'alpha', label: 'Response α', type: 'number', default: 1.2, step: 0.1 },
+    ],
+    localCompute: (inputs) => {
+      const res = compareModels('two_site', {
+        g: num(inputs.g),
+        phiA: num(inputs.phiA),
+        phiB: num(inputs.phiB),
+        delta: num(inputs.delta),
+        alpha: num(inputs.alpha),
+      });
+      return {
+        structured: { ...res },
+        text: `Standard QM = ${res.standardQM.toFixed(4)}, Woodyard = ${res.woodyardModel.toFixed(4)}, Δ = ${res.delta.toFixed(4)} (${res.percentDeviation.toFixed(2)}%)`,
+      };
+    },
+    visualize: (o) => (
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-2 font-mono text-xs">
+          <div className="rounded border border-blue-500/30 bg-blue-950/30 p-2">
+            <span className="text-blue-400 text-[10px]">Standard QM</span>
+            <div className="text-sm font-bold text-blue-200">{num(o.standardQM).toFixed(4)}</div>
+          </div>
+          <div className="rounded border border-amber-500/30 bg-amber-950/30 p-2">
+            <span className="text-amber-400 text-[10px]">Woodyard Model</span>
+            <div className="text-sm font-bold text-amber-200">{num(o.woodyardModel).toFixed(4)}</div>
+          </div>
+        </div>
+        <div className="font-mono text-xs text-emerald-300">
+          Deviation: <span className="font-bold">{num(o.delta) >= 0 ? '+' : ''}{num(o.delta).toFixed(4)} ({num(o.percentDeviation).toFixed(2)}%)</span>
+        </div>
+      </div>
+    ),
+  },
+  {
+    name: 'anomaly_search',
+    title: 'Automated Anomaly Parameter Sweep',
+    summary: 'Automated search for regimes that maximize measurable statistical deviation.',
+    fields: [
+      { name: 'seed', label: 'PRNG Seed', type: 'number', default: 42, step: 1 },
+      { name: 'iterations', label: 'Iterations', type: 'number', default: 50, step: 10, min: 10, max: 200 },
+    ],
+    localCompute: (inputs) => {
+      const candidates = searchAnomalies({ seed: num(inputs.seed), iterations: num(inputs.iterations) });
+      return {
+        structured: { totalDiscovered: candidates.length, topRegimes: candidates.slice(0, 3) },
+        text: `Found ${candidates.length} candidate regimes. Top score: ${candidates[0]?.score}`,
+      };
+    },
+    visualize: (o) => {
+      const top = (o.topRegimes as Array<Record<string, unknown>>) || [];
+      return (
+        <div className="space-y-2 font-mono text-xs">
+          <div className="text-cyan-300 font-bold">Discovered {num(o.totalDiscovered)} Candidate Regimes</div>
+          {top.map((item, idx) => (
+            <div key={idx} className="rounded border border-slate-800 bg-slate-950/60 p-2 text-[11px]">
+              <div className="flex justify-between text-slate-300">
+                <span>{str(item.id)}</span>
+                <span className="text-amber-300 font-bold">Score: {num(item.score)}</span>
+              </div>
+              <div className="text-[10px] text-slate-400">{str(item.candidatePlatform)} · ΔP = {num(item.deltaP).toFixed(4)}</div>
+            </div>
+          ))}
+        </div>
+      );
+    },
+  },
+  {
     name: 'barrier_transmission',
     title: '1D barrier transmission',
     summary: 'Rectangular potential barrier T(E, V, a). Tunneling, resonant, or oscillatory.',
@@ -142,6 +296,13 @@ const TOOLS: ToolDef[] = [
       { name: 'barrier_eV', label: 'Barrier V', type: 'number', default: 2.0, min: 0.001, step: 0.05, unit: 'eV' },
       { name: 'width_nm', label: 'Width a', type: 'number', default: 0.5, min: 0.001, step: 0.05, unit: 'nm' },
     ],
+    localCompute: (inputs) => {
+      const res = barrierTransmission(num(inputs.energy_eV), num(inputs.barrier_eV), num(inputs.width_nm));
+      return {
+        structured: { ...res, transmission: res.T, reflection: 1 - res.T },
+        text: `T = ${res.T.toExponential(4)} (regime: ${res.regime}, κa = ${res.kappa_a.toFixed(4)})`,
+      };
+    },
     visualize: (o) => (
       <div className="space-y-3">
         <div className="flex items-center gap-2">
@@ -163,6 +324,18 @@ const TOOLS: ToolDef[] = [
       { name: 'wavelength_nm', label: 'Wavelength λ', type: 'number', default: 633, min: 1, step: 1, unit: 'nm' },
       { name: 'screen_distance_mm', label: 'Distance L', type: 'number', default: 1000, min: 1, step: 10, unit: 'mm' },
     ],
+    localCompute: (inputs) => {
+      const intensity = doubleSlitIntensity(
+        num(inputs.y_mm),
+        num(inputs.slit_separation_um),
+        num(inputs.wavelength_nm),
+        num(inputs.screen_distance_mm)
+      );
+      return {
+        structured: { intensity },
+        text: `Intensity I/I₀ = ${intensity.toFixed(4)}`,
+      };
+    },
     visualize: (o) => (
       <div className="space-y-2">
         <Bar value={num(o.intensity)} label="Normalized intensity I/I₀" tone="violet" />
@@ -177,6 +350,13 @@ const TOOLS: ToolDef[] = [
     fields: [
       { name: 'theta_rad', label: 'Polar θ', type: 'number', default: Math.PI / 3, step: 0.05, unit: 'rad' },
     ],
+    localCompute: (inputs) => {
+      const res = bornProbabilities(num(inputs.theta_rad));
+      return {
+        structured: { ...res },
+        text: `p(0) = ${res.p0.toFixed(4)}, p(1) = ${res.p1.toFixed(4)}`,
+      };
+    },
     visualize: (o) => (
       <div className="space-y-3">
         <Bar value={num(o.p0)} label="p(0)" tone="cyan" />
@@ -192,6 +372,14 @@ const TOOLS: ToolDef[] = [
       { name: 'bell_purity', label: 'Bell purity p', type: 'number', default: 0.9, min: 0, max: 1, step: 0.01 },
       { name: 'decoherence', label: 'Decoherence d', type: 'number', default: 0.1, min: 0, max: 1, step: 0.01 },
     ],
+    localCompute: (inputs) => {
+      const fidelity = teleportationFidelity(num(inputs.bell_purity), num(inputs.decoherence));
+      const concurrence = wernerConcurrence(num(inputs.bell_purity));
+      return {
+        structured: { fidelity, concurrence, entangled: concurrence > 0 },
+        text: `Fidelity F = ${fidelity.toFixed(4)}, Concurrence C = ${concurrence.toFixed(4)}`,
+      };
+    },
     visualize: (o) => (
       <div className="space-y-3">
         <Bar value={num(o.fidelity)} label="Fidelity F" tone="cyan" />
@@ -210,6 +398,17 @@ const TOOLS: ToolDef[] = [
       { name: 'm1', label: 'm₁', type: 'bit', default: 0 },
       { name: 'm2', label: 'm₂', type: 'bit', default: 1 },
     ],
+    localCompute: (inputs) => {
+      const m1 = num(inputs.m1) === 1 ? 1 : 0;
+      const m2 = num(inputs.m2) === 1 ? 1 : 0;
+      const ops = ['I (Identity)', 'X (Bit flip)', 'Z (Phase flip)', 'ZX / -iY (Bit + phase flip)'];
+      const symbols = ['I', 'X', 'Z', 'ZX'];
+      const idx = m1 * 2 + m2;
+      return {
+        structured: { operator: symbols[idx], bits: `${m1}${m2}`, description: ops[idx] },
+        text: `Operator: ${symbols[idx]} for bits ${m1}${m2}`,
+      };
+    },
     visualize: (o) => (
       <div className="flex items-center gap-3">
         <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-cyan-400/40 bg-cyan-500/10 font-mono text-2xl text-cyan-100">
@@ -228,7 +427,7 @@ export function PhysicsToolRunner() {
   const [selected, setSelected] = useState(TOOLS[0].name);
   const tool = useMemo(() => TOOLS.find((t) => t.name === selected)!, [selected]);
   const [values, setValues] = useState<Record<string, number>>(() =>
-    Object.fromEntries(tool.fields.map((f) => [f.name, f.default])),
+    Object.fromEntries(tool.fields.map((f) => [f.name, f.default as number])),
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -237,7 +436,7 @@ export function PhysicsToolRunner() {
   function pick(name: string) {
     const next = TOOLS.find((t) => t.name === name)!;
     setSelected(name);
-    setValues(Object.fromEntries(next.fields.map((f) => [f.name, f.default])));
+    setValues(Object.fromEntries(next.fields.map((f) => [f.name, f.default as number])));
     setResult(null);
     setError(null);
   }
@@ -247,6 +446,7 @@ export function PhysicsToolRunner() {
     setError(null);
     setResult(null);
     try {
+      // Try remote Supabase edge function invocation
       const res = await fetch(`${MCP_URL}/.mcp/invoke-tool/${tool.name}`, {
         method: 'POST',
         headers: {
@@ -256,19 +456,38 @@ export function PhysicsToolRunner() {
         },
         body: JSON.stringify(values),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-      const data = await res.json();
-      type ContentItem = { type?: string; text?: string };
-      const text = Array.isArray(data?.content)
-        ? (data.content as ContentItem[])
-            .filter((c) => c?.type === 'text')
-            .map((c) => c.text ?? '')
-            .join('\n')
-        : '';
-      setResult({ structured: (data?.structuredContent as Record<string, unknown>) ?? null, text });
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      setError(message);
+
+      if (res.ok) {
+        const data = await res.json();
+        type ContentItem = { type?: string; text?: string };
+        const text = Array.isArray(data?.content)
+          ? (data.content as ContentItem[])
+              .filter((c) => c?.type === 'text')
+              .map((c) => c.text ?? '')
+              .join('\n')
+          : '';
+        const structured =
+          data?.structuredContent && typeof data.structuredContent === 'object'
+            ? (data.structuredContent as Record<string, unknown>)
+            : null;
+        setResult({ structured, text });
+      } else {
+        // Fallback to local analytical compute
+        if (tool.localCompute) {
+          const localRes = tool.localCompute(values);
+          setResult(localRes);
+        } else {
+          throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+        }
+      }
+    } catch (e) {
+      if (tool.localCompute) {
+        const localRes = tool.localCompute(values);
+        setResult(localRes);
+      } else {
+        const message = e instanceof Error ? e.message : String(e);
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }

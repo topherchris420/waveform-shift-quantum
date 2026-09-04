@@ -34,6 +34,9 @@ import {
 } from '@/quantum/components/TeleportationWorkspace';
 import { QDPWorkspace } from '@/quantum/components/QDPWorkspace';
 import { TwoSiteExperiment } from '@/quantum/experiments/TwoSiteExperiment';
+import { DensityMatrixVisualizer } from '@/quantum/components/DensityMatrixVisualizer';
+import { InterferometryExperiment } from '@/quantum/experiments/InterferometryExperiment';
+
 import { SIMULATION_DISCLAIMER, type EpistemicClass } from '@/lib/epistemics';
 import { DEFAULT_SPLIT_PARAMS, type RealitySplitParams, type SplitMode } from '@/lib/realitySplit';
 import { getPlatform, PLATFORMS } from '@/lib/platforms';
@@ -647,6 +650,15 @@ export const QuantumLab: React.FC = () => {
                 delta: splitParams.delta,
               }}
             />
+
+            <DensityMatrixVisualizer
+              parameters={{
+                g: splitParams.g,
+                phiA: splitParams.phiA,
+                phiB: splitParams.phiB,
+                delta: splitParams.delta,
+              }}
+            />
           </div>
 
           <div className="space-y-4">
@@ -729,6 +741,11 @@ export const QuantumLab: React.FC = () => {
             </section>
           </div>
         </div>
+      </Reveal>
+
+      {/* Matter-Wave Interferometry & Ramsey Spectroscopy */}
+      <Reveal as="section" variant="up" className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
+        <InterferometryExperiment />
       </Reveal>
 
       {/* Teleportation bench (established-physics control case) */}

@@ -456,6 +456,33 @@ export function compareModels(
       };
     }
 
+    case 'signatures':
+    case 'interferometry': {
+      const g_val = g;
+      const dPhi = (phiB - phiA);
+      const T = 2.0; // standard interrogation time ms
+      const phaseShift = interferometryPhaseShift(g_val, 1.0, dPhi * T);
+      const stdFringe = 0.5; // at midpoint θ = π/2
+      const woodFringe = 0.5 * (1 + Math.cos(Math.PI / 2 + phaseShift));
+      const diff = woodFringe - stdFringe;
+      const pct = (diff / stdFringe) * 100;
+      return {
+        standardQM: stdFringe,
+        woodyardModel: woodFringe,
+        delta: diff,
+        percentDeviation: pct,
+        observableName: 'Interferometric Fringe Shift Δφ_φ',
+        assumptions: [
+          'Two-path Mach-Zehnder matter-wave geometry',
+          'Linear scalar phase accumulation Δφ = (g/ħ) ∫ Δφ dt',
+          'Negligible gravitational gradient cross-talk',
+        ],
+        scientificStatus: 'Prediction',
+        falsificationCondition:
+          'Zero fringe shift |Δφ| < 10⁻⁴ rad under verified scalar gradient excludes matter-scalar coupling strength g.',
+      };
+    }
+
     case 'teleportation': {
       const purity = params.purity ?? 0.98;
       const dec = params.decoherence ?? 0.2;
@@ -498,3 +525,262 @@ export function compareModels(
     }
   }
 }
+
+/**
+ * ============================================================================
+ * Quantum State Tomography & Density Matrix (ρ) Analytics
+ * ============================================================================
+ */
+
+export interface DensityMatrix2x2 {
+  rho00: Complex;
+  rho01: Complex;
+  rho10: Complex;
+  rho11: Complex;
+}
+
+/** Construct 2x2 Density Matrix ρ = |ψ⟩⟨ψ| from state vector */
+export function stateToDensityMatrix(state: TwoSiteStateVector): DensityMatrix2x2 {
+  const { cA, cB } = state;
+  // |cA|²
+  const rho00: Complex = { re: cA.re * cA.re + cA.im * cA.im, im: 0 };
+  // cA * cB*
+  const rho01: Complex = {
+    re: cA.re * cB.re + cA.im * cB.im,
+    im: -cA.re * cB.im + cA.im * cB.re,
+  };
+  // cB * cA* = rho01*
+  const rho10: Complex = {
+    re: rho01.re,
+    im: -rho01.im,
+  };
+  // |cB|²
+  const rho11: Complex = { re: cB.re * cB.re + cB.im * cB.im, im: 0 };
+
+  return { rho00, rho01, rho10, rho11 };
+}
+
+export interface DensityMatrixMetrics {
+  trace: number;
+  purity: number;
+  coherence: number;
+  entropy: number;
+  isHermitian: boolean;
+  isPositiveSemiDefinite: boolean;
+  eigenvalues: [number, number];
+}
+
+/** Calculate full physical invariants and metrics of a 2x2 density matrix */
+export function densityMatrixMetrics(rho: DensityMatrix2x2): DensityMatrixMetrics {
+  const tr = rho.rho00.re + rho.rho11.re;
+  const coh = Math.hypot(rho.rho01.re, rho.rho01.im);
+
+  // Tr(ρ²) = rho00² + rho11² + 2|rho01|²
+  const purity = rho.rho00.re * rho.rho00.re + rho.rho11.re * rho.rho11.re + 2 * coh * coh;
+
+  // Eigenvalues of Hermitian 2x2 matrix: λ = 0.5 * (Tr ± sqrt(Tr² - 4*det))
+  // det(ρ) = rho00 * rho11 - |rho01|²
+  const det = rho.rho00.re * rho.rho11.re - coh * coh;
+  const discriminant = Math.max(0, tr * tr - 4 * det);
+  const sqrtDisc = Math.sqrt(discriminant);
+  const lambda1Raw = 0.5 * (tr + sqrtDisc);
+  const lambda2Raw = 0.5 * (tr - sqrtDisc);
+  const lambda1 = clamp(lambda1Raw, 0, 1);
+  const lambda2 = clamp(lambda2Raw, 0, 1);
+
+  // Von Neumann entropy S(ρ) = - Σ λ_i ln(λ_i) (in base e or nats)
+  let entropy = 0;
+  if (lambda1 > 1e-12) entropy -= lambda1 * Math.log(lambda1);
+  if (lambda2 > 1e-12) entropy -= lambda2 * Math.log(lambda2);
+
+  const isHermitian =
+    Math.abs(rho.rho00.im) < 1e-6 &&
+    Math.abs(rho.rho11.im) < 1e-6 &&
+    Math.abs(rho.rho01.re - rho.rho10.re) < 1e-6 &&
+    Math.abs(rho.rho01.im + rho.rho10.im) < 1e-6;
+
+  const isPositiveSemiDefinite = lambda1Raw >= -1e-6 && lambda2Raw >= -1e-6;
+
+  return {
+    trace: tr,
+    purity: clamp(purity, 0, 1),
+    coherence: coh,
+    entropy,
+    isHermitian,
+    isPositiveSemiDefinite,
+    eigenvalues: [lambda1, lambda2],
+  };
+}
+
+/** Quantum state fidelity between two 2x2 density matrices F(ρ, σ) */
+export function densityMatrixFidelity(rho: DensityMatrix2x2, sigma: DensityMatrix2x2): number {
+  // For pure or mixed 2x2 states: Tr(ρσ) + 2*sqrt(det(ρ)*det(sigma))
+  const cohRho = Math.hypot(rho.rho01.re, rho.rho01.im);
+  const cohSigma = Math.hypot(sigma.rho01.re, sigma.rho01.im);
+  const detRho = Math.max(0, rho.rho00.re * rho.rho11.re - cohRho * cohRho);
+  const detSigma = Math.max(0, sigma.rho00.re * sigma.rho11.re - cohSigma * cohSigma);
+
+  // Tr(ρ σ) = rho00*sigma00 + rho11*sigma11 + 2*(rho01.re*sigma01.re + rho01.im*sigma01.im)
+  const trRhoSigma =
+    rho.rho00.re * sigma.rho00.re +
+    rho.rho11.re * sigma.rho11.re +
+    2 * (rho.rho01.re * sigma.rho01.re + rho.rho01.im * sigma.rho01.im);
+
+  const fidelity = trRhoSigma + 2 * Math.sqrt(detRho * detSigma);
+  return clamp(fidelity, 0, 1);
+}
+
+/** Apply T2* environmental phase dephasing to density matrix */
+export function applyDephasing(rho: DensityMatrix2x2, dephasingCoeff: number): DensityMatrix2x2 {
+  const decay = Math.exp(-Math.max(0, dephasingCoeff));
+  return {
+    rho00: { re: rho.rho00.re, im: 0 },
+    rho01: { re: rho.rho01.re * decay, im: rho.rho01.im * decay },
+    rho10: { re: rho.rho10.re * decay, im: rho.rho10.im * decay },
+    rho11: { re: rho.rho11.re, im: 0 },
+  };
+}
+
+/**
+ * ============================================================================
+ * Matter-Wave Interferometry & Ramsey Spectroscopy Simulation
+ * ============================================================================
+ */
+
+export interface InterferometerSimulationParams {
+  armSeparation_um: number;
+  interrogationTime_ms: number;
+  fieldGradient_per_um: number;
+  coupling_g: number;
+  dephasingNoise: number;
+}
+
+export interface InterferometerFringePoint {
+  phaseSetting_rad: number;
+  phaseSetting_deg: number;
+  standardIntensity: number;
+  modelIntensity: number;
+  deltaIntensity: number;
+}
+
+export interface InterferometerResult {
+  phaseShift_rad: number;
+  phaseShift_deg: number;
+  visibility: number;
+  maxDelta: number;
+  fringePoints: InterferometerFringePoint[];
+}
+
+/**
+ * Compute matter-wave interferometry fringe patterns for standard QM vs Woodyard field model
+ */
+export function computeInterferometerFringes(
+  params: InterferometerSimulationParams,
+  numPoints = 50
+): InterferometerResult {
+  const { armSeparation_um, interrogationTime_ms, fieldGradient_per_um, coupling_g, dephasingNoise } =
+    params;
+
+  // Integrated field difference Δφ = (dφ/dx) * Δx * T
+  const deltaPhiSpatial = fieldGradient_per_um * armSeparation_um;
+  const integratedDeltaPhi = deltaPhiSpatial * interrogationTime_ms;
+
+  // Phase shift Δφ_φ = (g / ħ) * integratedDeltaPhi (with ħ = 1 in normalized units)
+  const phaseShift_rad = interferometryPhaseShift(coupling_g, 1.0, integratedDeltaPhi);
+  const phaseShift_deg = (phaseShift_rad * 180) / Math.PI;
+
+  // Visibility degradation under environmental noise
+  const visibility = Math.exp(-Math.max(0, dephasingNoise) * interrogationTime_ms * 0.5);
+
+  const fringePoints: InterferometerFringePoint[] = [];
+  let maxDelta = 0;
+
+  for (let i = 0; i <= numPoints; i++) {
+    const theta = (i / numPoints) * 2 * Math.PI;
+    const stdI = 0.5 * (1 + visibility * Math.cos(theta));
+    const modelI = 0.5 * (1 + visibility * Math.cos(theta + phaseShift_rad));
+    const deltaI = modelI - stdI;
+
+    if (Math.abs(deltaI) > maxDelta) {
+      maxDelta = Math.abs(deltaI);
+    }
+
+    fringePoints.push({
+      phaseSetting_rad: theta,
+      phaseSetting_deg: (theta * 180) / Math.PI,
+      standardIntensity: stdI,
+      modelIntensity: modelI,
+      deltaIntensity: deltaI,
+    });
+  }
+
+  return {
+    phaseShift_rad,
+    phaseShift_deg,
+    visibility,
+    maxDelta,
+    fringePoints,
+  };
+}
+
+export interface RamseySpectroscopyParams {
+  detuning_kHz: number;
+  interrogationTime_ms: number;
+  fieldDiff_au: number;
+  eta: number;
+  decoherenceRate: number;
+}
+
+export interface RamseyFringePoint {
+  time_ms: number;
+  standardProb: number;
+  modelProb: number;
+  deltaProb: number;
+}
+
+export interface RamseyResult {
+  differentialPhase_rad: number;
+  frequencyShift_Hz: number;
+  decayContrast: number;
+  fringePoints: RamseyFringePoint[];
+}
+
+/**
+ * Compute atomic clock Ramsey spectroscopy time-domain fringes
+ */
+export function computeRamseyFringes(
+  params: RamseySpectroscopyParams,
+  numPoints = 60
+): RamseyResult {
+  const { detuning_kHz, interrogationTime_ms, fieldDiff_au, eta, decoherenceRate } = params;
+
+  // Differential clock phase ΔΦ_AB = η * δφ * T
+  const differentialPhase_rad = clockComparisonPhase(eta, fieldDiff_au * interrogationTime_ms);
+  const frequencyShift_Hz = (eta * fieldDiff_au * 1000) / (2 * Math.PI);
+  const decayContrast = Math.exp(-Math.max(0, decoherenceRate) * interrogationTime_ms);
+
+  const omega0 = 2 * Math.PI * detuning_kHz; // rad/ms
+  const fringePoints: RamseyFringePoint[] = [];
+
+  for (let i = 0; i <= numPoints; i++) {
+    const t = (i / numPoints) * interrogationTime_ms;
+    const decay = Math.exp(-Math.max(0, decoherenceRate) * t);
+    const stdP = 0.5 * (1 + decay * Math.cos(omega0 * t));
+    const modelP = 0.5 * (1 + decay * Math.cos(omega0 * t + eta * fieldDiff_au * t));
+
+    fringePoints.push({
+      time_ms: t,
+      standardProb: stdP,
+      modelProb: modelP,
+      deltaProb: modelP - stdP,
+    });
+  }
+
+  return {
+    differentialPhase_rad,
+    frequencyShift_Hz,
+    decayContrast,
+    fringePoints,
+  };
+}
+
