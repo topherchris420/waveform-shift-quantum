@@ -4,9 +4,12 @@ import { Activity, Landmark, Network, ShieldCheck, Layers } from 'lucide-react';
 import { AblationComparisonPanel } from './AblationComparison';
 
 const META: Record<Architecture, { label: string; color: string }> = {
-  market: { label: 'Market', color: 'text-amber-300' },
+  market: { label: 'Heuristic price-matching baseline', color: 'text-amber-300' },
+  doubleAuction: { label: 'Double auction', color: 'text-orange-300' },
+  shadowPriceMarket: { label: 'Shadow-price market', color: 'text-yellow-300' },
   stabilizedMarket: { label: 'Stabilized Market', color: 'text-emerald-300' },
   hybrid: { label: 'Computational Market / Hybrid', color: 'text-indigo-300' },
+  maxWeightMatching: { label: 'Maximum-weight matching', color: 'text-violet-300' },
   genesis: { label: 'Genesis', color: 'text-cyan-300' },
 };
 
@@ -19,7 +22,13 @@ export const RoutingComparison: React.FC<{ result: SimulationResult }> = ({ resu
 
   return (
     <div className="space-y-6">
-      {/* 4 Architecture Cards */}
+      <section className="rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-xs text-slate-400">
+        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-cyan-300">Interpretation limit</p>
+        <p className="mt-2">Results are conditional simulation comparisons, not claims that computation, money, or markets are universally superior. Hidden true state scores welfare; mechanisms act only on their reported price or telemetry observations.</p>
+        <p className="mt-2 font-mono text-[10px] text-slate-500">seed {result.seed} · experiment {result.experimentHash}</p>
+      </section>
+
+      {/* Architecture Cards */}
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {(Object.keys(META) as Architecture[]).map((id) => {
           const m = result.architectures[id];
@@ -34,6 +43,9 @@ export const RoutingComparison: React.FC<{ result: SimulationResult }> = ({ resu
                 <Row k="Settlement failures" v={`${(m.settlementFailureRate * 100).toFixed(1)}%`} />
                 <Row k="Backstop use" v={`${(m.backstopUtilization * 100).toFixed(1)}%`} />
                 <Row k="Stranded utility" v={`${m.strandedPhysicalUtility.toFixed(1)}%`} />
+                <Row k="Oracle efficiency" v={`${(m.efficiencyRatio * 100).toFixed(1)}%`} />
+                <Row k="Clearing / shadow price" v={`${m.clearingPrice.toFixed(2)} / ${m.shadowPrice.toFixed(2)}`} />
+                <Row k="False-critical rate" v={`${m.falseCriticalAllocationRate.toFixed(1)}%`} />
               </dl>
               <ul className="mt-4 space-y-1 border-t border-slate-800 pt-3 text-[10px] leading-relaxed text-slate-500">
                 {result.reasons[id].map((reason) => <li key={reason}>• {reason}</li>)}
@@ -46,6 +58,15 @@ export const RoutingComparison: React.FC<{ result: SimulationResult }> = ({ resu
       {/* Multi-Layer Ablation Comparison Section */}
       <section>
         <AblationComparisonPanel ablation={ablation} />
+      </section>
+
+      <section className="rounded-xl border border-indigo-900/40 bg-indigo-950/10 p-5">
+        <div className="flex items-center gap-2"><Layers className="h-4 w-4 text-indigo-300"/><h3 className="font-mono text-[11px] font-bold uppercase tracking-widest text-indigo-200">Matched information × mechanism decomposition</h3></div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <Row k="Information advantage" v={`${result.informationDecomposition.informationAdvantage.toFixed(2)} pp`} />
+          <Row k="Mechanism advantage" v={`${result.informationDecomposition.mechanismAdvantage.toFixed(2)} pp`} />
+          <Row k="Interaction" v={`${result.informationDecomposition.interactionEffect.toFixed(2)} pp`} />
+        </div>
       </section>
 
       {/* Verdict & Decomposition */}
