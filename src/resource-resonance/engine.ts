@@ -76,11 +76,24 @@ export interface SimulationParams {
   confidenceShock: number;
   infrastructureOutage: number;
   regulatoryShock: number;
+
+  // Research-design controls. Optional so stored legacy experiments remain replayable.
+  ensembleSize?: number;
+  bidShading?: number;
+  misreportProbability?: number;
+  misreportMagnitude?: number;
+  auditProbability?: number;
+  misreportPenalty?: number;
+  telemetryManipulationProbability?: number;
+  forecastHorizon?: number;
+  forecastError?: number;
 }
 
-export type Architecture = 'market' | 'stabilizedMarket' | 'hybrid' | 'genesis';
-export type ArchitectureVerdict = 'MARKET SUPERIOR' | 'STABILIZED MARKET SUPERIOR' | 'HYBRID SUPERIOR' |
-  'GENESIS SUPERIOR IN THIS REGIME' | 'NO SIGNIFICANT DIFFERENCE' | 'INSUFFICIENT EVIDENCE';
+export const ARCHITECTURES = ['market', 'doubleAuction', 'shadowPriceMarket', 'stabilizedMarket', 'hybrid', 'maxWeightMatching', 'genesis'] as const;
+export type Architecture = typeof ARCHITECTURES[number];
+export type ArchitectureVerdict = 'MARKET SUPERIOR' | 'DOUBLE AUCTION SUPERIOR' | 'SHADOW-PRICE MARKET SUPERIOR' |
+  'STABILIZED MARKET SUPERIOR' | 'HYBRID SUPERIOR' | 'MATCHING SUPERIOR' | 'GENESIS SUPERIOR IN THIS REGIME' |
+  'PARETO TRADEOFF' | 'NO SIGNIFICANT DIFFERENCE' | 'INSUFFICIENT EVIDENCE';
 export type SafetyValveState = 'NORMAL' | 'FINANCIAL_STRESS' | 'STABILIZED_MARKET' | 'HYBRID' | 'GENESIS_BASELINE' | 'RECOVERY';
 
 export interface UnmetDemandDecomposition {
@@ -135,6 +148,14 @@ export interface SimulationMetrics {
   interventionUtilization: number;
   deadweightLoss: number;
   causalAttribution: CausalAttribution;
+  oracleWelfare: number;
+  architectureWelfare: number;
+  oracleGap: number;
+  efficiencyRatio: number;
+  clearingPrice: number;
+  shadowPrice: number;
+  manipulationVulnerability: number;
+  falseCriticalAllocationRate: number;
 }
 
 export type RiskVerdict = 'improves-safely' | 'improves-with-risk' | 'no-improvement';
@@ -146,17 +167,23 @@ export interface SimulationResult {
   deltaUtility: number; deltaVsHybrid: number; deltaConfidence: number; winRate: number; primaryDriver: string;
   riskChecks: RiskCheck[]; verdict: RiskVerdict; architectureVerdict: ArchitectureVerdict; verdictSummary: string;
   reasons: Record<Architecture, string[]>; safetyValve: SafetyValveAssessment; physicalCapacity: number; totalDemand: number; ensembleSize: number;
+  informationDecomposition: { informationAdvantage: number; mechanismAdvantage: number; interactionEffect: number };
+  experimentHash: string;
+  seed: number;
 }
 
 export interface ScenarioPreset { id: string; name: string; description: string; patch: Partial<SimulationParams>; financialOnly?: boolean }
 export const SCENARIO_PRESETS: ScenarioPreset[] = [
   { id: 'normal', name: 'Normal Market', description: 'Liquid credit, representative behavioral heterogeneity, and normal institutional capacity.', patch: { liquidityStress: .08, creditAvailability: .9, counterpartyRisk: .05, settlementReliability: .98, priceSignalNoise: .05, riskAversion: .1, liquidityPreference: .05, regulatoryFriction: .05 } },
+  { id: 'market-friendly', name: 'Market-Friendly Private Preferences', description: 'Reliable liquidity and price discovery with bid shading and little telemetry advantage.', patch: { liquidityStress: 0, creditAvailability: 1, settlementReliability: 1, priceSignalNoise: .01, telemetryReliability: .55, bidShading: .08, marketOverhead: .02 } },
+  { id: 'compatibility', name: 'Compatibility-Dominant Network', description: 'Reliable telemetry and costly geography make feasible network matching decisive.', patch: { geographicalFriction: .85, telemetryReliability: .98, priceSignalNoise: .35, resourceScarcity: .55 } },
   { id: 'credit-freeze', name: 'Credit Freeze & Panics', description: 'Elevated risk aversion, liquidity hoarding, and trust decay amid monetary freeze.', financialOnly: true, patch: { creditAvailability: .12, liquidityStress: .88, fundingCost: .2, behavioralEnabled: true, riskAversion: .8, liquidityPreference: .85, hoardingSensitivity: .75, trustSensitivity: .8 } },
   { id: 'intermediary-failure', name: 'Intermediary Failure & Contagion', description: 'Counterparty default cascade with network trust collapse and institutional latency.', financialOnly: true, patch: { counterpartyRisk: .72, settlementReliability: .7, creditAvailability: .35, behavioralEnabled: true, institutionalEnabled: true, confidenceShock: .8, governanceLatency: .7, capitalConstraints: .75 } },
   { id: 'settlement', name: 'Settlement Disruption & Regulatory Freeze', description: 'Payment rail disruption coupled with compliance bottlenecks.', financialOnly: true, patch: { settlementReliability: .42, settlementLatency: .85, institutionalEnabled: true, regulatoryFriction: .75, regulatoryShock: .6 } },
   { id: 'inflation', name: 'Price Noise & Information Asymmetry', description: 'Signal noise and asymmetric forecasts impair trading decisions.', financialOnly: true, patch: { priceSignalNoise: .75, fundingCost: .14, behavioralEnabled: true, informationAsymmetry: .8, adaptationSpeed: .3 } },
   { id: 'cb-success', name: 'Central-Bank Liquidity Intervention', description: 'Lender of last resort provides liquidity subject to policy response lags.', financialOnly: true, patch: { liquidityStress: .76, creditAvailability: .35, counterpartyRisk: .08, centralBankBackstop: true, backstopCapacity: .8, institutionalEnabled: true, policyResponsiveness: .8, interventionThreshold: .3 } },
   { id: 'telemetry', name: 'Telemetry Corruption & Verification Lag', description: 'Noisy telemetry coupled with regulatory verification holds.', patch: { telemetryReliability: .25, participantReliability: .45, institutionalEnabled: true, regulatoryFriction: .6 } },
+  { id: 'manipulation', name: 'Strategic Urgency Manipulation', description: 'Reported urgency and demand are exaggerated with weak auditing.', patch: { misreportProbability: .8, misreportMagnitude: .75, auditProbability: .05, misreportPenalty: .05, telemetryManipulationProbability: .5 } },
   { id: 'physical', name: 'Physical Shock & Precautionary Hoarding', description: 'Energy & compute scarcity triggers non-linear precautionary hoarding.', patch: { resourceScarcity: .92, renewableVolatility: .85, supplyDemandImbalance: .65, behavioralEnabled: true, hoardingSensitivity: .9, riskAversion: .7 } },
   { id: 'trust', name: 'Low-Trust & Regulatory Bottlenecks', description: 'Counterparty distrust and institutional compliance restrictions.', patch: { counterpartyRisk: .55, telemetryReliability: .38, participantReliability: .45, settlementReliability: .65, behavioralEnabled: true, institutionalEnabled: true, trustSensitivity: .85, regulatoryFriction: .7 } },
   { id: 'combined', name: 'Systemic Crisis (Coupled Risk)', description: 'Full non-linear crisis coupling physical scarcity, panic hoarding, and institutional delays.', patch: { resourceScarcity: .88, supplyDemandImbalance: .6, liquidityStress: .85, creditAvailability: .2, settlementReliability: .5, counterpartyRisk: .6, behavioralEnabled: true, institutionalEnabled: true, riskAversion: .85, liquidityPreference: .9, regulatoryFriction: .8, governanceLatency: .75, confidenceShock: .85 } },
@@ -196,6 +223,15 @@ export const DEFAULT_SIMULATION_PARAMS: SimulationParams = {
   confidenceShock: 0,
   infrastructureOutage: 0,
   regulatoryShock: 0,
+  ensembleSize: 20,
+  bidShading: .08,
+  misreportProbability: .08,
+  misreportMagnitude: .25,
+  auditProbability: .1,
+  misreportPenalty: .2,
+  telemetryManipulationProbability: .04,
+  forecastHorizon: 1,
+  forecastError: .15,
 };
 
 export class GridStochasticEngine {
@@ -255,11 +291,33 @@ export interface ExtendedAgent {
   solarEnergyBonus: number;
   monetaryPrice: number;
   monetaryBid: number;
+  privateValue: number;
+  reportedBid: number;
+  marginalCost: number;
+  reportedAsk: number;
+  trueUrgency: number;
+  reportedUrgency: number;
+  trueDemand: number;
+  reportedDemand: number;
+  trueScarcity: number;
+  reportedScarcity: number;
+  trueReliability: number;
+  reportedReliability: number;
 }
 
-interface World { offers: ExtendedAgent[]; needs: ExtendedAgent[]; physicalCapacity: number; totalDemand: number }
+export interface World { offers: ExtendedAgent[]; needs: ExtendedAgent[]; physicalCapacity: number; totalDemand: number }
 
-function buildWorld(p: SimulationParams, seed: number, shock: number): World {
+/** Deep clone used at every counterfactual boundary; vectors must never be shared. */
+export function cloneWorld(world: Readonly<World>): World {
+  return {
+    offers: world.offers.map(agent => ({ ...agent, vector: { ...agent.vector } })),
+    needs: world.needs.map(agent => ({ ...agent, vector: { ...agent.vector } })),
+    physicalCapacity: world.physicalCapacity,
+    totalDemand: world.totalDemand,
+  };
+}
+
+export function buildWorld(p: SimulationParams, seed: number, shock: number): World {
   const rand = mulberry32(seed); const n = Math.max(6, Math.min(120, Math.round(p.networkSize)));
   const offers: ExtendedAgent[] = []; const needs: ExtendedAgent[] = [];
   const bEnabled = p.behavioralEnabled ?? false;
@@ -298,6 +356,9 @@ function buildWorld(p: SimulationParams, seed: number, shock: number): World {
 
     const solarEnergyBonus = typeIdx === 1 ? 0.12 * vector.energyCost : 0;
     const monetaryPrice = (vector.scarcity * .45 + vector.quality * .35 + (1 - vector.locationCost) * .2) * (1 + p.supplyDemandImbalance);
+    const manipulated = rand() < (p.telemetryManipulationProbability ?? 0);
+    const reportFactor = manipulated ? 1 + (p.misreportMagnitude ?? 0) : 1;
+    const marginalCost = clamp(.15 + vector.energyCost * .35 + (1 - vector.quality) * .25);
 
     offers.push({
       id: i, type, amount: effectiveAmount, vector,
@@ -308,7 +369,12 @@ function buildWorld(p: SimulationParams, seed: number, shock: number): World {
       hoardingMultiplier: hoarding, liquidityHold: liqHold,
       perceivedScarcity: vector.scarcity, perceivedPrice: 1.0, holdoutProbability: holdoutProb,
       regulatoryApproved: regApproved, capitalReserveRequirement: capReserve, settlementQueueTime: queueTime,
-      typeIdx, solarEnergyBonus, monetaryPrice, monetaryBid: 0
+      typeIdx, solarEnergyBonus, monetaryPrice, monetaryBid: 0,
+      privateValue: 0, reportedBid: 0, marginalCost, reportedAsk: marginalCost * (1 + (p.bidShading ?? 0)),
+      trueUrgency: vector.urgency, reportedUrgency: clamp(vector.urgency * reportFactor),
+      trueDemand: vector.demand, reportedDemand: clamp(vector.demand * reportFactor),
+      trueScarcity: vector.scarcity, reportedScarcity: clamp(vector.scarcity * reportFactor),
+      trueReliability: vector.reliability, reportedReliability: clamp(vector.reliability / reportFactor)
     });
   }
 
@@ -338,6 +404,11 @@ function buildWorld(p: SimulationParams, seed: number, shock: number): World {
     const effectiveNeed = bEnabled ? baseNeed * panicAmp : baseNeed;
 
     const monetaryBid = vector.demand * .45 + vector.urgency * .55;
+    const privateValue = clamp(.15 + vector.demand * .45 + vector.urgency * .4);
+    const misreports = rand() < (p.misreportProbability ?? 0);
+    const reportFactor = misreports ? 1 + (p.misreportMagnitude ?? 0) : 1;
+    const audited = misreports && rand() < (p.auditProbability ?? 0);
+    const penalty = audited ? (p.misreportPenalty ?? 0) : 0;
 
     needs.push({
       id: i, type, amount: effectiveNeed, vector,
@@ -348,7 +419,12 @@ function buildWorld(p: SimulationParams, seed: number, shock: number): World {
       hoardingMultiplier: panicAmp, liquidityHold: liqHold,
       perceivedScarcity: vector.scarcity, perceivedPrice: 1.0, holdoutProbability: holdoutProb,
       regulatoryApproved: regApproved, capitalReserveRequirement: capReserve, settlementQueueTime: queueTime,
-      typeIdx, solarEnergyBonus: 0, monetaryPrice: 0, monetaryBid
+      typeIdx, solarEnergyBonus: 0, monetaryPrice: 0, monetaryBid,
+      privateValue, reportedBid: Math.max(0, privateValue * (1 - (p.bidShading ?? 0)) - penalty), marginalCost: 0, reportedAsk: 0,
+      trueUrgency: vector.urgency, reportedUrgency: clamp(vector.urgency * reportFactor),
+      trueDemand: vector.demand, reportedDemand: clamp(vector.demand * reportFactor),
+      trueScarcity: vector.scarcity, reportedScarcity: clamp(vector.scarcity * reportFactor),
+      trueReliability: vector.reliability, reportedReliability: clamp(vector.reliability / reportFactor)
     });
   }
 
@@ -359,7 +435,7 @@ function buildWorld(p: SimulationParams, seed: number, shock: number): World {
   };
 }
 
-interface Outcome {
+export interface Outcome {
   welfare: number; attainable: number; delivered: number; demand: number; capacity: number; spill: number;
   hhi: number; latency: number; relay: number; gini: number; overhead: number; flows: number[];
   financialRejected: number; settlementAttempts: number; settlementFailures: number; backstop: number;
@@ -373,7 +449,51 @@ interface Outcome {
   trustWeightedCap: number;
 }
 
-interface Edge { oi: number; ni: number; sub: number; value: number; rank: number; relay: boolean; accessible: boolean }
+interface Edge { oi: number; ni: number; sub: number; value: number; rank: number; relay: boolean; accessible: boolean; target?: number; price?: number }
+
+/** Exact maximum-weight flow for the divisible bipartite transportation problem.
+ * Successive longest augmenting paths include reverse arcs, so earlier choices can
+ * be reassigned. This is a true LP optimum for this continuous network model. */
+function maximumWeightFlow(edges: Edge[], supply: number[], demand: number[], useHiddenObjective: boolean): Map<string, number> {
+  const no = supply.length, nn = demand.length, source = no + nn, sink = source + 1, size = sink + 1;
+  type Arc = { to: number; rev: number; cap: number; cost: number; oi?: number; ni?: number };
+  const graph: Arc[][] = Array.from({ length: size }, () => []);
+  const add = (from: number, to: number, cap: number, cost: number, oi?: number, ni?: number) => {
+    const f: Arc = { to, rev: graph[to].length, cap, cost, oi, ni };
+    const r: Arc = { to: from, rev: graph[from].length, cap: 0, cost: -cost };
+    graph[from].push(f); graph[to].push(r);
+  };
+  supply.forEach((cap, i) => add(source, i, cap, 0));
+  edges.forEach(e => add(e.oi, no + e.ni, Number.POSITIVE_INFINITY, (useHiddenObjective ? e.value : Math.max(0, e.rank)) * e.sub, e.oi, e.ni));
+  demand.forEach((cap, i) => add(no + i, sink, cap, 0));
+  const result = new Map<string, number>();
+  for (;;) {
+    const dist = Array(size).fill(Number.NEGATIVE_INFINITY) as number[];
+    const prevNode = Array(size).fill(-1) as number[], prevArc = Array(size).fill(-1) as number[];
+    dist[source] = 0;
+    for (let pass = 0; pass < size - 1; pass++) {
+      let changed = false;
+      for (let u = 0; u < size; u++) if (dist[u] > Number.NEGATIVE_INFINITY) graph[u].forEach((a, ai) => {
+        if (a.cap > 1e-9 && dist[u] + a.cost > dist[a.to] + 1e-12) {
+          dist[a.to] = dist[u] + a.cost; prevNode[a.to] = u; prevArc[a.to] = ai; changed = true;
+        }
+      });
+      if (!changed) break;
+    }
+    if (prevNode[sink] < 0 || dist[sink] <= 1e-12) break;
+    let amount = Number.POSITIVE_INFINITY;
+    for (let v = sink; v !== source; v = prevNode[v]) amount = Math.min(amount, graph[prevNode[v]][prevArc[v]].cap);
+    for (let v = sink; v !== source; v = prevNode[v]) {
+      const a = graph[prevNode[v]][prevArc[v]]; a.cap -= amount; graph[v][a.rev].cap += amount;
+      if (a.oi !== undefined && a.ni !== undefined) result.set(`${a.oi}:${a.ni}`, (result.get(`${a.oi}:${a.ni}`) ?? 0) + amount);
+      else {
+        const reverse = graph[v][a.rev];
+        if (reverse.oi !== undefined && reverse.ni !== undefined) result.set(`${reverse.oi}:${reverse.ni}`, (result.get(`${reverse.oi}:${reverse.ni}`) ?? 0) - amount);
+      }
+    }
+  }
+  return result;
+}
 
 function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracle', seed: number, failed = -1): Outcome {
   const rand = mulberry32(seed);
@@ -395,8 +515,8 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
     creditFlows[i] = 0;
   }
 
-  const monetary = mode === 'market' || mode === 'stabilizedMarket' || mode === 'hybrid';
-  const telemetry = mode === 'hybrid' || mode === 'genesis';
+  const monetary = mode === 'market' || mode === 'doubleAuction' || mode === 'shadowPriceMarket' || mode === 'stabilizedMarket' || mode === 'hybrid';
+  const telemetry = mode === 'shadowPriceMarket' || mode === 'hybrid' || mode === 'maxWeightMatching' || mode === 'genesis';
   const bEnabled = p.behavioralEnabled ?? false;
   const iEnabled = p.institutionalEnabled ?? false;
 
@@ -442,10 +562,20 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
         const resScore = compProd * ((1 - Math.abs(oUrg - nVec.urgency)) * .2 + oVec.energyCost * .3 + locProduct * oneMinusGeoFriction * .2 + oRel * .3);
         const signal = resScore * sub * (1 + (1 - p.telemetryReliability) * (rand() - .5) * 2.4);
 
-        rank = mode === 'market' || mode === 'stabilizedMarket' ? price : mode === 'hybrid' ? signal * .72 + price * .28 : signal;
+        const auctionSurplus = n.reportedBid - o.reportedAsk;
+        rank = mode === 'doubleAuction' ? (auctionSurplus >= 0 ? auctionSurplus * sub : -1)
+          : mode === 'market' || mode === 'stabilizedMarket' ? price
+          : mode === 'hybrid' ? signal * .72 + price * .28 : signal;
       }
-      edges.push({ oi, ni, sub, value, rank, relay, accessible: true });
+      const clearingPrice = mode === 'doubleAuction' ? (o.reportedAsk + n.reportedBid) / 2 : undefined;
+      edges.push({ oi, ni, sub, value, rank, relay, accessible: true, price: clearingPrice });
     }
+  }
+
+  if (mode === 'oracle' || mode === 'shadowPriceMarket' || mode === 'maxWeightMatching') {
+    const optimum = maximumWeightFlow(edges, supply, remain, mode === 'oracle');
+    edges.forEach(e => { e.target = Math.max(0, optimum.get(`${e.oi}:${e.ni}`) ?? 0); });
+    edges.sort((a, b) => (b.target ?? 0) - (a.target ?? 0) || a.oi - b.oi || a.ni - b.ni);
   }
 
   edges.sort((a, b) => b.rank - a.rank || a.oi - b.oi || a.ni - b.ni);
@@ -456,7 +586,7 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
 
   for (let ei = 0; ei < edges.length; ei++) {
     const e = edges[ei];
-    const raw = Math.min(supply[e.oi], remain[e.ni] / e.sub);
+    const raw = Math.min(supply[e.oi], remain[e.ni] / e.sub, e.target ?? Number.POSITIVE_INFINITY);
     if (raw <= 1e-9) continue;
     const effective = raw * e.sub;
     const seller = world.offers[e.oi], buyer = world.needs[e.ni];
@@ -486,7 +616,7 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
     // 3. Monetary & Financial Settlement Check
     if (monetary) {
       settlementAttempts++;
-      const price = (.35 + seller.vector.scarcity * .45 + p.fundingCost) * raw;
+      const price = (e.price ?? (.35 + seller.vector.scarcity * .45 + p.fundingCost)) * raw;
       const liqDeduction = bEnabled ? buyer.liquidityHold : 0;
       const liquid = Math.max(0, buyer.balance * (1 - p.liquidityStress) - liqDeduction);
       const capDeduction = iEnabled ? buyer.capitalReserveRequirement : 0;
@@ -572,7 +702,7 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
   const gini = sumShort ? 2 * weighted / (nNeeds * sumShort) - (nNeeds + 1) / nNeeds : 0;
 
   const instLatency = iEnabled ? p.governanceLatency * 40 + p.regulatoryFriction * 20 : 0;
-  const overhead = mode === 'market' || mode === 'stabilizedMarket'
+  const overhead = mode === 'market' || mode === 'doubleAuction' || mode === 'shadowPriceMarket' || mode === 'stabilizedMarket'
     ? p.marketOverhead + backstop / Math.max(demand, 1) * .04
     : mode === 'hybrid'
     ? p.hybridOverhead + p.telemetryVerificationCost * (1 - p.telemetryReliability)
@@ -590,7 +720,11 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
   };
 }
 
-const ENSEMBLE = 20;
+/** Public pure counterfactual boundary for tests, replay tools, and alternate UIs. */
+export function evaluateArchitecture(world: Readonly<World>, p: SimulationParams, mode: Architecture | 'oracle', seed: number, failed = -1): Outcome {
+  return allocate(cloneWorld(world), { ...DEFAULT_SIMULATION_PARAMS, ...p }, mode, seed, failed);
+}
+
 function mean<T>(xs: T[], f: (x:T)=>number) { return xs.reduce((s,x)=>s+f(x),0)/xs.length; }
 
 function computeCausalAttribution(dec: UnmetDemandDecomposition): CausalAttribution {
@@ -694,46 +828,50 @@ function metrics(runs: Outcome[], casc: number, p: SimulationParams): Simulation
     policyResponseLag: p.institutionalEnabled ? 4 * (1 - p.policyResponsiveness) : 0,
     interventionUtilization: mean(runs, r => r.backstop / Math.max(r.demand, 1)),
     deadweightLoss: mean(runs, r => r.overhead * 100),
-    causalAttribution
+    causalAttribution,
+    oracleWelfare: mean(runs, r => r.attainable),
+    architectureWelfare: mean(runs, r => r.welfare),
+    oracleGap: mean(runs, r => Math.max(0, r.attainable - r.welfare)),
+    efficiencyRatio: mean(runs, r => r.attainable ? Math.min(1, r.welfare / r.attainable) : 0),
+    clearingPrice: mean(runs, r => r.delivered ? r.creditFlows.reduce((s, x) => s + x, 0) / r.delivered : 0),
+    shadowPrice: mean(runs, r => r.capacity > 0 ? r.attainable / r.capacity : 0),
+    manipulationVulnerability: (p.misreportProbability ?? 0) * (p.misreportMagnitude ?? 0) * 100,
+    falseCriticalAllocationRate: (p.misreportProbability ?? 0) * (1 - (p.auditProbability ?? 0)) * 100
   };
 }
 
 export function runSimulation(input: SimulationParams, seed=20260813): SimulationResult {
   const p={...DEFAULT_SIMULATION_PARAMS,...input};
-  const all:Record<Architecture,Outcome[]>={market:[],stabilizedMarket:[],hybrid:[],genesis:[]};
+  const ensemble=Math.max(2,Math.round(p.ensembleSize ?? 20));
+  const all=Object.fromEntries(ARCHITECTURES.map(a=>[a,[]])) as unknown as Record<Architecture,Outcome[]>;
   const deltaDraws:number[]=[]; let capacity=0,demand=0;
-  const casc:Record<Architecture,number>={market:0,stabilizedMarket:0,hybrid:0,genesis:0};
+  const casc=Object.fromEntries(ARCHITECTURES.map(a=>[a,0])) as Record<Architecture,number>;
 
-  for(let k=0;k<ENSEMBLE;k++){
+  for(let k=0;k<ensemble;k++){
     const shockRand=mulberry32(seed+k*7919);
     const shock=(shockRand()*2-1)*(.12+p.renewableVolatility*.35);
     const world=buildWorld(p,seed+k*7919+17,shock);
     capacity+=world.physicalCapacity; demand+=world.totalDemand;
-    const oracle=allocate(world,p,'oracle',seed+k*31);
+    const oracle=allocate(cloneWorld(world),p,'oracle',seed+k*31);
 
-    for(const mode of Object.keys(all) as Architecture[]){
-      const out=allocate(world,p,mode,seed+k*101+3);
+    for(const mode of ARCHITECTURES){
+      const out=allocate(cloneWorld(world),p,mode,seed+k*101+3);
       out.attainable=oracle.welfare;
       all[mode].push(out);
       const top=out.flows.indexOf(Math.max(...out.flows));
-      const failed=allocate(world,p,mode,seed+k*101+3,top);
+      const failed=allocate(cloneWorld(world),p,mode,seed+k*101+3,top);
       const loss=out.welfare?Math.max(0,1-failed.welfare/out.welfare-(out.flows[top]||0)/(out.flows.reduce((s,x)=>s+x,0)||1))*100:0;
-      casc[mode]+=loss/ENSEMBLE;
+      casc[mode]+=loss/ensemble;
     }
     const g=all.genesis[k],m=all.market[k];
     deltaDraws.push(((g.attainable?g.welfare/g.attainable:0)*(1-g.overhead)-(m.attainable?m.welfare/m.attainable:0)*(1-m.overhead))*100);
   }
 
-  const architectures={
-    market:metrics(all.market,casc.market,p),
-    stabilizedMarket:metrics(all.stabilizedMarket,casc.stabilizedMarket,p),
-    hybrid:metrics(all.hybrid,casc.hybrid,p),
-    genesis:metrics(all.genesis,casc.genesis,p)
-  };
+  const architectures=Object.fromEntries(ARCHITECTURES.map(a=>[a,metrics(all[a],casc[a],p)])) as Record<Architecture,SimulationMetrics>;
 
   const delta=architectures.genesis.totalNetworkUtility-architectures.market.totalNetworkUtility;
   const dmu=mean(deltaDraws,x=>x); const dsd=Math.sqrt(mean(deltaDraws,x=>(x-dmu)**2));
-  const ci=1.96*dsd/Math.sqrt(ENSEMBLE);
+  const ci=1.96*dsd/Math.sqrt(ensemble);
   const strongest=(Object.entries(architectures) as [Architecture,SimulationMetrics][]).sort((a,b)=>b[1].totalNetworkUtility-a[1].totalNetworkUtility);
   const gap=strongest[0][1].totalNetworkUtility-strongest[1][1].totalNetworkUtility;
 
@@ -747,7 +885,8 @@ export function runSimulation(input: SimulationParams, seed=20260813): Simulatio
     ['telemetry','Telemetry corruption sensitivity',0,architectures.genesis.telemetryCorruptionSensitivity,20,'Sensitivity to corrupted physical reports.']
   ].map(([id,label,baseline,routed,tolerance,note])=>({id:id as string,label:label as string,baseline:baseline as number,routed:routed as number,tolerance:tolerance as number,lowerIsBetter:true,passed:(routed as number)<=(baseline as number)+(tolerance as number),unit:'',note:note as string}));
 
-  let architectureVerdict:ArchitectureVerdict=gap<ci?'NO SIGNIFICANT DIFFERENCE':strongest[0][0]==='market'?'MARKET SUPERIOR':strongest[0][0]==='stabilizedMarket'?'STABILIZED MARKET SUPERIOR':strongest[0][0]==='hybrid'?'HYBRID SUPERIOR':'GENESIS SUPERIOR IN THIS REGIME';
+  const verdicts:Record<Architecture,ArchitectureVerdict>={market:'MARKET SUPERIOR',doubleAuction:'DOUBLE AUCTION SUPERIOR',shadowPriceMarket:'SHADOW-PRICE MARKET SUPERIOR',stabilizedMarket:'STABILIZED MARKET SUPERIOR',hybrid:'HYBRID SUPERIOR',maxWeightMatching:'MATCHING SUPERIOR',genesis:'GENESIS SUPERIOR IN THIS REGIME'};
+  let architectureVerdict:ArchitectureVerdict=gap<ci?'NO SIGNIFICANT DIFFERENCE':verdicts[strongest[0][0]];
   const failed=riskChecks.filter(x=>!x.passed);
   if(architectureVerdict==='GENESIS SUPERIOR IN THIS REGIME'&&failed.length) architectureVerdict='INSUFFICIENT EVIDENCE';
 
@@ -787,12 +926,19 @@ export function runSimulation(input: SimulationParams, seed=20260813): Simulatio
   return {
     architectures,modelA:architectures.market,modelStabilized:architectures.stabilizedMarket,modelHybrid:architectures.hybrid,modelB:architectures.genesis,
     deltaUtility:delta,deltaVsHybrid:architectures.genesis.totalNetworkUtility-architectures.hybrid.totalNetworkUtility,deltaConfidence:ci,
-    winRate:deltaDraws.filter(x=>x>0).length/ENSEMBLE,
+    winRate:deltaDraws.filter(x=>x>0).length/ensemble,
     primaryDriver:p.liquidityStress>.55?'Financial rejection strands physically feasible demand.':p.telemetryReliability<.5?'Telemetry corruption limits computational coordination.':'Prices and physical telemetry reveal different constraints.',
     riskChecks,verdict,architectureVerdict,
     verdictSummary:`${architectureVerdict}. ${strongest[0][0]} achieved ${strongest[0][1].totalNetworkUtility.toFixed(1)}% net attainable welfare; the runner-up achieved ${strongest[1][1].totalNetworkUtility.toFixed(1)}%.`,
     reasons,safetyValve:{state,conditions,explanation:`The valve is explicitly in ${state}; transitions require the displayed preregistered conditions and never create physical capacity.`},
-    physicalCapacity:capacity/ENSEMBLE,totalDemand:demand/ENSEMBLE,ensembleSize:ENSEMBLE
+    physicalCapacity:capacity/ensemble,totalDemand:demand/ensemble,ensembleSize:ensemble,
+    informationDecomposition:{
+      informationAdvantage:architectures.genesis.totalNetworkUtility-architectures.maxWeightMatching.totalNetworkUtility,
+      mechanismAdvantage:architectures.maxWeightMatching.totalNetworkUtility-architectures.shadowPriceMarket.totalNetworkUtility,
+      interactionEffect:(architectures.genesis.totalNetworkUtility-architectures.market.totalNetworkUtility)-(architectures.genesis.totalNetworkUtility-architectures.maxWeightMatching.totalNetworkUtility)-(architectures.maxWeightMatching.totalNetworkUtility-architectures.shadowPriceMarket.totalNetworkUtility)
+    },
+    experimentHash:`rr-${seed.toString(36)}-${JSON.stringify(p).split('').reduce((h,c)=>Math.imul(h^c.charCodeAt(0),16777619)>>>0,2166136261).toString(36)}`,
+    seed
   };
 }
 
@@ -884,13 +1030,13 @@ export function runAblationAnalysis(input: SimulationParams, seed = 20260813): A
 }
 
 export interface RegimePoint { x:number; y:number; financialStress:number; telemetryReliability:number; winner:ArchitectureVerdict; utilities:Record<Architecture,number> }
-export function buildCoordinationRegimeMap(base:SimulationParams, dimensionX:'resourceScarcity'|'liquidityStress'|'creditAvailability'='liquidityStress', dimensionY:'telemetryReliability'|'geographicalFriction'|'renewableVolatility'='telemetryReliability', steps=5):RegimePoint[]{ const points:RegimePoint[]=[]; for(let yi=0;yi<steps;yi++)for(let xi=0;xi<steps;xi++){const x=xi/(steps-1),y=yi/(steps-1);const p={...base,[dimensionX]:x,[dimensionY]:y};const r=runSimulation(p,4400+yi*101+xi);points.push({x,y,financialStress:p.liquidityStress,telemetryReliability:p.telemetryReliability,winner:r.architectureVerdict,utilities:{market:r.modelA.totalNetworkUtility,stabilizedMarket:r.modelStabilized.totalNetworkUtility,hybrid:r.modelHybrid.totalNetworkUtility,genesis:r.modelB.totalNetworkUtility}})}return points; }
+export function buildCoordinationRegimeMap(base:SimulationParams, dimensionX:'resourceScarcity'|'liquidityStress'|'creditAvailability'='liquidityStress', dimensionY:'telemetryReliability'|'geographicalFriction'|'renewableVolatility'='telemetryReliability', steps=5):RegimePoint[]{ const points:RegimePoint[]=[]; for(let yi=0;yi<steps;yi++)for(let xi=0;xi<steps;xi++){const x=xi/(steps-1),y=yi/(steps-1);const p={...base,[dimensionX]:x,[dimensionY]:y};const r=runSimulation(p,4400+yi*101+xi);points.push({x,y,financialStress:p.liquidityStress,telemetryReliability:p.telemetryReliability,winner:r.architectureVerdict,utilities:Object.fromEntries(ARCHITECTURES.map(a=>[a,r.architectures[a].totalNetworkUtility])) as Record<Architecture,number>})}return points; }
 
 export interface StageEvidence { seeds:number[]; deltaUtility:number; deltaConfidence:number; deltaVsHybrid:number; deltaVsHybridConfidence:number; winRate:number; riskChecks:RiskCheck[]; draws:number }
 export interface SuperiorityGate { id:string; label:string; detail:string; passed:boolean }
 export interface FrozenClaim { id:string; frozenAt:string; params:SimulationParams; discovery:StageEvidence; discoverySeeds:number[]; holdoutSeeds:number[]; predictedDelta:number; predictedBand:number }
 export interface ChallengeOutcome { claim:FrozenClaim; holdout:StageEvidence; gates:SuperiorityGate[]; granted:boolean; shrinkage:number; oracleGapBaseline:number; oracleGapRouted:number; summary:string; sample:SimulationResult }
 const DISCOVERY_SEEDS=[101,227,373,521],HOLDOUT_SEEDS=[90211,91733,93187,94687,96079,97501];
-function aggregate(results:SimulationResult[],seeds:number[]):StageEvidence{const ds=results.map(r=>r.deltaUtility),mu=mean(ds,x=>x),sd=Math.sqrt(ds.reduce((s,x)=>s+(x-mu)**2,0)/Math.max(1,ds.length-1)),hs=results.map(r=>r.deltaVsHybrid),hm=mean(hs,x=>x),hsd=Math.sqrt(hs.reduce((s,x)=>s+(x-hm)**2,0)/Math.max(1,hs.length-1));return{seeds,deltaUtility:mu,deltaConfidence:1.96*sd/Math.sqrt(ds.length),deltaVsHybrid:hm,deltaVsHybridConfidence:1.96*hsd/Math.sqrt(hs.length),winRate:mean(results,r=>r.winRate),riskChecks:results[0].riskChecks.map(c=>{const rows=results.map(r=>r.riskChecks.find(x=>x.id===c.id)!);const baseline=mean(rows,x=>x.baseline),routed=mean(rows,x=>x.routed);return{...c,baseline,routed,passed:routed<=baseline+c.tolerance}}),draws:results.length*ENSEMBLE}}
+function aggregate(results:SimulationResult[],seeds:number[]):StageEvidence{const ds=results.map(r=>r.deltaUtility),mu=mean(ds,x=>x),sd=Math.sqrt(ds.reduce((s,x)=>s+(x-mu)**2,0)/Math.max(1,ds.length-1)),hs=results.map(r=>r.deltaVsHybrid),hm=mean(hs,x=>x),hsd=Math.sqrt(hs.reduce((s,x)=>s+(x-hm)**2,0)/Math.max(1,hs.length-1));return{seeds,deltaUtility:mu,deltaConfidence:1.96*sd/Math.sqrt(ds.length),deltaVsHybrid:hm,deltaVsHybridConfidence:1.96*hsd/Math.sqrt(hs.length),winRate:mean(results,r=>r.winRate),riskChecks:results[0].riskChecks.map(c=>{const rows=results.map(r=>r.riskChecks.find(x=>x.id===c.id)!);const baseline=mean(rows,x=>x.baseline),routed=mean(rows,x=>x.routed);return{...c,baseline,routed,passed:routed<=baseline+c.tolerance}}),draws:results.reduce((sum,r)=>sum+r.ensembleSize,0)}}
 export function discoverAndFreeze(base:SimulationParams):FrozenClaim{let best:{p:SimulationParams;e:StageEvidence;l:number}|undefined;for(const stress of [.15,.5,.85])for(const trust of [.35,.65,.92])for(const scarcity of [.25,.55,.85]){const p={...base,liquidityStress:stress,telemetryReliability:trust,resourceScarcity:scarcity};const e=aggregate(DISCOVERY_SEEDS.map(s=>runSimulation(p,s)),DISCOVERY_SEEDS),l=e.deltaUtility-e.deltaConfidence;if(!best||l>best.l)best={p,e,l}}return{id:`RRC-${Math.abs(Math.round(best!.e.deltaUtility*1000)).toString(36).toUpperCase()}`,frozenAt:new Date().toISOString(),params:best!.p,discovery:best!.e,discoverySeeds:DISCOVERY_SEEDS,holdoutSeeds:HOLDOUT_SEEDS,predictedDelta:best!.e.deltaUtility,predictedBand:best!.e.deltaConfidence}}
 export function challengeClaim(claim:FrozenClaim):ChallengeOutcome{const results=claim.holdoutSeeds.map(s=>runSimulation(claim.params,s)),h=aggregate(results,claim.holdoutSeeds),sample=results[0],lcb=h.deltaUtility-h.deltaConfidence,hlcb=h.deltaVsHybrid-h.deltaVsHybridConfidence,failed=h.riskChecks.filter(x=>!x.passed),shrinkage=h.deltaUtility-claim.predictedDelta,gates:SuperiorityGate[]=[{id:'significance',label:'Holdout gain exceeds preregistered minimum',detail:`Δ = ${h.deltaUtility.toFixed(2)} pp, 95% CI lower bound ${lcb.toFixed(2)} pp over ${h.draws} unseen draws; ε = 1.00 pp.`,passed:lcb>1},{id:'hybrid',label:'Beats strongest monetary/hybrid comparator',detail:`Genesis minus hybrid = ${h.deltaVsHybrid.toFixed(2)} pp, 95% CI lower bound ${hlcb.toFixed(2)} pp over ${h.seeds.length} holdout seeds.`,passed:hlcb>0&&sample.modelB.totalNetworkUtility>sample.modelStabilized.totalNetworkUtility},{id:'consistency',label:'Survives unseen seeds and shocks',detail:`Genesis beat Market in ${(h.winRate*100).toFixed(0)}% of unseen draws; threshold > 60%.`,passed:h.winRate>.6},{id:'oracle',label:'Closes the oracle welfare gap',detail:`Stranded attainable utility: Market ${sample.modelA.strandedPhysicalUtility.toFixed(1)}% → Genesis ${sample.modelB.strandedPhysicalUtility.toFixed(1)}%.`,passed:sample.modelB.strandedPhysicalUtility<sample.modelA.strandedPhysicalUtility},{id:'risk',label:'Every systemic-risk gate passes',detail:failed.length?`Failing: ${failed.map(x=>x.label).join(', ')}.`:'All concentration, fragility, inequality, dependence and telemetry gates pass.',passed:failed.length===0},{id:'overhead',label:'Not driven solely by overhead assumptions',detail:'Re-evaluated with Genesis overhead set equal to the lowest comparator.',passed:runSimulation({...claim.params,genesisOverhead:Math.min(claim.params.marketOverhead,claim.params.hybridOverhead)},claim.holdoutSeeds[0]).deltaVsHybrid>0}];const granted=gates.every(g=>g.passed);return{claim,holdout:h,gates,granted,shrinkage,oracleGapBaseline:sample.modelA.strandedPhysicalUtility,oracleGapRouted:sample.modelB.strandedPhysicalUtility,summary:granted?`Genesis superiority is supported only in frozen regime ${claim.id}.`:`INSUFFICIENT EVIDENCE: ${gates.filter(g=>!g.passed).map(g=>g.label.toLowerCase()).join('; ')}.`,sample}}
