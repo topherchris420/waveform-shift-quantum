@@ -30,43 +30,18 @@ function resolveSourceCommit(): string {
 const sourceCommit = resolveSourceCommit();
 
 // https://vitejs.dev/config/
-export default defineConfig(() => {
-  const plugins = [react()];
-  if (!process.env.VITEST && process.env.ENABLE_LOVABLE_MCP_SYNC === 'true') {
-    plugins.push(mcpPlugin());
-  }
-
-  return {
-    define: {
-      __SOURCE_COMMIT__: JSON.stringify(sourceCommit),
+export default defineConfig(() => ({
+  define: {
+    __SOURCE_COMMIT__: JSON.stringify(sourceCommit),
+  },
+  server: {
+    host: '::',
+    port: 8080,
+  },
+  plugins: [react(), mcpPlugin()],
+  resolve: {
+    alias: {
+      '@': path.resolve(rootDir, './src'),
     },
-    server: {
-      host: '::',
-      port: 8080,
-    },
-    plugins,
-    resolve: {
-      alias: {
-        '@': path.resolve(rootDir, './src'),
-      },
-    },
-    build: {
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-            'vendor-ui': [
-              '@radix-ui/react-slot',
-              '@radix-ui/react-separator',
-              '@radix-ui/react-slider',
-              '@radix-ui/react-tabs',
-              '@radix-ui/react-tooltip',
-              'lucide-react',
-            ],
-            'vendor-math': ['katex', 'react-katex', 'recharts'],
-          },
-        },
-      },
-    },
-  };
-});
+  },
+}));

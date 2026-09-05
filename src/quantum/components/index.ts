@@ -5,6 +5,3 @@ export * from './InstrumentScene';
 export * from './RealitySplitStage';
 export * from './TeleportationWorkspace';
 export * from './QDPWorkspace';
-export * from './DensityMatrixVisualizer';
-export * from '../experiments/InterferometryExperiment';
-

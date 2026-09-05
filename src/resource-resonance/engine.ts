@@ -46,6 +46,11 @@ export interface SimulationParams {
   resourceScarcity: number; networkSize: number; renewableVolatility: number; computeDemand: number; urgency: number;
   geographicalFriction: number; participantReliability: number; supplyDemandImbalance: number; flexibleComputeShare: number;
   marketOverhead: number; hybridOverhead: number; genesisOverhead: number; telemetryVerificationCost: number;
+  /** Physical timing layer: how hard deadlines bite, and how much a storage bridge preserves. */
+  deadlinePressure?: number; storageBridgeEfficiency?: number;
+  /** Rounds of price discovery (tâtonnement) the monetary baseline is allowed to run. */
+  marketClearingRounds?: number;
+
   creditAvailability: number; liquidityStress: number; counterpartyRisk: number; collateralHaircut: number;
   settlementReliability: number; settlementLatency: number; fundingCost: number; priceSignalNoise: number;
   centralBankBackstop: boolean; backstopCapacity: number; telemetryReliability: number;
@@ -194,6 +199,8 @@ export const DEFAULT_SIMULATION_PARAMS: SimulationParams = {
   resourceScarcity: .5, networkSize: 24, renewableVolatility: .6, computeDemand: .8, urgency: .5,
   geographicalFriction: .3, participantReliability: .8, supplyDemandImbalance: .1, flexibleComputeShare: .65,
   marketOverhead: .04, hybridOverhead: .07, genesisOverhead: .09, telemetryVerificationCost: .08,
+  deadlinePressure: .6, storageBridgeEfficiency: .88, marketClearingRounds: 4,
+
   creditAvailability: .78, liquidityStress: .18, counterpartyRisk: .1, collateralHaircut: .2,
   settlementReliability: .96, settlementLatency: .12, fundingCost: .05, priceSignalNoise: .08,
   centralBankBackstop: true, backstopCapacity: .45, telemetryReliability: .88,
@@ -303,7 +310,17 @@ export interface ExtendedAgent {
   reportedScarcity: number;
   trueReliability: number;
   reportedReliability: number;
+
+  /** Physical timing layer (energy/compute/storage positive-control domain). */
+  windowStart: number;   // hour at which the offer becomes physically available
+  windowEnd: number;     // hour at which unused capacity is curtailed
+  deadline: number;      // hour by which a need must be served
+  flexible: boolean;     // workload can be time-shifted
+  blockIdx: number;      // coarse 6-hour block visible to price-only mechanisms
+  reportedWindowStart: number; // telemetry-reported (noisy) availability
+  reportedDeadline: number;
 }
+
 
 export interface World { offers: ExtendedAgent[]; needs: ExtendedAgent[]; physicalCapacity: number; totalDemand: number }
 
@@ -360,6 +377,12 @@ export function buildWorld(p: SimulationParams, seed: number, shock: number): Wo
     const reportFactor = manipulated ? 1 + (p.misreportMagnitude ?? 0) : 1;
     const marginalCost = clamp(.15 + vector.energyCost * .35 + (1 - vector.quality) * .25);
 
+    // Physical availability window. Solar is a rapidly expiring surplus; firm
+    // capacity persists. Unused capacity past windowEnd is physically curtailed.
+    const windowStart = typeIdx === 1 ? 8 + rand() * 7 : rand() * 20;
+    const windowEnd = windowStart + (typeIdx === 1 ? .3 + rand() * 1.4 : 6 + rand() * 12);
+    const telemetryError = (1 - p.telemetryReliability) * (rand() - .5) * 6;
+
     offers.push({
       id: i, type, amount: effectiveAmount, vector,
       balance: .2 + rand(), credit: .2 + rand(), collateral: .15 + rand(),
@@ -374,9 +397,13 @@ export function buildWorld(p: SimulationParams, seed: number, shock: number): Wo
       trueUrgency: vector.urgency, reportedUrgency: clamp(vector.urgency * reportFactor),
       trueDemand: vector.demand, reportedDemand: clamp(vector.demand * reportFactor),
       trueScarcity: vector.scarcity, reportedScarcity: clamp(vector.scarcity * reportFactor),
-      trueReliability: vector.reliability, reportedReliability: clamp(vector.reliability / reportFactor)
+      trueReliability: vector.reliability, reportedReliability: clamp(vector.reliability / reportFactor),
+      windowStart, windowEnd, deadline: windowEnd, flexible: typeIdx === 2,
+      blockIdx: Math.floor(windowStart / 6),
+      reportedWindowStart: windowStart + telemetryError, reportedDeadline: windowEnd + telemetryError
     });
   }
+
 
   for (let i = 0; i < n; i++) {
     const type = TYPES[Math.floor(rand() * 3)];
@@ -410,6 +437,12 @@ export function buildWorld(p: SimulationParams, seed: number, shock: number): Wo
     const audited = misreports && rand() < (p.auditProbability ?? 0);
     const penalty = audited ? (p.misreportPenalty ?? 0) : 0;
 
+    // Workload timing: urgent jobs carry short deadlines, flexible compute can wait.
+    const release = rand() * 18;
+    const slack = flexible ? 4 + rand() * 8 : .5 + (1 - vector.urgency) * 3;
+    const deadline = release + slack;
+    const nTelemetryError = (1 - p.telemetryReliability) * (rand() - .5) * 6;
+
     needs.push({
       id: i, type, amount: effectiveNeed, vector,
       balance: .12 + rand() * .9, credit: .15 + rand(), collateral: .1 + rand(),
@@ -424,8 +457,12 @@ export function buildWorld(p: SimulationParams, seed: number, shock: number): Wo
       trueUrgency: vector.urgency, reportedUrgency: clamp(vector.urgency * reportFactor),
       trueDemand: vector.demand, reportedDemand: clamp(vector.demand * reportFactor),
       trueScarcity: vector.scarcity, reportedScarcity: clamp(vector.scarcity * reportFactor),
-      trueReliability: vector.reliability, reportedReliability: clamp(vector.reliability / reportFactor)
+      trueReliability: vector.reliability, reportedReliability: clamp(vector.reliability / reportFactor),
+      windowStart: release, windowEnd: deadline, deadline, flexible,
+      blockIdx: Math.floor(release / 6),
+      reportedWindowStart: release + nTelemetryError, reportedDeadline: deadline + nTelemetryError
     });
+
   }
 
   return {
@@ -495,7 +532,29 @@ function maximumWeightFlow(edges: Edge[], supply: number[], demand: number[], us
   return result;
 }
 
+/**
+ * Latent physical timing feasibility, part of the neutral ground truth.
+ * Energy that arrives after a job's deadline is curtailed unless a storage
+ * bridge carries it forward or the workload itself can be time-shifted.
+ */
+export function timingFactor(
+  windowStart: number, windowEnd: number, deadline: number, flexible: boolean, bridged: boolean, p: SimulationParams,
+): number {
+  const pressure = p.deadlinePressure ?? .6;
+  const bridge = p.storageBridgeEfficiency ?? .88;
+  if (windowStart <= deadline) {
+    // Served inside the window; a very short overlap still loses a little energy.
+    const overlap = Math.min(windowEnd, deadline) - windowStart;
+    return overlap >= .5 ? 1 : clamp(.7 + overlap * .6, .3, 1);
+  }
+  const late = windowStart - deadline;
+  if (bridged) return clamp(bridge * Math.exp(-late / 24), .05, 1);
+  if (flexible) return clamp((1 - pressure * .4) * Math.exp(-late / 18), .05, 1);
+  return clamp((1 - pressure) * Math.exp(-late / 6), 0, 1);
+}
+
 function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracle', seed: number, failed = -1): Outcome {
+
   const rand = mulberry32(seed);
   const nOffers = world.offers.length;
   const nNeeds = world.needs.length;
@@ -549,24 +608,33 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
 
       const relay = sub < 1;
       const conversion = relay ? .82 : 1;
-      const value = Math.max(0, (oQual * nVec.demand + .25 * nVec.urgency + oSolarBonus) * (.72 + .28 * locProduct) * conversion * oRel * sub);
+      // Physical timing: capacity that arrives after a job's deadline is only
+      // usable if it can be bridged (storage) or the workload can be shifted.
+      const timing = timingFactor(o.windowStart, o.windowEnd, n.deadline, n.flexible, relay, p);
+      const value = Math.max(0, (oQual * nVec.demand + .25 * nVec.urgency + oSolarBonus) * (.72 + .28 * locProduct) * conversion * oRel * sub * timing);
 
       let rank = value;
       if (mode !== 'oracle') {
         const infoNoise = bEnabled ? (rand() - 0.5) * p.informationAsymmetry * 1.5 : 0;
         const nComp = nVec.compatibility;
         const compProd = oComp * nComp;
+        // Price-only mechanisms can only see a coarse 6-hour delivery block,
+        // never the individual availability window or job deadline.
+        const blockTiming = o.blockIdx === n.blockIdx ? 1 : o.blockIdx < n.blockIdx ? .85 : .7;
         const priceScore = Math.max(0, 1 - Math.abs(oPrice - n.monetaryBid)) * (compProd > .5 ? 1 : .1);
-        const price = priceScore * sub * (1 + p.priceSignalNoise * (rand() - .5) * 2 + infoNoise);
+        const price = priceScore * sub * blockTiming * (1 + p.priceSignalNoise * (rand() - .5) * 2 + infoNoise);
 
+        // Telemetry mechanisms see the reported (noisy) windows and deadlines.
+        const reportedTiming = timingFactor(o.reportedWindowStart, o.reportedDeadline, n.reportedDeadline, n.flexible, relay, p);
         const resScore = compProd * ((1 - Math.abs(oUrg - nVec.urgency)) * .2 + oVec.energyCost * .3 + locProduct * oneMinusGeoFriction * .2 + oRel * .3);
-        const signal = resScore * sub * (1 + (1 - p.telemetryReliability) * (rand() - .5) * 2.4);
+        const signal = resScore * sub * reportedTiming * (1 + (1 - p.telemetryReliability) * (rand() - .5) * 2.4);
 
         const auctionSurplus = n.reportedBid - o.reportedAsk;
-        rank = mode === 'doubleAuction' ? (auctionSurplus >= 0 ? auctionSurplus * sub : -1)
+        rank = mode === 'doubleAuction' ? (auctionSurplus >= 0 ? auctionSurplus * sub * blockTiming : -1)
           : mode === 'market' || mode === 'stabilizedMarket' ? price
           : mode === 'hybrid' ? signal * .72 + price * .28 : signal;
       }
+
       const clearingPrice = mode === 'doubleAuction' ? (o.reportedAsk + n.reportedBid) / 2 : undefined;
       edges.push({ oi, ni, sub, value, rank, relay, accessible: true, price: clearingPrice });
     }

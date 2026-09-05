@@ -10,9 +10,7 @@ export type ExperimentType =
   | 'teleportation'
   | 'interference'
   | 'superposition'
-  | 'qdp'
-  | 'interferometry'
-  | 'density_matrix';
+  | 'qdp';
 
 export interface QuantumLabParameters {
   g: number;
