@@ -532,7 +532,29 @@ function maximumWeightFlow(edges: Edge[], supply: number[], demand: number[], us
   return result;
 }
 
+/**
+ * Latent physical timing feasibility, part of the neutral ground truth.
+ * Energy that arrives after a job's deadline is curtailed unless a storage
+ * bridge carries it forward or the workload itself can be time-shifted.
+ */
+export function timingFactor(
+  windowStart: number, windowEnd: number, deadline: number, flexible: boolean, bridged: boolean, p: SimulationParams,
+): number {
+  const pressure = p.deadlinePressure ?? .6;
+  const bridge = p.storageBridgeEfficiency ?? .88;
+  if (windowStart <= deadline) {
+    // Served inside the window; a very short overlap still loses a little energy.
+    const overlap = Math.min(windowEnd, deadline) - windowStart;
+    return overlap >= .5 ? 1 : clamp(.7 + overlap * .6, .3, 1);
+  }
+  const late = windowStart - deadline;
+  if (bridged) return clamp(bridge * Math.exp(-late / 24), .05, 1);
+  if (flexible) return clamp((1 - pressure * .4) * Math.exp(-late / 18), .05, 1);
+  return clamp((1 - pressure) * Math.exp(-late / 6), 0, 1);
+}
+
 function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracle', seed: number, failed = -1): Outcome {
+
   const rand = mulberry32(seed);
   const nOffers = world.offers.length;
   const nNeeds = world.needs.length;
