@@ -377,6 +377,12 @@ export function buildWorld(p: SimulationParams, seed: number, shock: number): Wo
     const reportFactor = manipulated ? 1 + (p.misreportMagnitude ?? 0) : 1;
     const marginalCost = clamp(.15 + vector.energyCost * .35 + (1 - vector.quality) * .25);
 
+    // Physical availability window. Solar is a rapidly expiring surplus; firm
+    // capacity persists. Unused capacity past windowEnd is physically curtailed.
+    const windowStart = typeIdx === 1 ? 8 + rand() * 7 : rand() * 20;
+    const windowEnd = windowStart + (typeIdx === 1 ? .3 + rand() * 1.4 : 6 + rand() * 12);
+    const telemetryError = (1 - p.telemetryReliability) * (rand() - .5) * 6;
+
     offers.push({
       id: i, type, amount: effectiveAmount, vector,
       balance: .2 + rand(), credit: .2 + rand(), collateral: .15 + rand(),
@@ -391,9 +397,13 @@ export function buildWorld(p: SimulationParams, seed: number, shock: number): Wo
       trueUrgency: vector.urgency, reportedUrgency: clamp(vector.urgency * reportFactor),
       trueDemand: vector.demand, reportedDemand: clamp(vector.demand * reportFactor),
       trueScarcity: vector.scarcity, reportedScarcity: clamp(vector.scarcity * reportFactor),
-      trueReliability: vector.reliability, reportedReliability: clamp(vector.reliability / reportFactor)
+      trueReliability: vector.reliability, reportedReliability: clamp(vector.reliability / reportFactor),
+      windowStart, windowEnd, deadline: windowEnd, flexible: typeIdx === 2,
+      blockIdx: Math.floor(windowStart / 6),
+      reportedWindowStart: windowStart + telemetryError, reportedDeadline: windowEnd + telemetryError
     });
   }
+
 
   for (let i = 0; i < n; i++) {
     const type = TYPES[Math.floor(rand() * 3)];
