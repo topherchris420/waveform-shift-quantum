@@ -1,0 +1,3 @@
+## 2026-09-05 - Canvas Gradient Caching in React
+**Learning:** In a highly interactive `requestAnimationFrame` loop inside a React component (like in `RealitySplitStage.tsx`), creating new objects like `CanvasGradient`s on every frame using `createLinearGradient` puts significant pressure on the garbage collector. This is a common performance bottleneck for canvas animations in React.
+**Action:** Cache these objects using a `useRef` and key them by their dependencies (e.g., coordinates, colors). Include a safeguard (like clearing the cache if its size exceeds a small threshold) to prevent memory leaks if the dependencies change continuously over time.

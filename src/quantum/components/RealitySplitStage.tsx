@@ -70,6 +70,7 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const heatmapRef = useRef<HTMLCanvasElement | null>(null);
+  const gradientsRef = useRef<{ bg?: CanvasGradient; bgKey?: string; bands: Map<string, CanvasGradient> }>({ bands: new Map() });
   const rafRef = useRef<number>();
   const timeRef = useRef(0);
   const uiTimeRef = useRef(0);
@@ -220,10 +221,17 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
       ctx.lineTo(PLOT_X1, baseline);
       ctx.closePath();
 
-      const fill = ctx.createLinearGradient(0, band.top, 0, baseline);
-      fill.addColorStop(0, `${color}66`);
-      fill.addColorStop(1, `${color}0d`);
-      ctx.fillStyle = fill;
+      const bandKey = `${band.top}-${baseline}-${color}-${W}-${H}`;
+      if (!gradientsRef.current.bands.has(bandKey)) {
+        if (gradientsRef.current.bands.size > 10) {
+          gradientsRef.current.bands.clear(); // Prevent memory leaks
+        }
+        const fill = ctx.createLinearGradient(0, band.top, 0, baseline);
+        fill.addColorStop(0, `${color}66`);
+        fill.addColorStop(1, `${color}0d`);
+        gradientsRef.current.bands.set(bandKey, fill);
+      }
+      ctx.fillStyle = gradientsRef.current.bands.get(bandKey)!;
       ctx.fill();
 
       ctx.beginPath();
@@ -281,11 +289,17 @@ export const RealitySplitStage: React.FC<RealitySplitStageProps> = ({
       );
 
       // Backdrop
-      const bg = ctx.createLinearGradient(0, 0, 0, H);
-      bg.addColorStop(0, '#f5f3ee');
-      bg.addColorStop(0.5, '#efece4');
-      bg.addColorStop(1, '#f5f3ee');
-      ctx.fillStyle = bg;
+      // Keyed by W/H to ensure that if the canvas resizes (in the future or via CSS vars), the background gradient gets re-created safely.
+      const bgKey = `${W}-${H}`;
+      if (gradientsRef.current.bgKey !== bgKey) {
+        const bg = ctx.createLinearGradient(0, 0, 0, H);
+        bg.addColorStop(0, '#f5f3ee');
+        bg.addColorStop(0.5, '#efece4');
+        bg.addColorStop(1, '#f5f3ee');
+        gradientsRef.current.bg = bg;
+        gradientsRef.current.bgKey = bgKey;
+      }
+      ctx.fillStyle = gradientsRef.current.bg!;
       ctx.fillRect(0, 0, W, H);
 
       // Shared spatial gridlines tie all three bands to one x-axis.

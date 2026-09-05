@@ -797,7 +797,7 @@ const metricToneStyles: Record<NonNullable<MetricProps['tone']>, string> = {
   violet: 'bg-violet',
 };
 
-const Metric: React.FC<MetricProps> = ({ label, value, icon: Icon, tone = 'primary', kind }) => (
+const Metric: React.FC<MetricProps> = React.memo(({ label, value, icon: Icon, tone = 'primary', kind }) => (
   <div className="metric-cell p-6 lg:p-8">
     <div className="flex items-center justify-between gap-2">
       <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
@@ -815,7 +815,7 @@ const Metric: React.FC<MetricProps> = ({ label, value, icon: Icon, tone = 'prima
       <EpistemicTag kind={kind} short hideIcon />
     </div>
   </div>
-);
+));
 
 interface PanelHeaderProps {
   eyebrow: string;
@@ -823,7 +823,7 @@ interface PanelHeaderProps {
   icon: React.ElementType;
 }
 
-const PanelHeader: React.FC<PanelHeaderProps> = ({ eyebrow, title, icon: Icon }) => (
+const PanelHeader: React.FC<PanelHeaderProps> = React.memo(({ eyebrow, title, icon: Icon }) => (
   <div className="flex items-center gap-3">
     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-cyan-400/30 bg-cyan-500/10 text-cyan-300">
       <Icon className="h-4 w-4" />
@@ -833,7 +833,7 @@ const PanelHeader: React.FC<PanelHeaderProps> = ({ eyebrow, title, icon: Icon })
       <h3 className="mt-0.5 text-sm font-semibold leading-snug text-foreground sm:truncate">{title}</h3>
     </div>
   </div>
-);
+));
 
 interface LabSliderProps {
   icon: React.ElementType;
@@ -846,7 +846,7 @@ interface LabSliderProps {
   display: string;
 }
 
-const LabSlider: React.FC<LabSliderProps> = ({
+const LabSlider: React.FC<LabSliderProps> = React.memo(({
   icon: Icon,
   label,
   value,
@@ -866,4 +866,4 @@ const LabSlider: React.FC<LabSliderProps> = ({
     </div>
     <Slider aria-label={label} value={value} onValueChange={onValueChange} min={min} max={max} step={step} />
   </div>
-);
+));
