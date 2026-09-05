@@ -586,24 +586,33 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
 
       const relay = sub < 1;
       const conversion = relay ? .82 : 1;
-      const value = Math.max(0, (oQual * nVec.demand + .25 * nVec.urgency + oSolarBonus) * (.72 + .28 * locProduct) * conversion * oRel * sub);
+      // Physical timing: capacity that arrives after a job's deadline is only
+      // usable if it can be bridged (storage) or the workload can be shifted.
+      const timing = timingFactor(o.windowStart, o.windowEnd, n.deadline, n.flexible, relay, p);
+      const value = Math.max(0, (oQual * nVec.demand + .25 * nVec.urgency + oSolarBonus) * (.72 + .28 * locProduct) * conversion * oRel * sub * timing);
 
       let rank = value;
       if (mode !== 'oracle') {
         const infoNoise = bEnabled ? (rand() - 0.5) * p.informationAsymmetry * 1.5 : 0;
         const nComp = nVec.compatibility;
         const compProd = oComp * nComp;
+        // Price-only mechanisms can only see a coarse 6-hour delivery block,
+        // never the individual availability window or job deadline.
+        const blockTiming = o.blockIdx === n.blockIdx ? 1 : o.blockIdx < n.blockIdx ? .85 : .7;
         const priceScore = Math.max(0, 1 - Math.abs(oPrice - n.monetaryBid)) * (compProd > .5 ? 1 : .1);
-        const price = priceScore * sub * (1 + p.priceSignalNoise * (rand() - .5) * 2 + infoNoise);
+        const price = priceScore * sub * blockTiming * (1 + p.priceSignalNoise * (rand() - .5) * 2 + infoNoise);
 
+        // Telemetry mechanisms see the reported (noisy) windows and deadlines.
+        const reportedTiming = timingFactor(o.reportedWindowStart, o.reportedDeadline, n.reportedDeadline, n.flexible, relay, p);
         const resScore = compProd * ((1 - Math.abs(oUrg - nVec.urgency)) * .2 + oVec.energyCost * .3 + locProduct * oneMinusGeoFriction * .2 + oRel * .3);
-        const signal = resScore * sub * (1 + (1 - p.telemetryReliability) * (rand() - .5) * 2.4);
+        const signal = resScore * sub * reportedTiming * (1 + (1 - p.telemetryReliability) * (rand() - .5) * 2.4);
 
         const auctionSurplus = n.reportedBid - o.reportedAsk;
-        rank = mode === 'doubleAuction' ? (auctionSurplus >= 0 ? auctionSurplus * sub : -1)
+        rank = mode === 'doubleAuction' ? (auctionSurplus >= 0 ? auctionSurplus * sub * blockTiming : -1)
           : mode === 'market' || mode === 'stabilizedMarket' ? price
           : mode === 'hybrid' ? signal * .72 + price * .28 : signal;
       }
+
       const clearingPrice = mode === 'doubleAuction' ? (o.reportedAsk + n.reportedBid) / 2 : undefined;
       edges.push({ oi, ni, sub, value, rank, relay, accessible: true, price: clearingPrice });
     }
