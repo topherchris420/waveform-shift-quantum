@@ -437,6 +437,12 @@ export function buildWorld(p: SimulationParams, seed: number, shock: number): Wo
     const audited = misreports && rand() < (p.auditProbability ?? 0);
     const penalty = audited ? (p.misreportPenalty ?? 0) : 0;
 
+    // Workload timing: urgent jobs carry short deadlines, flexible compute can wait.
+    const release = rand() * 18;
+    const slack = flexible ? 4 + rand() * 8 : .5 + (1 - vector.urgency) * 3;
+    const deadline = release + slack;
+    const nTelemetryError = (1 - p.telemetryReliability) * (rand() - .5) * 6;
+
     needs.push({
       id: i, type, amount: effectiveNeed, vector,
       balance: .12 + rand() * .9, credit: .15 + rand(), collateral: .1 + rand(),
@@ -451,8 +457,12 @@ export function buildWorld(p: SimulationParams, seed: number, shock: number): Wo
       trueUrgency: vector.urgency, reportedUrgency: clamp(vector.urgency * reportFactor),
       trueDemand: vector.demand, reportedDemand: clamp(vector.demand * reportFactor),
       trueScarcity: vector.scarcity, reportedScarcity: clamp(vector.scarcity * reportFactor),
-      trueReliability: vector.reliability, reportedReliability: clamp(vector.reliability / reportFactor)
+      trueReliability: vector.reliability, reportedReliability: clamp(vector.reliability / reportFactor),
+      windowStart: release, windowEnd: deadline, deadline, flexible,
+      blockIdx: Math.floor(release / 6),
+      reportedWindowStart: release + nTelemetryError, reportedDeadline: deadline + nTelemetryError
     });
+
   }
 
   return {
