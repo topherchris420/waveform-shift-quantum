@@ -57,7 +57,7 @@ export const RoutingComparison: React.FC<{ result: SimulationResult }> = ({ resu
             <p className="mt-1 text-sm text-slate-400">{result.verdictSummary}</p>
           </div>
         </div>
-        <div className="mt-5 grid gap-3 sm:grid-cols-4 md:grid-cols-6">
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
           {Object.entries(result.modelA.unmetDemandDecomposition).map(([key, value]) => (
             <div key={key} className="border-l-2 border-slate-700 pl-3">
               <p className="text-lg text-slate-100">{value.toFixed(1)}%</p>

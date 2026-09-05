@@ -115,10 +115,10 @@ describe('monetary coordination layer', () => {
       { ...params, liquidityStress: .95, creditAvailability: 0, centralBankBackstop: false, telemetryReliability: 1, genesisOverhead: 0 },
     ];
     const expected = [
-      ['market', 'doubleAuction', 'shadowPriceMarket'],
-      ['stabilizedMarket'],
+      ['market', 'doubleAuction', 'shadowPriceMarket', 'stabilizedMarket'],
+      ['stabilizedMarket', 'shadowPriceMarket', 'market'],
       ['hybrid'],
-      ['genesis'],
+      ['genesis', 'maxWeightMatching'],
     ];
     cases.forEach((input, index) => {
       const result = runSimulation(input, 400 + index);

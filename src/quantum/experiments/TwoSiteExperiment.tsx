@@ -129,7 +129,7 @@ export const TwoSiteExperiment: React.FC<TwoSiteExperimentProps> = ({ parameters
       </div>
 
       {/* Live Numerical Indicators */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 font-mono text-xs">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 font-mono text-xs">
         <div className="rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-3">
           <div className="text-[10px] text-cyan-400">PA(t) = |cA(t)|²</div>
           <div className="text-xl font-bold text-cyan-200">{currentPA.toFixed(4)}</div>

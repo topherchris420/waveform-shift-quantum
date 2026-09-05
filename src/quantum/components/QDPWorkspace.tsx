@@ -71,7 +71,7 @@ export const QDPWorkspace: React.FC = () => {
       </div>
 
       {/* Solver Selectors */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         <SolverButton
           mode="classical"
           active={solverMode === 'classical'}
@@ -233,7 +233,7 @@ export const QDPWorkspace: React.FC = () => {
           </div>
 
           {/* Benchmark vs Calculated comparison grid */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <MetricCard
               label="x₁ (Policy)"
               calc={lastIteration.x1}
@@ -256,7 +256,7 @@ export const QDPWorkspace: React.FC = () => {
 
           {/* Iteration history table */}
           <div className="overflow-x-auto rounded-md border border-slate-800">
-            <table className="w-full text-left font-mono text-[11px]">
+            <table className="w-full min-w-[500px] text-left font-mono text-[11px]">
               <thead className="border-b border-slate-800 bg-slate-900/80 text-slate-400">
                 <tr>
                   <th className="p-2">Iter</th>
@@ -297,7 +297,7 @@ export const QDPWorkspace: React.FC = () => {
                 QUBO Sample Loss: <strong>{lastIteration.lossPV.toExponential(3)}</strong>
               </span>
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-2 font-mono text-[10px]">
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 font-mono text-[10px]">
               <div className="rounded border border-slate-800 bg-slate-950 p-2">
                 <p className="text-slate-400">x₂ Register (q₀ ... q₉):</p>
                 <p className="mt-1 tracking-widest text-emerald-400">{qubitEncoding.bits2.join(' ')}</p>

@@ -66,7 +66,7 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
                 <button
                   key={item.id}
                   onClick={() => setActiveSection(item.id)}
-                  className={`flex w-auto shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs transition md:w-full ${
+                  className={`flex w-auto shrink-0 items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2 text-left text-xs transition md:w-full md:whitespace-normal ${
                     active
                       ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-400/40 font-semibold'
                       : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
@@ -128,7 +128,7 @@ export const PaperReaderModal: React.FC<PaperReaderModalProps> = ({ isOpen, onCl
                   Matter wavefunction <InlineMath math="\\psi(\\mathbf{x}, t)" /> is coupled to a real auxiliary scalar field <InlineMath math="\\phi(\\mathbf{x}, t)" /> through the local density <InlineMath math="|\\psi(\\mathbf{x}, t)|^2" />:
                 </p>
 
-                <div className="rounded-xl border border-white/10 bg-slate-900/60 p-4">
+                <div className="rounded-xl border border-white/10 bg-slate-900/60 p-4 overflow-x-auto">
                   <p className="text-xs font-mono text-cyan-400 mb-2">Total Action (Eq. 5):</p>
                   <BlockMath math="S_{\\text{tot}} = S_\\psi + S_\\phi + S_{\\text{int}}" />
                   <p className="text-xs font-mono text-cyan-400 my-2">Matter-Scalar Coupling (Eq. 4):</p>

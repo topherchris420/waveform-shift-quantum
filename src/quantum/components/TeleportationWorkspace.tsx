@@ -154,7 +154,7 @@ export const TeleportationWorkspace: React.FC<TeleportationWorkspaceProps> = ({
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         {/* Input / output states */}
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-slate-800 bg-slate-950/70 p-3">
               <p className="mb-1 text-center font-mono text-[10px] uppercase tracking-wider text-slate-400">
                 Alice input |ψ⟩
@@ -248,7 +248,7 @@ export const TeleportationWorkspace: React.FC<TeleportationWorkspaceProps> = ({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-px overflow-hidden rounded-lg border border-slate-800 bg-slate-800 sm:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-slate-800 bg-slate-800 sm:grid-cols-4">
         <MetricCell label="Fidelity F" value={fidelity.toFixed(4)} note="classical bound 2/3" />
         <MetricCell label="Concurrence C" value={concurrence.toFixed(4)} note="entangled iff C > 0" />
         <MetricCell label="⟨ZZ⟩" value={zz.toFixed(4)} note={`${history.length} shots`} />
