@@ -31,13 +31,13 @@ class KatexSafeBoundary extends Component<{ children: ReactNode; fallbackText: s
 }
 
 export const EquationBlock: React.FC<EquationBlockProps> = ({ title, latex, note, inline = false }) => (
-  <div className="rounded-md border border-white/10 bg-black/30 p-3">
-    {title && <p className="section-eyebrow mb-2">{title}</p>}
-    <div className="overflow-x-auto text-foreground">
+  <div className="rounded-md border border-white/10 bg-black/30 p-3 min-w-0 max-w-full">
+    {title && <p className="section-eyebrow mb-2 break-words">{title}</p>}
+    <div className="overflow-x-auto max-w-full text-foreground">
       <KatexSafeBoundary fallbackText={latex}>
         {inline ? <InlineMath math={latex} /> : <BlockMath math={latex} />}
       </KatexSafeBoundary>
     </div>
-    {note && <p className="mt-2 text-[11px] leading-5 text-muted-foreground">{note}</p>}
+    {note && <p className="mt-2 text-[11px] leading-5 text-muted-foreground break-words">{note}</p>}
   </div>
 );

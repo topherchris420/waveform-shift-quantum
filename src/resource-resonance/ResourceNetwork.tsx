@@ -168,7 +168,7 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
   const getRelayY = (index: number) => 25 + index * 30; // Center column
 
   return (
-    <div className="relative flex min-h-[500px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/50 p-3 shadow-2xl backdrop-blur-md group sm:p-6">
+    <div className="relative flex min-h-[500px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/50 p-3 shadow-2xl backdrop-blur-md group sm:p-6 min-w-0 max-w-full">
       
       <div className="absolute inset-0 pointer-events-none opacity-30 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px] [transform:perspective(500px)_rotateX(60deg)_translateY(-100px)_scale(2.5)] origin-top z-0" />
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,_rgba(6,182,212,0.15)_0%,_transparent_70%)] z-0" />
@@ -200,7 +200,7 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
       <div className="text-[10px] font-mono text-cyan-400/70 mb-1 flex items-center gap-1 sm:hidden">
         <span>Swipe horizontally to explore topology →</span>
       </div>
-      <div className="relative z-10 -mx-3 flex-1 overflow-x-auto px-3 pb-2 sm:mx-0 sm:overflow-visible sm:px-0 scrollbar-none">
+      <div className="relative z-10 -mx-3 flex-1 overflow-x-auto px-3 pb-2 sm:mx-0 sm:overflow-visible sm:px-0 scrollbar-none min-w-0 max-w-full">
       <div className="relative mt-4 flex min-h-[390px] min-w-[580px] flex-1 items-stretch justify-between gap-3 sm:mt-6 sm:min-w-0 sm:gap-4">
         
         {/* SVG Layer */}
