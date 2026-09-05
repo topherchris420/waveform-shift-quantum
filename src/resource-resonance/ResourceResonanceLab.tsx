@@ -151,7 +151,7 @@ export const ResourceResonanceLab: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-foreground selection:bg-cyan-500/30">
+    <div className="min-h-screen bg-black text-foreground selection:bg-cyan-500/30 max-w-full overflow-x-hidden">
       <Toaster theme="dark" />
       <div className="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
         
