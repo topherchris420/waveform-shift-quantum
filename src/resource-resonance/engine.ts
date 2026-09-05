@@ -310,7 +310,17 @@ export interface ExtendedAgent {
   reportedScarcity: number;
   trueReliability: number;
   reportedReliability: number;
+
+  /** Physical timing layer (energy/compute/storage positive-control domain). */
+  windowStart: number;   // hour at which the offer becomes physically available
+  windowEnd: number;     // hour at which unused capacity is curtailed
+  deadline: number;      // hour by which a need must be served
+  flexible: boolean;     // workload can be time-shifted
+  blockIdx: number;      // coarse 6-hour block visible to price-only mechanisms
+  reportedWindowStart: number; // telemetry-reported (noisy) availability
+  reportedDeadline: number;
 }
+
 
 export interface World { offers: ExtendedAgent[]; needs: ExtendedAgent[]; physicalCapacity: number; totalDemand: number }
 
