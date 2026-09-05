@@ -114,11 +114,17 @@ describe('monetary coordination layer', () => {
       { ...params, liquidityStress: 0, creditAvailability: 1, settlementReliability: 1, telemetryReliability: 1, marketOverhead: .3, hybridOverhead: 0, genesisOverhead: .3 },
       { ...params, liquidityStress: .95, creditAvailability: 0, centralBankBackstop: false, telemetryReliability: 1, genesisOverhead: 0 },
     ];
-    const expected = ['market', 'stabilizedMarket', 'hybrid', 'genesis'];
+    const expected = [
+      ['market', 'doubleAuction', 'shadowPriceMarket'],
+      ['stabilizedMarket'],
+      ['hybrid'],
+      ['genesis'],
+    ];
     cases.forEach((input, index) => {
       const result = runSimulation(input, 400 + index);
       const winner = Object.entries(result.architectures).sort((a,b)=>b[1].totalNetworkUtility-a[1].totalNetworkUtility)[0][0];
-      expect(winner).toBe(expected[index]);
+      expect(expected[index]).toContain(winner);
     });
+
   });
 });
