@@ -182,7 +182,7 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
         <button
           onClick={onRoute}
           disabled={isRouting}
-          className="relative min-h-11 overflow-hidden rounded-lg border border-white/20 bg-white/10 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-white shadow-[0_0_20px_rgba(6,182,212,0.2)] transition-all duration-300 hover:bg-white/20 hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] disabled:opacity-50 group-hover:border-cyan-500/50 sm:px-6 sm:text-[11px]"
+          className="relative min-h-11 w-full sm:w-auto overflow-hidden rounded-lg border border-white/20 bg-white/10 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-white shadow-[0_0_20px_rgba(6,182,212,0.2)] transition-all duration-300 hover:bg-white/20 hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] disabled:opacity-50 group-hover:border-cyan-500/50 sm:px-6 sm:text-[11px]"
         >
           {isRouting ? (
             <span className="flex items-center gap-2">
@@ -197,8 +197,11 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
         </button>
       </div>
 
-      <div className="relative z-10 -mx-3 flex-1 overflow-x-auto px-3 pb-2 sm:mx-0 sm:overflow-visible sm:px-0">
-      <div className="relative mt-6 flex min-h-[390px] min-w-[620px] flex-1 items-stretch justify-between gap-4 sm:min-w-0">
+      <div className="text-[10px] font-mono text-cyan-400/70 mb-1 flex items-center gap-1 sm:hidden">
+        <span>Swipe horizontally to explore topology →</span>
+      </div>
+      <div className="relative z-10 -mx-3 flex-1 overflow-x-auto px-3 pb-2 sm:mx-0 sm:overflow-visible sm:px-0 scrollbar-none">
+      <div className="relative mt-4 flex min-h-[390px] min-w-[580px] flex-1 items-stretch justify-between gap-3 sm:mt-6 sm:min-w-0 sm:gap-4">
         
         {/* SVG Layer */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" style={{ overflow: 'visible' }}>
@@ -308,7 +311,7 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
            
            {/* Center Engine Core if no relays are active, or just behind them */}
            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 opacity-40">
-              <div className={`w-32 h-32 rounded-full border-2 border-dashed border-cyan-900/50 flex items-center justify-center transition-all duration-1000 ${isRouting ? 'animate-[spin_4s_linear_infinite]' : ''}`} />
+              <div className={`w-24 h-24 sm:w-32 sm:h-32 rounded-full border-2 border-dashed border-cyan-900/50 flex items-center justify-center transition-all duration-1000 ${isRouting ? 'animate-[spin_4s_linear_infinite]' : ''}`} />
            </div>
         </div>
 
