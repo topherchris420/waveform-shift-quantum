@@ -5,6 +5,8 @@ import { compileResonanceRun, ResonanceCatalystSession } from './resonanceCataly
 import { ResourceNetwork, RelayNode } from './ResourceNetwork';
 import { RoutingComparison } from './RoutingComparison';
 import { SuperiorityProtocol } from './SuperiorityProtocol';
+import { AssumptionSensitivity } from './AssumptionSensitivity';
+
 import { CoordinationRegimeMap } from './CoordinationRegimeMap';
 import { MatchExplanation } from './MatchExplanation';
 import { Button } from '@/components/ui/button';
@@ -362,6 +364,16 @@ export const ResourceResonanceLab: React.FC = () => {
               </div>
             </div>
             <SuperiorityProtocol onAdopt={handleDiscover} baseParams={params} />
+
+            <AssumptionSensitivity
+              params={params}
+              onChange={(patch) => {
+                const next = { ...params, ...patch };
+                setParams(next);
+                setResult(runSimulation(next));
+              }}
+            />
+
             
             {matches.length > 0 && (
               <MatchExplanation match={matches[0]} />
