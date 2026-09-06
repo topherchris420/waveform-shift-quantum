@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { challengeClaim, DEFAULT_SIMULATION_PARAMS, FrozenClaim, runSimulation, SimulationParams } from '../resource-resonance/engine';
+import { challengeClaim, DEFAULT_SIMULATION_PARAMS, FrozenClaim, runOverheadSensitivity, runSimulation, SimulationParams, timingFactor } from '../resource-resonance/engine';
 
 const params: SimulationParams = {
   ...DEFAULT_SIMULATION_PARAMS,
@@ -126,5 +126,34 @@ describe('monetary coordination layer', () => {
       expect(expected[index]).toContain(winner);
     });
 
+  });
+});
+
+describe('physical timing layer (energy / compute / storage)', () => {
+  it('treats energy that arrives before a deadline as fully usable', () => {
+    expect(timingFactor(4, 9, 10, false, false, DEFAULT_SIMULATION_PARAMS)).toBe(1);
+  });
+
+  it('curtails inflexible late energy but lets a storage bridge carry it forward', () => {
+    const late = timingFactor(14, 16, 10, false, false, DEFAULT_SIMULATION_PARAMS);
+    const bridged = timingFactor(14, 16, 10, false, true, DEFAULT_SIMULATION_PARAMS);
+    const shifted = timingFactor(14, 16, 10, true, false, DEFAULT_SIMULATION_PARAMS);
+    expect(late).toBeLessThan(shifted);
+    expect(shifted).toBeLessThan(bridged);
+  });
+
+  it('lets harder deadlines reduce realized welfare for every mechanism', () => {
+    const soft = runSimulation({ ...params, deadlinePressure: 0.1 }, 555);
+    const hard = runSimulation({ ...params, deadlinePressure: 0.95 }, 555);
+    expect(hard.modelA.totalNetworkUtility).toBeLessThanOrEqual(soft.modelA.totalNetworkUtility + 1e-9);
+  });
+});
+
+describe('overhead assumptions are exposed, not hidden', () => {
+  it('reports whether the direction survives halving and doubling the cost constant', () => {
+    const report = runOverheadSensitivity(params, [90211, 91733]);
+    expect(report.points).toHaveLength(5);
+    expect(report.points.map((point) => point.multiplier)).toEqual([0.5, 0.75, 1, 1.5, 2]);
+    expect(report.robust).toBe(report.points.every((point) => point.genesisStillAhead));
   });
 });
