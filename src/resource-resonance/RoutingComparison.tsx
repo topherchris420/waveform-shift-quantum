@@ -1,5 +1,5 @@
 import React from 'react';
-import { Architecture, SimulationResult, runAblationAnalysis } from './engine';
+import { Architecture, DEFAULT_SIMULATION_PARAMS, SimulationResult, runAblationAnalysis } from './engine';
 import { Activity, Landmark, Network, ShieldCheck, Layers } from 'lucide-react';
 import { AblationComparisonPanel } from './AblationComparison';
 
@@ -8,11 +8,15 @@ const META: Record<Architecture, { label: string; color: string }> = {
   stabilizedMarket: { label: 'Stabilized Market', color: 'text-emerald-300' },
   hybrid: { label: 'Computational Market / Hybrid', color: 'text-indigo-300' },
   genesis: { label: 'Genesis', color: 'text-cyan-300' },
+  doubleAuction: { label: 'Double Auction', color: 'text-amber-200' },
+  shadowPriceMarket: { label: 'Shadow-Price Market', color: 'text-orange-300' },
+  maxWeightMatching: { label: 'Max-Weight Matching', color: 'text-sky-300' },
 };
 
 export const RoutingComparison: React.FC<{ result: SimulationResult }> = ({ result }) => {
   // Compute ablation analysis for the current simulation sample
   const ablation = runAblationAnalysis({
+    ...DEFAULT_SIMULATION_PARAMS,
     resourceScarcity: result.modelA.unmetDemandDecomposition.physicalShortage / 100,
     liquidityStress: result.modelA.feasibleButUnservedDemand / 100
   });
@@ -57,7 +61,7 @@ export const RoutingComparison: React.FC<{ result: SimulationResult }> = ({ resu
             <p className="mt-1 text-sm text-slate-400">{result.verdictSummary}</p>
           </div>
         </div>
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
+        <div className="mt-5 grid gap-3 sm:grid-cols-4 md:grid-cols-6">
           {Object.entries(result.modelA.unmetDemandDecomposition).map(([key, value]) => (
             <div key={key} className="border-l-2 border-slate-700 pl-3">
               <p className="text-lg text-slate-100">{value.toFixed(1)}%</p>

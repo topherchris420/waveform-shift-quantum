@@ -65,7 +65,7 @@ export const CatalystRunPanel: React.FC<Props> = ({ session, customArtifact }) =
             graph, deterministic quality gates, and a SHA-256 hash-chained provenance ledger with parameter digests.
           </p>
         </div>
-        <Button onClick={run} disabled={busy} className="w-full sm:w-auto gap-2 bg-cyan-500 font-bold text-slate-950 hover:bg-cyan-400">
+        <Button onClick={run} disabled={busy} className="gap-2 bg-cyan-500 font-bold text-slate-950 hover:bg-cyan-400">
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
           {busy ? 'Compiling…' : 'Compile run'}
         </Button>
@@ -118,7 +118,7 @@ export const CatalystRunPanel: React.FC<Props> = ({ session, customArtifact }) =
                 {chainOk ? <ShieldCheck className="h-3.5 w-3.5" /> : <ShieldAlert className="h-3.5 w-3.5" />}
                 {chainOk ? 'INTEGRITY: VALID' : 'INTEGRITY INVALID'}
               </span>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto gap-1.5 border-slate-700 bg-slate-900 font-mono text-xs text-slate-200" onClick={download}>
+              <Button variant="outline" size="sm" className="gap-1.5 border-slate-700 bg-slate-900 font-mono text-xs text-slate-200" onClick={download}>
                 <Download className="h-3.5 w-3.5" /> export artifact.json
               </Button>
             </div>

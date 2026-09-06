@@ -48,21 +48,21 @@ export const QDPWorkspace: React.FC = () => {
   const qubitEncoding = useMemo(() => encodeQubitState(lastIteration.x2, lastIteration.x3), [lastIteration]);
 
   return (
-    <div className="space-y-6 rounded-xl border border-slate-800 bg-slate-900/90 p-5 text-slate-100 shadow-2xl min-w-0 max-w-full overflow-hidden">
+    <div className="space-y-6 rounded-xl border border-slate-800 bg-slate-900/90 p-5 text-slate-100 shadow-2xl">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 min-w-0">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div>
           <div className="flex items-center gap-2">
-            <Cpu className="h-5 w-5 shrink-0 text-cyan-400" />
-            <h2 className="text-lg font-bold text-foreground break-words">
+            <Cpu className="h-5 w-5 text-cyan-400" />
+            <h2 className="text-lg font-bold text-foreground">
               Quantum Dynamic Programming (QDP) Bench
             </h2>
           </div>
-          <p className="mt-1 font-mono text-xs text-slate-400 break-words">
+          <p className="mt-1 font-mono text-xs text-slate-400">
             Fernández-Villaverde & Hull (2022) — Solving the Real Business Cycle (RBC) Model on D-Wave Pegasus QUBO
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2">
           <EpistemicTag kind="established" short />
           <Badge variant="outline" className="border-cyan-500/40 bg-cyan-500/10 font-mono text-xs text-cyan-300">
             QUBO Iterative Annealing
@@ -71,7 +71,7 @@ export const QDPWorkspace: React.FC = () => {
       </div>
 
       {/* Solver Selectors */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         <SolverButton
           mode="classical"
           active={solverMode === 'classical'}
@@ -109,9 +109,9 @@ export const QDPWorkspace: React.FC = () => {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3 min-w-0 max-w-full">
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Controls & Math */}
-        <div className="space-y-4 rounded-lg border border-slate-800 bg-slate-950/60 p-4 min-w-0 max-w-full">
+        <div className="space-y-4 rounded-lg border border-slate-800 bg-slate-950/60 p-4">
           <h3 className="flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-wider text-cyan-400">
             <Zap className="h-4 w-4" /> Parameters & Controls
           </h3>
@@ -221,10 +221,10 @@ export const QDPWorkspace: React.FC = () => {
         </div>
 
         {/* Live Convergence Metrics */}
-        <div className="space-y-4 rounded-lg border border-slate-800 bg-slate-950/60 p-4 lg:col-span-2 min-w-0 max-w-full">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2 min-w-0">
+        <div className="space-y-4 rounded-lg border border-slate-800 bg-slate-950/60 p-4 lg:col-span-2">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
             <h3 className="flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-wider text-cyan-400">
-              <BarChart2 className="h-4 w-4 shrink-0" /> Policy & Valuation Convergence
+              <BarChart2 className="h-4 w-4" /> Policy & Valuation Convergence
             </h3>
             <span className="font-mono text-[11px] text-slate-400">
               Execution time: <strong className="text-cyan-300">{result.totalTimeMs.toFixed(2)} ms</strong>
@@ -233,7 +233,7 @@ export const QDPWorkspace: React.FC = () => {
           </div>
 
           {/* Benchmark vs Calculated comparison grid */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-3 gap-3">
             <MetricCard
               label="x₁ (Policy)"
               calc={lastIteration.x1}
@@ -255,8 +255,8 @@ export const QDPWorkspace: React.FC = () => {
           </div>
 
           {/* Iteration history table */}
-          <div className="overflow-x-auto rounded-md border border-slate-800 max-w-full min-w-0">
-            <table className="w-full min-w-[500px] text-left font-mono text-[11px]">
+          <div className="overflow-x-auto rounded-md border border-slate-800">
+            <table className="w-full text-left font-mono text-[11px]">
               <thead className="border-b border-slate-800 bg-slate-900/80 text-slate-400">
                 <tr>
                   <th className="p-2">Iter</th>
@@ -287,24 +287,24 @@ export const QDPWorkspace: React.FC = () => {
           </div>
 
           {/* Qubit binary register readout */}
-          <div className="rounded-md border border-cyan-500/20 bg-cyan-950/20 p-3 min-w-0 max-w-full">
-            <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-xs text-cyan-300">
+          <div className="rounded-md border border-cyan-500/20 bg-cyan-950/20 p-3">
+            <div className="flex items-center justify-between font-mono text-xs text-cyan-300">
               <span className="flex items-center gap-1.5 font-bold">
-                <Cpu className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
+                <Cpu className="h-3.5 w-3.5 text-cyan-400" />
                 Active Pegasus Qubit Register (10-bit Discretization)
               </span>
               <span>
                 QUBO Sample Loss: <strong>{lastIteration.lossPV.toExponential(3)}</strong>
               </span>
             </div>
-            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 font-mono text-[10px] min-w-0">
-              <div className="rounded border border-slate-800 bg-slate-950 p-2 min-w-0 overflow-hidden">
+            <div className="mt-2 grid grid-cols-2 gap-2 font-mono text-[10px]">
+              <div className="rounded border border-slate-800 bg-slate-950 p-2">
                 <p className="text-slate-400">x₂ Register (q₀ ... q₉):</p>
-                <p className="mt-1 tracking-normal sm:tracking-widest text-emerald-400 break-all">{qubitEncoding.bits2.join(' ')}</p>
+                <p className="mt-1 tracking-widest text-emerald-400">{qubitEncoding.bits2.join(' ')}</p>
               </div>
-              <div className="rounded border border-slate-800 bg-slate-950 p-2 min-w-0 overflow-hidden">
+              <div className="rounded border border-slate-800 bg-slate-950 p-2">
                 <p className="text-slate-400">x₃ Register (q₁₀ ... q₁₉):</p>
-                <p className="mt-1 tracking-normal sm:tracking-widest text-emerald-400 break-all">{qubitEncoding.bits3.join(' ')}</p>
+                <p className="mt-1 tracking-widest text-emerald-400">{qubitEncoding.bits3.join(' ')}</p>
               </div>
             </div>
           </div>

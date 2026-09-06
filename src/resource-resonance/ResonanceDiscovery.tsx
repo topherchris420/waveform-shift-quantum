@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SimulationParams, runSimulation } from './engine';
+import { DEFAULT_SIMULATION_PARAMS, SimulationParams, runSimulation } from './engine';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Search, Loader2 } from 'lucide-react';
@@ -25,6 +25,7 @@ export const ResonanceDiscovery: React.FC<ResonanceDiscoveryProps> = ({ onDiscov
           setIsSweeping(false);
           // Pick an interesting state where Resonance wins big or fails
           const interestingParams: SimulationParams = {
+            ...DEFAULT_SIMULATION_PARAMS,
             resourceScarcity: 0.6,
             networkSize: 100,
             renewableVolatility: 0.85,

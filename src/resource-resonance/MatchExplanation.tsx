@@ -58,7 +58,7 @@ export const MatchExplanation: React.FC<MatchExplanationProps> = ({ match }) => 
                     </div>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-[200px] border-cyan-900/50 bg-slate-900 text-xs text-slate-300">
+                <TooltipContent side="right" className="max-w-[200px] border-cyan-900/50 bg-slate-900 text-xs text-slate-300">
                   <p>{m.tooltip}</p>
                 </TooltipContent>
               </Tooltip>

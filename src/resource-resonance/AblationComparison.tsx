@@ -63,7 +63,7 @@ export const AblationComparisonPanel: React.FC<{ ablation: AblationAnalysisResul
       </div>
 
       {/* Contribution Breakdown Ledger */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 pt-2 text-xs font-mono">
+      <div className="grid gap-3 sm:grid-cols-3 pt-2 text-xs font-mono">
         <div className="p-3.5 rounded-lg border border-rose-900/40 bg-rose-950/20">
           <div className="text-[10px] text-slate-400 uppercase tracking-wider">Behavioral Contribution</div>
           <div className="text-xl font-bold text-rose-300 mt-1">

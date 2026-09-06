@@ -176,7 +176,7 @@ export const DiscoveryModePanel: React.FC<DiscoveryModePanelProps> = ({
         <Button
           onClick={handleSearch}
           disabled={isSearching}
-          className="h-10 w-full lg:w-auto bg-gradient-to-r from-cyan-600 to-blue-700 font-mono text-xs font-bold tracking-wider text-white shadow-lg shadow-cyan-500/20 hover:from-cyan-500 hover:to-blue-600"
+          className="h-10 bg-gradient-to-r from-cyan-600 to-blue-700 font-mono text-xs font-bold tracking-wider text-white shadow-lg shadow-cyan-500/20 hover:from-cyan-500 hover:to-blue-600"
         >
           {isSearching ? (
             <>
@@ -321,7 +321,7 @@ export const DiscoveryModePanel: React.FC<DiscoveryModePanelProps> = ({
 
 const Tally: React.FC<{ label: string; value: number }> = ({ label, value }) => (
   <div className="bg-slate-950 px-3 py-2">
-    <div className="break-words font-mono text-[9px] uppercase leading-tight tracking-wider text-slate-500">
+    <div className="font-mono text-[9px] uppercase leading-tight tracking-wider text-slate-500">
       {label}
     </div>
     <div className="font-mono text-sm font-bold text-slate-300">{value}</div>

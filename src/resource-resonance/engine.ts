@@ -1108,3 +1108,55 @@ const DISCOVERY_SEEDS=[101,227,373,521],HOLDOUT_SEEDS=[90211,91733,93187,94687,9
 function aggregate(results:SimulationResult[],seeds:number[]):StageEvidence{const ds=results.map(r=>r.deltaUtility),mu=mean(ds,x=>x),sd=Math.sqrt(ds.reduce((s,x)=>s+(x-mu)**2,0)/Math.max(1,ds.length-1)),hs=results.map(r=>r.deltaVsHybrid),hm=mean(hs,x=>x),hsd=Math.sqrt(hs.reduce((s,x)=>s+(x-hm)**2,0)/Math.max(1,hs.length-1));return{seeds,deltaUtility:mu,deltaConfidence:1.96*sd/Math.sqrt(ds.length),deltaVsHybrid:hm,deltaVsHybridConfidence:1.96*hsd/Math.sqrt(hs.length),winRate:mean(results,r=>r.winRate),riskChecks:results[0].riskChecks.map(c=>{const rows=results.map(r=>r.riskChecks.find(x=>x.id===c.id)!);const baseline=mean(rows,x=>x.baseline),routed=mean(rows,x=>x.routed);return{...c,baseline,routed,passed:routed<=baseline+c.tolerance}}),draws:results.reduce((sum,r)=>sum+r.ensembleSize,0)}}
 export function discoverAndFreeze(base:SimulationParams):FrozenClaim{let best:{p:SimulationParams;e:StageEvidence;l:number}|undefined;for(const stress of [.15,.5,.85])for(const trust of [.35,.65,.92])for(const scarcity of [.25,.55,.85]){const p={...base,liquidityStress:stress,telemetryReliability:trust,resourceScarcity:scarcity};const e=aggregate(DISCOVERY_SEEDS.map(s=>runSimulation(p,s)),DISCOVERY_SEEDS),l=e.deltaUtility-e.deltaConfidence;if(!best||l>best.l)best={p,e,l}}return{id:`RRC-${Math.abs(Math.round(best!.e.deltaUtility*1000)).toString(36).toUpperCase()}`,frozenAt:new Date().toISOString(),params:best!.p,discovery:best!.e,discoverySeeds:DISCOVERY_SEEDS,holdoutSeeds:HOLDOUT_SEEDS,predictedDelta:best!.e.deltaUtility,predictedBand:best!.e.deltaConfidence}}
 export function challengeClaim(claim:FrozenClaim):ChallengeOutcome{const results=claim.holdoutSeeds.map(s=>runSimulation(claim.params,s)),h=aggregate(results,claim.holdoutSeeds),sample=results[0],lcb=h.deltaUtility-h.deltaConfidence,hlcb=h.deltaVsHybrid-h.deltaVsHybridConfidence,failed=h.riskChecks.filter(x=>!x.passed),shrinkage=h.deltaUtility-claim.predictedDelta,gates:SuperiorityGate[]=[{id:'significance',label:'Holdout gain exceeds preregistered minimum',detail:`Δ = ${h.deltaUtility.toFixed(2)} pp, 95% CI lower bound ${lcb.toFixed(2)} pp over ${h.draws} unseen draws; ε = 1.00 pp.`,passed:lcb>1},{id:'hybrid',label:'Beats strongest monetary/hybrid comparator',detail:`Genesis minus hybrid = ${h.deltaVsHybrid.toFixed(2)} pp, 95% CI lower bound ${hlcb.toFixed(2)} pp over ${h.seeds.length} holdout seeds.`,passed:hlcb>0&&sample.modelB.totalNetworkUtility>sample.modelStabilized.totalNetworkUtility},{id:'consistency',label:'Survives unseen seeds and shocks',detail:`Genesis beat Market in ${(h.winRate*100).toFixed(0)}% of unseen draws; threshold > 60%.`,passed:h.winRate>.6},{id:'oracle',label:'Closes the oracle welfare gap',detail:`Stranded attainable utility: Market ${sample.modelA.strandedPhysicalUtility.toFixed(1)}% → Genesis ${sample.modelB.strandedPhysicalUtility.toFixed(1)}%.`,passed:sample.modelB.strandedPhysicalUtility<sample.modelA.strandedPhysicalUtility},{id:'risk',label:'Every systemic-risk gate passes',detail:failed.length?`Failing: ${failed.map(x=>x.label).join(', ')}.`:'All concentration, fragility, inequality, dependence and telemetry gates pass.',passed:failed.length===0},{id:'overhead',label:'Not driven solely by overhead assumptions',detail:'Re-evaluated with Genesis overhead set equal to the lowest comparator.',passed:runSimulation({...claim.params,genesisOverhead:Math.min(claim.params.marketOverhead,claim.params.hybridOverhead)},claim.holdoutSeeds[0]).deltaVsHybrid>0}];const granted=gates.every(g=>g.passed);return{claim,holdout:h,gates,granted,shrinkage,oracleGapBaseline:sample.modelA.strandedPhysicalUtility,oracleGapRouted:sample.modelB.strandedPhysicalUtility,summary:granted?`Genesis superiority is supported only in frozen regime ${claim.id}.`:`INSUFFICIENT EVIDENCE: ${gates.filter(g=>!g.passed).map(g=>g.label.toLowerCase()).join('; ')}.`,sample}}
+
+/* ------------------------------------------------------------------ *
+ *  Assumption sensitivity: coordination-overhead constants
+ *  These constants are modelling assumptions, not measured facts, so the
+ *  claim must be re-tested across a band around them.
+ * ------------------------------------------------------------------ */
+export interface OverheadSensitivityPoint {
+  label: string;
+  multiplier: number;
+  genesisOverhead: number;
+  deltaVsMarket: number;
+  deltaVsHybrid: number;
+  genesisStillAhead: boolean;
+}
+export interface OverheadSensitivityReport {
+  points: OverheadSensitivityPoint[];
+  robust: boolean;
+  flipMultiplier: number | null;
+  summary: string;
+}
+
+export function runOverheadSensitivity(
+  base: SimulationParams,
+  seeds: number[] = [90211, 91733, 93187],
+): OverheadSensitivityReport {
+  const p = { ...DEFAULT_SIMULATION_PARAMS, ...base };
+  const multipliers = [0.5, 0.75, 1, 1.5, 2];
+  const points = multipliers.map((multiplier) => {
+    const genesisOverhead = clamp(p.genesisOverhead * multiplier, 0, .9);
+    const runs = seeds.map((s) => runSimulation({ ...p, genesisOverhead }, s));
+    const deltaVsMarket = mean(runs, (r) => r.deltaUtility);
+    const deltaVsHybrid = mean(runs, (r) => r.deltaVsHybrid);
+    return {
+      label: multiplier === 1 ? 'assumed' : `${multiplier}×`,
+      multiplier,
+      genesisOverhead,
+      deltaVsMarket,
+      deltaVsHybrid,
+      genesisStillAhead: deltaVsMarket > 0 && deltaVsHybrid > 0,
+    };
+  });
+  const flip = points.find((x) => !x.genesisStillAhead);
+  const robust = points.every((x) => x.genesisStillAhead);
+  return {
+    points,
+    robust,
+    flipMultiplier: flip ? flip.multiplier : null,
+    summary: robust
+      ? 'The direction of the result survives halving and doubling the assumed Genesis coordination overhead.'
+      : `The result flips once Genesis overhead reaches ${flip ? (flip.multiplier + '×') : 'the tested band'} of its assumed value — the advantage is partly an artefact of the cost constants.`,
+  };
+}

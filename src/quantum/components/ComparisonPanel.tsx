@@ -115,9 +115,9 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ experimentMode
 
       {/* Theoretical Assumptions & Controls */}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 pt-3">
-        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-          <Info className="h-4 w-4 shrink-0 text-cyan-400" />
-          <span className="break-words">
+        <div className="flex items-center gap-2 text-xs text-slate-400">
+          <Info className="h-4 w-4 text-cyan-400" />
+          <span>
             Assumptions:{' '}
             <strong className="text-slate-300">{comparison.assumptions.join('; ')}</strong>
           </span>

@@ -346,7 +346,7 @@ export const QuantumLab: React.FC = () => {
     experimentMode === 'two_site_transfer' ? 'scalar_kernel' : (experimentMode as SceneMode);
 
   return (
-    <main className="experience-background min-h-screen text-foreground max-w-full overflow-x-hidden">
+    <main className="experience-background min-h-screen text-foreground">
       {/* Editorial masthead */}
       <Reveal as="section" variant="up" className="mx-auto max-w-[1700px] px-3 pb-4 pt-10 sm:px-6 sm:pt-16 lg:px-8 lg:pt-24">
         <div className="hero-rule pl-4 sm:pl-6 md:pl-12">
