@@ -184,6 +184,60 @@
     box-shadow: 4px 4px 0 hsl(var(--ink) / 0.9);
   }
 
+  .topline-nav {
+    background: hsl(var(--paper) / 0.94);
+    backdrop-filter: blur(18px);
+  }
+
+  .nav-tab {
+    display: inline-flex;
+    min-height: 2.25rem;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0 0.75rem;
+    color: hsl(var(--muted-foreground));
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 180ms ease, background-color 180ms ease;
+  }
+
+  .nav-tab:hover,
+  .nav-tab--active {
+    background: hsl(var(--ink));
+    color: hsl(var(--paper));
+  }
+
+  .nav-tab:focus-visible,
+  .nav-launch:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+  }
+
+  .nav-launch {
+    display: inline-flex;
+    min-height: 2.25rem;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid hsl(var(--ink));
+    padding: 0 0.8rem;
+    color: hsl(var(--ink));
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+
+  .nav-launch:hover {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
   .lab-surface,
   .instrument-panel,
   .field-shell {
@@ -302,6 +356,62 @@
 
   .hero-rule {
     border-left: 2px solid hsl(var(--ink));
+  }
+
+  .hero-action {
+    display: inline-flex;
+    min-height: 3.25rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    border: 1px solid hsl(var(--ink));
+    background: hsl(var(--paper));
+    padding: 0 1.25rem;
+    color: hsl(var(--ink));
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+  }
+
+  .hero-action:hover {
+    background: hsl(var(--paper-deep));
+    transform: translateY(-2px);
+  }
+
+  .hero-action--primary {
+    background: hsl(var(--ink));
+    color: hsl(var(--paper));
+  }
+
+  .hero-action--primary:hover {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  .hero-action:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 3px;
+  }
+
+  .theory-ledger {
+    position: relative;
+    border: 1px solid hsl(var(--ink));
+    background: hsl(var(--card));
+    box-shadow: 8px 8px 0 hsl(var(--ink));
+  }
+
+  .theory-ledger::before {
+    content: '01';
+    position: absolute;
+    right: 0.5rem;
+    top: -2.25rem;
+    color: hsl(var(--ink) / 0.18);
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
   }
 
   .metric-cell {

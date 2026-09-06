@@ -355,26 +355,67 @@ export const QuantumLab: React.FC = () => {
             <span className="inline-block h-1.5 w-1.5 bg-primary" aria-hidden="true" />
             <span>Vers3Dynamics</span>
           </p>
-          <h1 className="hero-title max-w-5xl">
-            Two theories.{' '}
-            <br className="hidden sm:inline" />
-            One initial condition.{' '}
-            <br className="hidden sm:inline" />
-            <span className="text-primary">Find the experiment</span> that decides.
-          </h1>
-          <div className="mt-10 flex flex-col items-start gap-8 md:flex-row md:items-end">
-            <p className="max-w-xl text-base leading-relaxed text-muted-foreground">
-              Standard quantum mechanics and the proposed field-modulated localization model{' '}
-              <InlineMath math="\phi(\mathbf{x}, t)" /> are evolved side by side from identical
-              initial conditions. Change one physical parameter and watch where — and by how much —
-              their predictions separate.
-            </p>
-            <a
-              href="#reality-split"
-              className="w-full border border-ink bg-foreground px-5 py-4 text-center font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-background transition-colors duration-300 hover:bg-primary sm:w-auto sm:shrink-0 sm:px-8 sm:tracking-[0.2em]"
-            >
-              Initiate sequence
-            </a>
+          <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_350px] xl:items-end">
+            <div>
+              <h1 className="hero-title max-w-5xl">
+                Two theories.{' '}
+                <br className="hidden sm:inline" />
+                One initial condition.{' '}
+                <br className="hidden sm:inline" />
+                <span className="text-primary">Find the experiment</span> that decides.
+              </h1>
+              <div className="mt-10 flex flex-col items-start gap-8 md:flex-row md:items-end">
+                <p className="max-w-xl text-base leading-relaxed text-muted-foreground">
+                  Standard quantum mechanics and the proposed field-modulated localization model{' '}
+                  <InlineMath math="\phi(\mathbf{x}, t)" /> are evolved side by side from identical
+                  initial conditions. Change one physical parameter and watch where — and by how much —
+                  their predictions separate.
+                </p>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                  <a href="#reality-split" className="hero-action hero-action--primary">
+                    <Beaker className="h-4 w-4" />
+                    Initiate sequence
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setIsPaperModalOpen(true)}
+                    className="hero-action"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Read paper
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="theory-ledger" aria-label="Theory comparison overview">
+              <div className="flex items-center justify-between border-b border-foreground px-4 py-3">
+                <span className="font-mono text-[9px] font-bold uppercase tracking-[0.2em]">Active comparison</span>
+                <span className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-wider text-primary">
+                  <span className="h-1.5 w-1.5 animate-pulse bg-primary" /> Evolving
+                </span>
+              </div>
+              <div className="grid grid-cols-[2.5rem_1fr_auto] items-center gap-3 border-b border-foreground/20 p-4">
+                <span className="grid h-10 w-10 place-items-center bg-foreground font-display text-lg font-bold text-background">A</span>
+                <span>
+                  <strong className="block text-sm">Standard QM</strong>
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">Control model</span>
+                </span>
+                <span className="h-px w-8 bg-foreground/30" />
+              </div>
+              <div className="grid grid-cols-[2.5rem_1fr_auto] items-center gap-3 p-4">
+                <span className="grid h-10 w-10 place-items-center bg-primary font-display text-lg font-bold text-primary-foreground">B</span>
+                <span>
+                  <strong className="block text-sm">Field-localized</strong>
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">Candidate model</span>
+                </span>
+                <span className="font-mono text-[10px] font-bold text-primary">Δ →</span>
+              </div>
+              <div className="border-t border-foreground bg-foreground px-4 py-3 text-background">
+                <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-background/60">Decision rule</span>
+                <p className="mt-1 text-xs leading-relaxed">Separate predictions beyond the instrument noise floor.</p>
+              </div>
+            </div>
           </div>
         </div>
 
