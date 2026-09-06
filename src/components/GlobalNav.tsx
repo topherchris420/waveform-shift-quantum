@@ -1,70 +1,64 @@
-import React from 'react';
+import { Activity, ArrowUpRight, Atom, Network } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { Shield, Activity, Network } from 'lucide-react';
-import { toast } from 'sonner';
-import { Button } from './ui/button';
 
 export const GlobalNav = () => {
   const location = useLocation();
   const isResonance = location.pathname === '/resonance';
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex min-h-14 max-w-screen-2xl flex-col items-stretch gap-2 px-3 py-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-6">
-          <Link to="/" className="flex shrink-0 items-center gap-2 group rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
-            {isResonance ? (
-              <Network className="h-5 w-5 shrink-0 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
-            ) : (
-              <Shield className="h-5 w-5 shrink-0 text-primary group-hover:text-primary/80 transition-colors" />
-            )}
-            <span className="truncate font-mono text-xs font-bold tracking-wider sm:text-sm">
-              {isResonance ? 'THE GENESIS PROTOCOL' : 'QUANTUM LABORATORY'}
-            </span>
+    <header className="topline-nav sticky top-0 z-50 border-x-0 border-t-0 shadow-none">
+      <div className="mx-auto flex min-h-16 max-w-[1700px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+        <Link
+          to="/"
+          aria-label="Waveform Quantum home"
+          className="group flex shrink-0 items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <span className="relative grid h-9 w-9 place-items-center overflow-hidden bg-foreground text-background">
+            <Atom className="h-5 w-5 transition-transform duration-500 group-hover:rotate-90" />
+            <span className="absolute bottom-0 left-0 h-0.5 w-full origin-left scale-x-50 bg-primary transition-transform group-hover:scale-x-100" />
+          </span>
+          <span className="hidden sm:block">
+            <span className="block font-display text-sm font-extrabold uppercase leading-none tracking-[-0.02em]">Waveform</span>
+            <span className="mt-1 block font-mono text-[8px] uppercase tracking-[0.25em] text-muted-foreground">Quantum systems lab</span>
+          </span>
+        </Link>
+
+        <span className="hidden h-6 w-px bg-foreground/20 sm:block" aria-hidden="true" />
+
+        <nav aria-label="Primary navigation" className="flex min-w-0 flex-1 items-center gap-1">
+          <Link
+            to="/"
+            aria-current={!isResonance ? 'page' : undefined}
+            className={`nav-tab ${!isResonance ? 'nav-tab--active' : ''}`}
+          >
+            Physics lab
           </Link>
-          
-          <nav aria-label="Primary navigation" className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium sm:gap-x-6 sm:text-sm">
-            <Link 
-              to="/" 
-              aria-current={!isResonance ? "page" : undefined}
-              className={`shrink-0 transition-colors hover:text-foreground/80 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${!isResonance ? 'text-foreground' : 'text-foreground/60'}`}
-            >
-              Physics Lab
-            </Link>
-            <Link 
-              to="/resonance" 
-              aria-current={isResonance ? "page" : undefined}
-              className={`shrink-0 transition-colors hover:text-cyan-400 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${isResonance ? 'text-cyan-400' : 'text-foreground/60'}`}
-            >
-              Economics Engine
-            </Link>
-          </nav>
+          <Link
+            to="/resonance"
+            aria-current={isResonance ? 'page' : undefined}
+            className={`nav-tab ${isResonance ? 'nav-tab--active' : ''}`}
+          >
+            <Network className="hidden h-3 w-3 sm:block" />
+            Resonance
+          </Link>
+        </nav>
+
+        <div className="hidden items-center gap-2 border-l border-foreground/20 pl-4 md:flex">
+          <span className="relative flex h-2 w-2" aria-hidden="true">
+            <span className="absolute inline-flex h-full w-full animate-ping bg-primary opacity-40" />
+            <span className="relative inline-flex h-2 w-2 bg-primary" />
+          </span>
+          <Activity className="h-3.5 w-3.5 text-primary" />
+          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Live simulation</span>
         </div>
 
-        <div className="hidden items-center gap-4 md:flex">
-          <div className="hidden sm:flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5">
-            <Activity className="w-3 h-3 text-emerald-500 animate-pulse" />
-            <span className="text-muted-foreground tracking-widest">SYSTEM ONLINE</span>
-          </div>
-          {isResonance ? (
-             <div className="text-[10px] font-mono uppercase tracking-widest text-cyan-400/80 border border-cyan-900/50 bg-cyan-950/30 px-3 py-1 rounded">
-               Multi-Hop Triangulation
-             </div>
-          ) : (
-             <Button
-               variant="outline"
-               size="sm"
-               aria-label="Initialize Quantum Laboratory System"
-               onClick={() => {
-                 document.getElementById('reality-split')?.scrollIntoView({ behavior: 'smooth' });
-                 toast.success('System initialization sequence active.');
-               }}
-               className="hidden sm:flex font-mono text-xs focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-             >
-               INITIALIZE SYSTEM
-             </Button>
-          )}
-        </div>
+        {!isResonance && (
+          <a href="#reality-split" className="nav-launch">
+            <span className="hidden sm:inline">Open workspace</span>
+            <span className="sm:hidden">Open</span>
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </a>
+        )}
       </div>
     </header>
   );
