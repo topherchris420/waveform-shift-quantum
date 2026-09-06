@@ -1,5 +1,5 @@
 import React from 'react';
-import { Architecture, SimulationResult, runAblationAnalysis } from './engine';
+import { Architecture, DEFAULT_SIMULATION_PARAMS, SimulationResult, runAblationAnalysis } from './engine';
 import { Activity, Landmark, Network, ShieldCheck, Layers } from 'lucide-react';
 import { AblationComparisonPanel } from './AblationComparison';
 
@@ -8,11 +8,15 @@ const META: Record<Architecture, { label: string; color: string }> = {
   stabilizedMarket: { label: 'Stabilized Market', color: 'text-emerald-300' },
   hybrid: { label: 'Computational Market / Hybrid', color: 'text-indigo-300' },
   genesis: { label: 'Genesis', color: 'text-cyan-300' },
+  doubleAuction: { label: 'Double Auction', color: 'text-amber-200' },
+  shadowPriceMarket: { label: 'Shadow-Price Market', color: 'text-orange-300' },
+  maxWeightMatching: { label: 'Max-Weight Matching', color: 'text-sky-300' },
 };
 
 export const RoutingComparison: React.FC<{ result: SimulationResult }> = ({ result }) => {
   // Compute ablation analysis for the current simulation sample
   const ablation = runAblationAnalysis({
+    ...DEFAULT_SIMULATION_PARAMS,
     resourceScarcity: result.modelA.unmetDemandDecomposition.physicalShortage / 100,
     liquidityStress: result.modelA.feasibleButUnservedDemand / 100
   });

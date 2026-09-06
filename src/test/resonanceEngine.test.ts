@@ -56,7 +56,7 @@ describe('neutral physical-welfare simulation', () => {
       holdoutSeeds,
       predictedDelta: 0,
       predictedBand: 0,
-    } as FrozenClaim;
+    } as unknown as FrozenClaim;
 
     const hybridGate = challengeClaim(claim).gates.find((gate) => gate.id === 'hybrid');
 
