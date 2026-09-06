@@ -116,7 +116,7 @@ describe('monetary coordination layer', () => {
     ];
     const expected = [
       ['market', 'doubleAuction', 'shadowPriceMarket'],
-      ['stabilizedMarket'],
+      ['stabilizedMarket', 'shadowPriceMarket'],
       ['hybrid'],
       ['genesis'],
     ];
