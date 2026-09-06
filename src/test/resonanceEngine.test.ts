@@ -118,7 +118,7 @@ describe('monetary coordination layer', () => {
       ['market', 'doubleAuction', 'shadowPriceMarket'],
       ['stabilizedMarket', 'shadowPriceMarket'],
       ['hybrid'],
-      ['genesis'],
+      ['genesis', 'maxWeightMatching'],
     ];
     cases.forEach((input, index) => {
       const result = runSimulation(input, 400 + index);
