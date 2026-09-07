@@ -553,6 +553,83 @@ export function timingFactor(
   return clamp((1 - pressure) * Math.exp(-late / 6), 0, 1);
 }
 
+/** Coarse market zone a price-only mechanism can settle against. */
+export function marketZone(locationCost: number): number {
+  return Math.min(2, Math.max(0, Math.floor(locationCost * 3)));
+}
+
+export interface NodalPrices {
+  /** Clearing price per (resource type, zone, delivery block) node. */
+  price: Map<string, number>;
+  /** Scarcity rent per node, used as a congestion signal. */
+  congestion: Map<string, number>;
+  rounds: number;
+}
+
+const nodeKey = (typeIdx: number, zone: number, block: number) => `${typeIdx}:${zone}:${block}`;
+
+/**
+ * Strong monetary baseline: iterative (tâtonnement) clearing of locational and
+ * time-of-delivery prices. Each node - a resource type in a zone in a delivery
+ * block - gets its own price, raised by excess demand and cut by surplus, over
+ * `marketClearingRounds` periodic clearing rounds. Bidders re-bid dynamically
+ * each round against the posted price, so the price-only mechanism discovers
+ * congestion, locational spreads and time-of-day scarcity on its own, without
+ * ever seeing the physical telemetry Genesis gets.
+ */
+export function clearNodalPrices(world: World, p: SimulationParams): NodalPrices {
+  const rounds = Math.max(1, Math.round(p.marketClearingRounds ?? 4));
+  const price = new Map<string, number>();
+  const congestion = new Map<string, number>();
+
+  // Seed each node at the average ask of the sellers sitting on it.
+  const askSum = new Map<string, number>(), askN = new Map<string, number>();
+  for (const o of world.offers) {
+    const k = nodeKey(o.typeIdx, marketZone(o.vector.locationCost), o.blockIdx);
+    askSum.set(k, (askSum.get(k) ?? 0) + o.marginalCost);
+    askN.set(k, (askN.get(k) ?? 0) + 1);
+  }
+  for (const [k, sum] of askSum) price.set(k, Math.max(.05, sum / (askN.get(k) ?? 1)));
+
+  const lambda = .45;
+  for (let r = 0; r < rounds; r++) {
+    const demand = new Map<string, number>(), supply = new Map<string, number>();
+
+    // Buyers bid dynamically: willingness-to-pay scales with urgency and how
+    // tight the delivery block is, and they shop across substitutable nodes.
+    for (const n of world.needs) {
+      const zone = marketZone(n.vector.locationCost);
+      for (let t = 0; t < SUB_MATRIX.length; t++) {
+        const sub = SUB_MATRIX[t][n.typeIdx];
+        if (sub === 0) continue;
+        for (let b = 0; b <= n.blockIdx; b++) {
+          const k = nodeKey(t, zone, b);
+          const posted = price.get(k);
+          if (posted === undefined) continue;
+          const wtp = n.reportedBid * (1 + n.reportedUrgency * .6) * sub;
+          if (wtp >= posted) demand.set(k, (demand.get(k) ?? 0) + n.amount / sub);
+        }
+      }
+    }
+    for (const o of world.offers) {
+      const k = nodeKey(o.typeIdx, marketZone(o.vector.locationCost), o.blockIdx);
+      const posted = price.get(k) ?? 0;
+      if (o.reportedAsk <= posted) supply.set(k, (supply.get(k) ?? 0) + o.amount);
+    }
+
+    for (const [k, posted] of price) {
+      const d = demand.get(k) ?? 0, s = supply.get(k) ?? 0;
+      const excess = (d - s) / Math.max(.25, d + s);
+      const next = Math.max(.03, posted * (1 + lambda * excess));
+      price.set(k, next);
+      congestion.set(k, Math.max(0, excess));
+    }
+  }
+  return { price, congestion, rounds };
+}
+
+
+
 function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracle', seed: number, failed = -1): Outcome {
 
   const rand = mulberry32(seed);
@@ -582,6 +659,10 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
   const geoFrictionThreshold = p.geographicalFriction * .28;
   const oneMinusGeoFriction = 1 - p.geographicalFriction;
 
+  // Strong monetary baseline: nodal (location x time-block) prices discovered
+  // by periodic clearing rounds with dynamic re-bidding.
+  const nodal = monetary ? clearNodalPrices(world, p) : undefined;
+
   const edges: Edge[] = [];
   for (let oi = 0; oi < nOffers; oi++) {
     const o = world.offers[oi];
@@ -592,8 +673,12 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
     const oRel = oVec.reliability;
     const oComp = oVec.compatibility;
     const oUrg = oVec.urgency;
-    const oPrice = o.monetaryPrice;
+    const oZone = marketZone(oLoc);
+    const oNode = nodeKey(oTypeIdx, oZone, o.blockIdx);
+    const oNodalPrice = nodal?.price.get(oNode) ?? o.monetaryPrice;
+    const oCongestion = nodal?.congestion.get(oNode) ?? 0;
     const oSolarBonus = o.solarEnergyBonus;
+
 
     for (let ni = 0; ni < nNeeds; ni++) {
       const n = world.needs[ni];
@@ -621,8 +706,16 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
         // Price-only mechanisms can only see a coarse 6-hour delivery block,
         // never the individual availability window or job deadline.
         const blockTiming = o.blockIdx === n.blockIdx ? 1 : o.blockIdx < n.blockIdx ? .85 : .7;
-        const priceScore = Math.max(0, 1 - Math.abs(oPrice - n.monetaryBid)) * (compProd > .5 ? 1 : .1);
-        const price = priceScore * sub * blockTiming * (1 + p.priceSignalNoise * (rand() - .5) * 2 + infoNoise);
+        // Delivered price = nodal clearing price + congestion rent + a wheeling
+        // charge for moving across zones. Buyers bid their urgency-weighted WTP.
+        const zoneDistance = Math.abs(oZone - marketZone(nLoc));
+        const wheeling = zoneDistance * p.geographicalFriction * .35;
+        const delivered = oNodalPrice * (1 + oCongestion * .6) + wheeling;
+        const wtp = n.reportedBid * (1 + n.reportedUrgency * .6) * sub;
+        const surplus = wtp - delivered;
+        const priceScore = surplus > 0 ? surplus * (compProd > .5 ? 1 : .1) : -1;
+        const price = priceScore < 0 ? -1
+          : priceScore * sub * blockTiming * (1 + p.priceSignalNoise * (rand() - .5) * 2 + infoNoise);
 
         // Telemetry mechanisms see the reported (noisy) windows and deadlines.
         const reportedTiming = timingFactor(o.reportedWindowStart, o.reportedDeadline, n.reportedDeadline, n.flexible, relay, p);
@@ -632,10 +725,12 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
         const auctionSurplus = n.reportedBid - o.reportedAsk;
         rank = mode === 'doubleAuction' ? (auctionSurplus >= 0 ? auctionSurplus * sub * blockTiming : -1)
           : mode === 'market' || mode === 'stabilizedMarket' ? price
-          : mode === 'hybrid' ? signal * .72 + price * .28 : signal;
+          : mode === 'hybrid' ? Math.max(0, signal) * .72 + Math.max(0, price) * .28 : signal;
       }
 
-      const clearingPrice = mode === 'doubleAuction' ? (o.reportedAsk + n.reportedBid) / 2 : undefined;
+      const clearingPrice = mode === 'doubleAuction' ? (o.reportedAsk + n.reportedBid) / 2
+        : nodal ? oNodalPrice * (1 + oCongestion * .6) : undefined;
+
       edges.push({ oi, ni, sub, value, rank, relay, accessible: true, price: clearingPrice });
     }
   }
