@@ -1,9 +1,10 @@
-import { Activity, ArrowUpRight, Atom, Network } from 'lucide-react';
+import { Activity, ArrowUpRight, Atom, Network, Zap } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 export const GlobalNav = () => {
   const location = useLocation();
   const isResonance = location.pathname === '/resonance';
+  const isARFR = location.pathname === '/arfr';
 
   return (
     <header className="topline-nav sticky top-0 z-50 border-x-0 border-t-0 shadow-none">
@@ -25,11 +26,11 @@ export const GlobalNav = () => {
 
         <span className="hidden h-6 w-px bg-foreground/20 sm:block" aria-hidden="true" />
 
-        <nav aria-label="Primary navigation" className="flex min-w-0 flex-1 items-center gap-1">
+        <nav aria-label="Primary navigation" className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scrollbar-none">
           <Link
             to="/"
-            aria-current={!isResonance ? 'page' : undefined}
-            className={`nav-tab ${!isResonance ? 'nav-tab--active' : ''}`}
+            aria-current={!isResonance && !isARFR ? 'page' : undefined}
+            className={`nav-tab ${!isResonance && !isARFR ? 'nav-tab--active' : ''}`}
           >
             Physics lab
           </Link>
@@ -40,6 +41,14 @@ export const GlobalNav = () => {
           >
             <Network className="hidden h-3 w-3 sm:block" />
             Resonance
+          </Link>
+          <Link
+            to="/arfr"
+            aria-current={isARFR ? 'page' : undefined}
+            className={`nav-tab ${isARFR ? 'nav-tab--active' : ''}`}
+          >
+            <Zap className="hidden h-3 w-3 sm:block" />
+            ARFR
           </Link>
         </nav>
 
@@ -52,7 +61,7 @@ export const GlobalNav = () => {
           <span className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Live simulation</span>
         </div>
 
-        {!isResonance && (
+        {!isResonance && !isARFR && (
           <a href="#reality-split" className="nav-launch">
             <span className="hidden sm:inline">Open workspace</span>
             <span className="sm:hidden">Open</span>
