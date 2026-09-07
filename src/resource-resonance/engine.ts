@@ -659,6 +659,10 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
   const geoFrictionThreshold = p.geographicalFriction * .28;
   const oneMinusGeoFriction = 1 - p.geographicalFriction;
 
+  // Strong monetary baseline: nodal (location x time-block) prices discovered
+  // by periodic clearing rounds with dynamic re-bidding.
+  const nodal = monetary ? clearNodalPrices(world, p) : undefined;
+
   const edges: Edge[] = [];
   for (let oi = 0; oi < nOffers; oi++) {
     const o = world.offers[oi];
@@ -669,8 +673,12 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
     const oRel = oVec.reliability;
     const oComp = oVec.compatibility;
     const oUrg = oVec.urgency;
-    const oPrice = o.monetaryPrice;
+    const oZone = marketZone(oLoc);
+    const oNode = nodeKey(oTypeIdx, oZone, o.blockIdx);
+    const oNodalPrice = nodal?.price.get(oNode) ?? o.monetaryPrice;
+    const oCongestion = nodal?.congestion.get(oNode) ?? 0;
     const oSolarBonus = o.solarEnergyBonus;
+
 
     for (let ni = 0; ni < nNeeds; ni++) {
       const n = world.needs[ni];
