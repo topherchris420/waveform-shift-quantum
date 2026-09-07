@@ -706,8 +706,16 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
         // Price-only mechanisms can only see a coarse 6-hour delivery block,
         // never the individual availability window or job deadline.
         const blockTiming = o.blockIdx === n.blockIdx ? 1 : o.blockIdx < n.blockIdx ? .85 : .7;
-        const priceScore = Math.max(0, 1 - Math.abs(oPrice - n.monetaryBid)) * (compProd > .5 ? 1 : .1);
-        const price = priceScore * sub * blockTiming * (1 + p.priceSignalNoise * (rand() - .5) * 2 + infoNoise);
+        // Delivered price = nodal clearing price + congestion rent + a wheeling
+        // charge for moving across zones. Buyers bid their urgency-weighted WTP.
+        const zoneDistance = Math.abs(oZone - marketZone(nLoc));
+        const wheeling = zoneDistance * p.geographicalFriction * .35;
+        const delivered = oNodalPrice * (1 + oCongestion * .6) + wheeling;
+        const wtp = n.reportedBid * (1 + n.reportedUrgency * .6) * sub;
+        const surplus = wtp - delivered;
+        const priceScore = surplus > 0 ? surplus * (compProd > .5 ? 1 : .1) : -1;
+        const price = priceScore < 0 ? -1
+          : priceScore * sub * blockTiming * (1 + p.priceSignalNoise * (rand() - .5) * 2 + infoNoise);
 
         // Telemetry mechanisms see the reported (noisy) windows and deadlines.
         const reportedTiming = timingFactor(o.reportedWindowStart, o.reportedDeadline, n.reportedDeadline, n.flexible, relay, p);
@@ -717,10 +725,12 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
         const auctionSurplus = n.reportedBid - o.reportedAsk;
         rank = mode === 'doubleAuction' ? (auctionSurplus >= 0 ? auctionSurplus * sub * blockTiming : -1)
           : mode === 'market' || mode === 'stabilizedMarket' ? price
-          : mode === 'hybrid' ? signal * .72 + price * .28 : signal;
+          : mode === 'hybrid' ? Math.max(0, signal) * .72 + Math.max(0, price) * .28 : signal;
       }
 
-      const clearingPrice = mode === 'doubleAuction' ? (o.reportedAsk + n.reportedBid) / 2 : undefined;
+      const clearingPrice = mode === 'doubleAuction' ? (o.reportedAsk + n.reportedBid) / 2
+        : nodal ? oNodalPrice * (1 + oCongestion * .6) : undefined;
+
       edges.push({ oi, ni, sub, value, rank, relay, accessible: true, price: clearingPrice });
     }
   }
