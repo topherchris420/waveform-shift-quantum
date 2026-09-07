@@ -4,6 +4,7 @@ import {
   Atom,
   Beaker,
   BookOpen,
+  Compass,
   Download,
   Gauge,
   Layers,
@@ -24,6 +25,7 @@ import { PhysicsToolRunner } from '@/components/lab/PhysicsToolRunner';
 import { CatalystRunPanel } from '@/components/lab/CatalystRunPanel';
 import { PaperReaderModal } from '@/components/lab/PaperReaderModal';
 import { EpistemicLegend, EpistemicTag } from '@/components/lab/EpistemicTag';
+import { ARFRWorkspace } from '@/components/lab/ARFRWorkspace';
 import { ComparisonPanel } from '@/quantum/components/ComparisonPanel';
 import { DiscoveryModePanel } from '@/quantum/components/DiscoveryModePanel';
 import { RealitySplitStage } from '@/quantum/components/RealitySplitStage';
@@ -372,7 +374,11 @@ export const QuantumLab: React.FC = () => {
                   their predictions separate.
                 </p>
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                  <a href="#reality-split" className="hero-action hero-action--primary">
+                  <a href="#arfr-section" className="hero-action hero-action--primary">
+                    <Compass className="h-4 w-4" />
+                    ARFR Router
+                  </a>
+                  <a href="#reality-split" className="hero-action">
                     <Beaker className="h-4 w-4" />
                     Initiate sequence
                   </a>
@@ -439,8 +445,13 @@ export const QuantumLab: React.FC = () => {
         </Reveal>
       </Reveal>
 
+      {/* ============================ ADAPTIVE RESONANT FIELD ROUTER (ARFR) ============================ */}
+      <Reveal as="section" id="arfr-section" variant="up" className="mx-auto mt-12 max-w-[1700px] px-4 sm:px-6 lg:px-8">
+        <ARFRWorkspace />
+      </Reveal>
+
       {/* ============================ THE CENTREPIECE ============================ */}
-      <Reveal as="section" variant="scale" className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
+      <Reveal as="section" variant="scale" className="mx-auto mt-12 max-w-[1700px] px-4 sm:px-6 lg:px-8">
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
           <RealitySplitStage
             mode={splitMode}
