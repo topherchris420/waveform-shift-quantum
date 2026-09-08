@@ -50,6 +50,8 @@ export interface SimulationParams {
   deadlinePressure?: number; storageBridgeEfficiency?: number;
   /** Rounds of price discovery (tâtonnement) the monetary baseline is allowed to run. */
   marketClearingRounds?: number;
+  /** How hard buyers re-bid each round (0 = passive, 1 = very aggressive escalation). */
+  bidAggressiveness?: number;
 
   creditAvailability: number; liquidityStress: number; counterpartyRisk: number; collateralHaircut: number;
   settlementReliability: number; settlementLatency: number; fundingCost: number; priceSignalNoise: number;
