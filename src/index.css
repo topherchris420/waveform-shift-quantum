@@ -88,6 +88,13 @@
     max-width: 100%;
   }
 
+  .katex-display {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.2rem;
+  }
+
   button,
   a,
   input,
