@@ -1,6 +1,5 @@
 # R.A.I.N. Lab (experiment #9)
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Evaluating standard quantum mechanics alongside the proposed **Woodyard (2026)** field-modulated spatial localization model.
