@@ -201,7 +201,7 @@ export const DEFAULT_SIMULATION_PARAMS: SimulationParams = {
   resourceScarcity: .5, networkSize: 24, renewableVolatility: .6, computeDemand: .8, urgency: .5,
   geographicalFriction: .3, participantReliability: .8, supplyDemandImbalance: .1, flexibleComputeShare: .65,
   marketOverhead: .04, hybridOverhead: .07, genesisOverhead: .09, telemetryVerificationCost: .08,
-  deadlinePressure: .6, storageBridgeEfficiency: .88, marketClearingRounds: 4,
+  deadlinePressure: .6, storageBridgeEfficiency: .88, marketClearingRounds: 4, bidAggressiveness: .5,
 
   creditAvailability: .78, liquidityStress: .18, counterpartyRisk: .1, collateralHaircut: .2,
   settlementReliability: .96, settlementLatency: .12, fundingCost: .05, priceSignalNoise: .08,
