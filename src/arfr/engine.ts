@@ -1275,7 +1275,7 @@ function computeOrbitMetrics(particles: ParticleEnsemble, center: Vec3, routeRad
 }
 
 function makeMetrics(
-  state: Pick<ARFRState, 'config' | 'primaryPocket' | 'pockets' | 'desiredTarget' | 'desiredTargets' | 'energy' | 'particles'>,
+  state: Pick<ARFRState, 'config' | 'primaryPocket' | 'pockets' | 'desiredTarget' | 'desiredTargets' | 'energy' | 'particles' | 'time'>,
   lock: ControllerState
 ): ARFRMetrics {
   const positionError = state.primaryPocket ? distanceVec(state.primaryPocket.centroid, state.desiredTarget) : 1.35;
