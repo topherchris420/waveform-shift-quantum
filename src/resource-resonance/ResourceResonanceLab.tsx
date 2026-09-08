@@ -334,6 +334,48 @@ export const ResourceResonanceLab: React.FC = () => {
                 <label className="flex items-center justify-between text-[11px] text-slate-400"><span>Central-bank lender of last resort</span><input type="checkbox" checked={params.centralBankBackstop} onChange={e=>{const next={...params,centralBankBackstop:e.target.checked};setParams(next);setResult(runSimulation(next));}}/></label>
               </div>
             </div>
+            {/* Market dynamics stress controls */}
+            <div className="rounded-xl border border-emerald-900/40 bg-emerald-950/10 p-4 sm:p-6">
+              <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-emerald-300 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-emerald-400" />
+                Market dynamics stress
+              </h3>
+              <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+                Harden the price-only baseline: more clearing rounds sharpen price discovery, and more aggressive
+                re-bidding escalates willingness-to-pay against congested nodes. Genesis must beat this.
+              </p>
+              <div className="mt-4 space-y-4">
+                <label className="block">
+                  <span className="flex justify-between font-mono text-[10px] text-slate-400">
+                    <span>Clearing rounds</span><span>{params.marketClearingRounds ?? 4}</span>
+                  </span>
+                  <input
+                    type="range" min="1" max="12" step="1" value={params.marketClearingRounds ?? 4}
+                    onChange={(event) => {
+                      const next = { ...params, marketClearingRounds: Number(event.target.value) };
+                      setParams(next);
+                      setResult(runSimulation(next));
+                    }}
+                    className="mt-2 h-1.5 w-full cursor-pointer accent-emerald-400"
+                  />
+                </label>
+                <label className="block">
+                  <span className="flex justify-between font-mono text-[10px] text-slate-400">
+                    <span>Buyer re-bid aggressiveness</span><span>{((params.bidAggressiveness ?? .5) * 100).toFixed(0)}%</span>
+                  </span>
+                  <input
+                    type="range" min="0" max="1" step="0.01" value={params.bidAggressiveness ?? .5}
+                    onChange={(event) => {
+                      const next = { ...params, bidAggressiveness: Number(event.target.value) };
+                      setParams(next);
+                      setResult(runSimulation(next));
+                    }}
+                    className="mt-2 h-1.5 w-full cursor-pointer accent-emerald-400"
+                  />
+                </label>
+              </div>
+            </div>
+
             <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 sm:p-6">
               <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-slate-200">Cost assumptions</h3>
               <p className="mt-2 text-[11px] leading-relaxed text-slate-500">

@@ -50,6 +50,8 @@ export interface SimulationParams {
   deadlinePressure?: number; storageBridgeEfficiency?: number;
   /** Rounds of price discovery (tâtonnement) the monetary baseline is allowed to run. */
   marketClearingRounds?: number;
+  /** How hard buyers re-bid each round (0 = passive, 1 = very aggressive escalation). */
+  bidAggressiveness?: number;
 
   creditAvailability: number; liquidityStress: number; counterpartyRisk: number; collateralHaircut: number;
   settlementReliability: number; settlementLatency: number; fundingCost: number; priceSignalNoise: number;
@@ -199,7 +201,7 @@ export const DEFAULT_SIMULATION_PARAMS: SimulationParams = {
   resourceScarcity: .5, networkSize: 24, renewableVolatility: .6, computeDemand: .8, urgency: .5,
   geographicalFriction: .3, participantReliability: .8, supplyDemandImbalance: .1, flexibleComputeShare: .65,
   marketOverhead: .04, hybridOverhead: .07, genesisOverhead: .09, telemetryVerificationCost: .08,
-  deadlinePressure: .6, storageBridgeEfficiency: .88, marketClearingRounds: 4,
+  deadlinePressure: .6, storageBridgeEfficiency: .88, marketClearingRounds: 4, bidAggressiveness: .5,
 
   creditAvailability: .78, liquidityStress: .18, counterpartyRisk: .1, collateralHaircut: .2,
   settlementReliability: .96, settlementLatency: .12, fundingCost: .05, priceSignalNoise: .08,
@@ -591,7 +593,10 @@ export function clearNodalPrices(world: World, p: SimulationParams): NodalPrices
   }
   for (const [k, sum] of askSum) price.set(k, Math.max(.05, sum / (askN.get(k) ?? 1)));
 
-  const lambda = .45;
+  // Buyer re-bid aggressiveness: scales both the price adjustment step and how
+  // far buyers stretch their willingness-to-pay above their base bid each round.
+  const aggr = Math.min(1, Math.max(0, p.bidAggressiveness ?? .5));
+  const lambda = .2 + aggr * .7;
   for (let r = 0; r < rounds; r++) {
     const demand = new Map<string, number>(), supply = new Map<string, number>();
 
@@ -606,7 +611,8 @@ export function clearNodalPrices(world: World, p: SimulationParams): NodalPrices
           const k = nodeKey(t, zone, b);
           const posted = price.get(k);
           if (posted === undefined) continue;
-          const wtp = n.reportedBid * (1 + n.reportedUrgency * .6) * sub;
+          const escalation = 1 + aggr * .8 * (r / Math.max(1, rounds - 1 || 1)) * (.4 + n.reportedUrgency);
+          const wtp = n.reportedBid * (1 + n.reportedUrgency * .6) * sub * escalation;
           if (wtp >= posted) demand.set(k, (demand.get(k) ?? 0) + n.amount / sub);
         }
       }

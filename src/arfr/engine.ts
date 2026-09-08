@@ -1275,7 +1275,7 @@ function computeOrbitMetrics(particles: ParticleEnsemble, center: Vec3, routeRad
 }
 
 function makeMetrics(
-  state: Pick<ARFRState, 'config' | 'primaryPocket' | 'pockets' | 'desiredTarget' | 'desiredTargets' | 'energy' | 'particles'>,
+  state: Pick<ARFRState, 'config' | 'primaryPocket' | 'pockets' | 'desiredTarget' | 'desiredTargets' | 'energy' | 'particles' | 'time'>,
   lock: ControllerState
 ): ARFRMetrics {
   const positionError = state.primaryPocket ? distanceVec(state.primaryPocket.centroid, state.desiredTarget) : 1.35;
@@ -1546,7 +1546,7 @@ export function createSimulation(config: ARFRConfig): ARFRState {
     },
     controller,
     energy: zeroEnergy(),
-    metrics: makeMetrics({ config: nextConfig, primaryPocket, pockets, desiredTarget: desired.primary, desiredTargets: desired.targets, energy: zeroEnergy(), particles }, controller),
+    metrics: makeMetrics({ config: nextConfig, primaryPocket, pockets, desiredTarget: desired.primary, desiredTargets: desired.targets, energy: zeroEnergy(), particles, time: 0 }, controller),
     pocketPath: primaryPocket ? [copyVec(primaryPocket.centroid)] : [],
     particleTrails,
     events: ['ARFR initialized: source geometry locked; field synthesis active'],
@@ -1647,6 +1647,7 @@ export function stepSimulation(previous: ARFRState, requestedDt = previous.confi
     desiredTargets: desired.targets,
     energy,
     particles,
+    time,
   };
   const metrics = makeMetrics(nextPartial, lock);
   metrics.positionError = positionError;
