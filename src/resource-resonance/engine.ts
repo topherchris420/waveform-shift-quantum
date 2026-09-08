@@ -593,7 +593,10 @@ export function clearNodalPrices(world: World, p: SimulationParams): NodalPrices
   }
   for (const [k, sum] of askSum) price.set(k, Math.max(.05, sum / (askN.get(k) ?? 1)));
 
-  const lambda = .45;
+  // Buyer re-bid aggressiveness: scales both the price adjustment step and how
+  // far buyers stretch their willingness-to-pay above their base bid each round.
+  const aggr = Math.min(1, Math.max(0, p.bidAggressiveness ?? .5));
+  const lambda = .2 + aggr * .7;
   for (let r = 0; r < rounds; r++) {
     const demand = new Map<string, number>(), supply = new Map<string, number>();
 
