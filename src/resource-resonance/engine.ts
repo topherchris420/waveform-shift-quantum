@@ -611,7 +611,8 @@ export function clearNodalPrices(world: World, p: SimulationParams): NodalPrices
           const k = nodeKey(t, zone, b);
           const posted = price.get(k);
           if (posted === undefined) continue;
-          const wtp = n.reportedBid * (1 + n.reportedUrgency * .6) * sub;
+          const escalation = 1 + aggr * .8 * (r / Math.max(1, rounds - 1 || 1)) * (.4 + n.reportedUrgency);
+          const wtp = n.reportedBid * (1 + n.reportedUrgency * .6) * sub * escalation;
           if (wtp >= posted) demand.set(k, (demand.get(k) ?? 0) + n.amount / sub);
         }
       }
