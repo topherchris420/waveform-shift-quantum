@@ -66,7 +66,7 @@ Genesis is not an anti-money claim and cannot receive a hardcoded victory. Disco
 ## Verification & Build Suite
 
 ```bash
-# Run scientific invariant test suite (10 automated vitest invariant checks)
+# Run scientific invariant and regression tests
 pnpm test
 
 # Run ESLint linter
@@ -75,3 +75,7 @@ pnpm run lint
 # Build production bundle
 pnpm run build
 ```
+
+## ARFR experiment integrity
+
+ARFR uses refresh-independent fixed stepping, cumulative run statistics and versioned result passports with full current configuration and build provenance. See [timing, export boundaries and validation](docs/ARFR_EXPERIMENT_INTEGRITY.md). The three workstations load on demand, and pull requests run the test, typecheck, lint and build gates.

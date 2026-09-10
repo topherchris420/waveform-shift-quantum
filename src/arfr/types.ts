@@ -258,7 +258,17 @@ export interface ResonantFieldNetwork {
   edges: ResonantNetworkEdge[];
 }
 
+/** Cumulative statistics survive the bounded visual event/trail buffers. */
+export interface RunStatistics {
+  samples: number;
+  positionErrorSum: number;
+  peakLockQuality: number;
+  splitDetected: boolean;
+  mergeDetected: boolean;
+}
+
 export interface ARFRState {
+  statistics: RunStatistics;
   config: ARFRConfig;
   time: number;
   step: number;

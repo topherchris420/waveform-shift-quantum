@@ -1,3 +1,4 @@
+import { createSimulationClock } from './clock';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
@@ -508,6 +509,8 @@ export const AdaptiveResonantFieldRouter: React.FC = () => {
   const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
   const initialState = useMemo(() => createSimulation(createDefaultARFRConfig()), []);
   const stateRef = useRef<ARFRState>(initialState);
+  const scheduledDisturbance = useRef<number | null>(null);
+  const clockRef = useRef(createSimulationClock(initialState.config.dt));
   const [state, setState] = useState<ARFRState>(initialState);
 
   const makeConfig = useCallback(
@@ -527,6 +530,8 @@ export const AdaptiveResonantFieldRouter: React.FC = () => {
     (overrides: ARFRConfigOverrides = {}) => {
       const next = createSimulation(makeConfig(overrides));
       stateRef.current = next;
+      scheduledDisturbance.current = null;
+      clockRef.current = createSimulationClock(next.config.dt);
       setState(next);
       setBenchmarkRows([]);
     },
@@ -536,14 +541,34 @@ export const AdaptiveResonantFieldRouter: React.FC = () => {
   useEffect(() => {
     if (!running) return;
     let frame = 0;
-    const tick = () => {
-      const next = stepSimulation(stateRef.current);
-      stateRef.current = next;
-      setState(next);
+    clockRef.current.reset();
+    const tick = (timestamp: number) => {
+      if (document.hidden) {
+        clockRef.current.reset();
+      } else {
+        const steps = clockRef.current.advance(timestamp);
+        let next = stateRef.current;
+        for (let index = 0; index < steps; index += 1) {
+          if (scheduledDisturbance.current !== null && next.time >= scheduledDisturbance.current) {
+            next = queueDisturbance(next, { kind: 'velocity_impulse', magnitude: 0.72, direction: { x: 1, y: 0.35, z: 0 } });
+            scheduledDisturbance.current = null;
+          }
+          next = stepSimulation(next);
+        }
+        if (steps > 0) {
+          stateRef.current = next;
+          setState(next);
+        }
+      }
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    const resetClock = () => clockRef.current.reset();
+    document.addEventListener('visibilitychange', resetClock);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('visibilitychange', resetClock);
+    };
   }, [running]);
 
   const updateLiveState = useCallback((update: (current: ARFRState) => ARFRState) => {
@@ -628,10 +653,10 @@ export const AdaptiveResonantFieldRouter: React.FC = () => {
     setRouteKind(selection.route);
     restart({ mode: selection.mode, shape: selection.shape, route: routeForKind(selection.route) });
     if (experiment === 'disturbance_recovery') {
-      window.setTimeout(() => disturb(), 700);
+      scheduledDisturbance.current = stateRef.current.config.duration * 0.35;
     }
     toast.success(`Preset loaded: ${experiment.replace('_', ' ').toUpperCase()}`);
-  }, [disturb, restart]);
+  }, [restart]);
 
   const runBenchmark = useCallback(() => {
     setIsBenchmarking(true);
@@ -649,11 +674,7 @@ export const AdaptiveResonantFieldRouter: React.FC = () => {
   const exportPassport = useCallback(async () => {
     setIsExporting(true);
     try {
-      const summary = summarizeExperiment(
-        stateRef.current,
-        stateRef.current.metrics.positionError,
-        stateRef.current.controller.lockQuality
-      );
+      const summary = summarizeExperiment(stateRef.current);
       const passport = await createARFRPassport({ experiment: 'interactive_session', state: stateRef.current, summary });
       const blob = new Blob([JSON.stringify(passport, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -838,7 +859,7 @@ export const AdaptiveResonantFieldRouter: React.FC = () => {
           <div className="space-y-4">
             <section className="border border-[#1e293b] bg-[#0b1621] p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <PanelHeading icon={Zap} eyebrow="Experiment passport" title="Reproducible ARFR runs" />
+                <PanelHeading icon={Zap} eyebrow="Experiment passport" title="ARFR experiment record" />
                 <Button size="sm" onClick={exportPassport} disabled={isExporting} aria-label="Export ARFR Experiment Passport as JSON" className="gap-1.5 rounded-none bg-[#38bdf8] font-mono text-[10px] font-bold uppercase tracking-widest text-[#071019] hover:bg-[#7dd3fc] focus-visible:ring-2 focus-visible:ring-[#38bdf8] focus-visible:ring-offset-2 focus-visible:ring-offset-[#071019]"><Download className="h-3.5 w-3.5" />{isExporting ? 'hashing…' : 'export passport'}</Button>
               </div>
               <div className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
@@ -855,7 +876,7 @@ export const AdaptiveResonantFieldRouter: React.FC = () => {
                   </button>
                 ))}
               </div>
-              <p className="mt-3 font-mono text-[10px] leading-relaxed text-[#64748b]">Passport records seed, source geometry, medium, controller, route, energy profile, results, and canonical identity hash through the existing passport canonicalization layer.</p>
+              <p className="mt-3 font-mono text-[10px] leading-relaxed text-[#64748b]">Passport v2 records the full current configuration, source commit, elapsed time, step count, cumulative results, and content hash. This result snapshot does not record interactive edit history for exact replay.</p>
             </section>
 
             <section className="border border-[#1e293b] bg-[#0b1621] p-4">

@@ -1,14 +1,16 @@
-import React, { Component, ReactNode } from "react";
+import React, { Component, ReactNode, Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import ResonanceIndex from "./pages/ResonanceIndex";
-import ARFR from "./pages/ARFR";
 import NotFound from "./pages/NotFound";
 import { GlobalNav } from "./components/GlobalNav";
+
+// Load each scientific workstation only when its route is opened.
+const Index = lazy(() => import("./pages/Index"));
+const ResonanceIndex = lazy(() => import("./pages/ResonanceIndex"));
+const ARFR = lazy(() => import("./pages/ARFR"));
 
 const queryClient = new QueryClient();
 
@@ -61,12 +63,14 @@ const App = () => (
         <Sonner />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <GlobalNav />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/resonance" element={<ResonanceIndex />} />
-            <Route path="/arfr" element={<ARFR />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={<div role="status" className="p-8 font-mono text-sm text-muted-foreground">Loading laboratory…</div>}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/resonance" element={<ResonanceIndex />} />
+              <Route path="/arfr" element={<ARFR />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
