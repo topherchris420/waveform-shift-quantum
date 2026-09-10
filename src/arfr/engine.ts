@@ -998,7 +998,7 @@ function advanceParticles(
     let nextVelocity = addVec(velocity, scaleVec(acceleration, dt));
     const speed = magnitudeVec(nextVelocity);
     if (speed > 2.4) nextVelocity = scaleVec(nextVelocity, 2.4 / speed);
-    let nextPosition = addVec(point, scaleVec(nextVelocity, dt));
+    const nextPosition = addVec(point, scaleVec(nextVelocity, dt));
 
     (['x', 'y', 'z'] as const).forEach((axis) => {
       const minimum = bounds.min[axis];
@@ -1464,7 +1464,29 @@ export function validateARFRConfig(config: ARFRConfig): void {
   const finite = (value: number, label: string) => {
     if (!Number.isFinite(value)) throw new RangeError(`${label} must be finite`);
   };
+  const vector = (value: Vec3, label: string) => {
+    for (const axis of ['x', 'y', 'z'] as const) finite(value[axis], `${label}.${axis}`);
+  };
   finite(config.seed, 'seed');
+  if (!Number.isSafeInteger(config.seed) || config.seed < 0 || config.seed > 0xffffffff) throw new RangeError('seed must be a uint32 integer');
+  finite(config.threshold, 'threshold');
+  if (!Number.isInteger(config.particleCount)) throw new RangeError('particleCount must be an integer');
+  if (!Number.isInteger(config.trailParticleCount) || config.trailParticleCount < 0 || config.trailParticleCount > config.particleCount) throw new RangeError('trailParticleCount must be an integer between zero and particleCount');
+  vector(config.bounds.min, 'bounds.min');
+  vector(config.bounds.max, 'bounds.max');
+  vector(config.medium.responseAxis, 'medium.responseAxis');
+  for (const [key, value] of Object.entries(config.medium)) {
+    if (key !== 'responseAxis') finite(value as number, `medium.${key}`);
+  }
+  for (const [key, value] of Object.entries(config.controller)) {
+    finite(value, `controller.${key}`);
+    if (value < 0) throw new RangeError(`controller.${key} must be non-negative`);
+  }
+  for (const key of ['start', 'end', 'center'] as const) vector(config.route[key], `route.${key}`);
+  config.route.waypoints.forEach((point, index) => vector(point, `route.waypoints[${index}]`));
+  for (const key of ['duration', 'radius', 'startAngle', 'endAngle', 'turns'] as const) finite(config.route[key], `route.${key}`);
+  if (config.route.duration <= 0 || config.route.radius < 0) throw new RangeError('route duration must be positive and radius non-negative');
+  if (config.medium.damping < 0 || config.medium.noiseAmplitude < 0) throw new RangeError('medium damping and noiseAmplitude must be non-negative');
   finite(config.dt, 'dt');
   finite(config.duration, 'duration');
   if (config.dt <= 0 || config.dt > 0.5) throw new RangeError('dt must be in (0, 0.5]');
@@ -1474,8 +1496,15 @@ export function validateARFRConfig(config: ARFRConfig): void {
   if (!Number.isInteger(config.fieldResolution.x) || !Number.isInteger(config.fieldResolution.y) || !Number.isInteger(config.fieldResolution.z)) throw new RangeError('field resolution must use integer dimensions');
   if (config.fieldResolution.x < 5 || config.fieldResolution.y < 5 || config.fieldResolution.z < 3) throw new RangeError('field resolution is too small');
   if (config.bounds.min.x >= config.bounds.max.x || config.bounds.min.y >= config.bounds.max.y || config.bounds.min.z >= config.bounds.max.z) throw new RangeError('bounds must have positive volume');
+  if (config.fieldResolution.x * config.fieldResolution.y * config.fieldResolution.z > 250000) throw new RangeError('field resolution exceeds 250000 cells');
+  if (config.sources.length > 64) throw new RangeError('at most 64 field sources are supported');
   if (config.sources.length === 0) throw new RangeError('at least one field source is required');
   config.sources.forEach((source) => {
+    vector(source.position, `${source.id}.position`);
+    vector(source.orientation, `${source.id}.orientation`);
+    vector(source.rotationAxis, `${source.id}.rotationAxis`);
+    finite(source.angularVelocity, `${source.id}.angularVelocity`);
+    finite(source.polarization, `${source.id}.polarization`);
     finite(source.frequency, `${source.id}.frequency`);
     finite(source.phase, `${source.id}.phase`);
     finite(source.amplitude, `${source.id}.amplitude`);
@@ -1508,6 +1537,7 @@ export function createSimulation(config: ARFRConfig): ARFRState {
     ...config,
     bounds: { min: copyVec(config.bounds.min), max: copyVec(config.bounds.max) },
     route: copyRoute(config.route),
+    fieldResolution: { ...config.fieldResolution },
     sources: config.sources.map(copySource),
     medium: { ...config.medium, responseAxis: copyVec(config.medium.responseAxis) },
     controller: { ...config.controller },
@@ -1527,6 +1557,7 @@ export function createSimulation(config: ARFRConfig): ARFRState {
   const controller = initialController(primaryPocket?.centroid ?? desired.primary);
   const initialState: ARFRState = {
     config: nextConfig,
+    statistics: { samples: 0, positionErrorSum: 0, peakLockQuality: 0, splitDetected: false, mergeDetected: false },
     time: 0,
     step: 0,
     sources,
@@ -1668,6 +1699,13 @@ export function stepSimulation(previous: ARFRState, requestedDt = previous.confi
     ...previous,
     time,
     step: previous.step + 1,
+    statistics: {
+      samples: previous.statistics.samples + 1,
+      positionErrorSum: previous.statistics.positionErrorSum + positionError,
+      peakLockQuality: Math.max(previous.statistics.peakLockQuality, lock.lockQuality),
+      splitDetected: previous.statistics.splitDetected || metrics.splitDetected,
+      mergeDetected: previous.statistics.mergeDetected || metrics.mergeDetected,
+    },
     sources,
     particles,
     field,
@@ -1747,7 +1785,11 @@ function configForExperiment(experiment: BuiltInExperiment, overrides: ARFRConfi
   return createDefaultARFRConfig({ ...base, mode: 'route', route: { kind: 'LINE', start: vec3(-1.05, 0, 0), end: vec3(1.05, 0, 0) } });
 }
 
-export function summarizeExperiment(state: ARFRState, meanPositionError: number, peakLockQuality: number): ExperimentResultSummary {
+export function summarizeExperiment(
+  state: ARFRState,
+  meanPositionError = state.statistics.samples ? state.statistics.positionErrorSum / state.statistics.samples : state.metrics.positionError,
+  peakLockQuality = state.statistics.peakLockQuality
+): ExperimentResultSummary {
   const totalEnergy = state.energy.fieldInput + state.energy.controlInput + state.energy.estimatedDissipation;
   let retained = 0;
   for (let index = 0; index < state.particles.count; index += 1) {
@@ -1765,8 +1807,8 @@ export function summarizeExperiment(state: ARFRState, meanPositionError: number,
     energyPerSimulatedMeter: state.energy.joulesPerSimulatedMeter,
     joulesPerParticleRetained: state.energy.joulesPerParticleRetained,
     stableConfinementTime: state.energy.stableConfinementTime,
-    splitDetected: state.metrics.splitDetected || state.events.some((event) => event.includes('split detected')),
-    mergeDetected: state.metrics.mergeDetected || state.events.some((event) => event.includes('merge detected')),
+    splitDetected: state.statistics.splitDetected,
+    mergeDetected: state.statistics.mergeDetected,
     pocketCount: state.pockets.length,
   };
 }
@@ -1778,17 +1820,14 @@ export function runBuiltInExperiment(
 ): ExperimentRunResult {
   const config = configForExperiment(experiment, overrides);
   const steps = requestedSteps ?? Math.ceil(config.duration / config.dt);
+  if (!Number.isSafeInteger(steps) || steps < 0 || steps > 100000) throw new RangeError('steps must be an integer in [0, 100000]');
   let state = createSimulation(config);
-  let errorSum = 0;
-  let peakLockQuality = 0;
   const trace: ExperimentRunResult['trace'] = [];
   for (let index = 0; index < steps; index += 1) {
     if (experiment === 'disturbance_recovery' && index === Math.floor(steps * 0.35)) {
       state = queueDisturbance(state, { kind: 'velocity_impulse', magnitude: 0.72, direction: vec3(1, 0.35, 0) });
     }
     state = stepSimulation(state);
-    errorSum += state.metrics.positionError;
-    peakLockQuality = Math.max(peakLockQuality, state.controller.lockQuality);
     trace.push({
       time: state.time,
       target: copyVec(state.desiredTarget),
@@ -1805,7 +1844,7 @@ export function runBuiltInExperiment(
     experiment,
     config,
     finalState: state,
-    summary: summarizeExperiment(state, errorSum / Math.max(1, steps), peakLockQuality),
+    summary: summarizeExperiment(state),
     trace,
   };
 }

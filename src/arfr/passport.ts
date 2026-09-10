@@ -1,4 +1,5 @@
 import {
+  CANONICAL_NUMBER_VERSION,
   canonicalJson,
   sha256Text,
 } from '@/lib/passport/canonical';
@@ -11,7 +12,7 @@ import type {
   RouteDefinition,
   Vec3,
 } from './types';
-import type { BuiltInExperiment } from './engine';
+import { summarizeExperiment, type BuiltInExperiment } from './engine';
 
 export interface ARFRPassportInput {
   experiment: BuiltInExperiment | string;
@@ -20,10 +21,19 @@ export interface ARFRPassportInput {
 }
 
 export interface ARFRExperimentPassport {
-  schema: 'arfr-experiment-passport.v1';
+  schema: 'arfr-experiment-passport.v2';
   technology: 'Adaptive Resonant Field Router';
   simulationVersion: string;
   generatedAt: string;
+  provenance: {
+    sourceCommit: string;
+    configuration: ARFRConfig;
+    completedSteps: number;
+    elapsedSimulationTime: number;
+    statistics: ARFRState['statistics'];
+    artifactKind: 'result-snapshot';
+    replayBoundary: string;
+  };
   seed: number;
   experiment: string;
   operatingMode: ARFRConfig['mode'];
@@ -58,6 +68,7 @@ export interface ARFRExperimentPassport {
 
 interface PassportIdentity {
   schema: ARFRExperimentPassport['schema'];
+  provenance: ARFRExperimentPassport['provenance'];
   technology: ARFRExperimentPassport['technology'];
   simulationVersion: string;
   seed: number;
@@ -107,7 +118,16 @@ export function passportIdentity(
   const { state } = input;
   const config = state.config;
   return {
-    schema: 'arfr-experiment-passport.v1',
+    schema: 'arfr-experiment-passport.v2',
+    provenance: {
+      sourceCommit: typeof __SOURCE_COMMIT__ === 'string' ? __SOURCE_COMMIT__ : 'unknown',
+      configuration: cloneConfigPart(config),
+      completedSteps: state.step,
+      elapsedSimulationTime: state.time,
+      statistics: { ...state.statistics },
+      artifactKind: 'result-snapshot',
+      replayBoundary: 'Records current configuration and cumulative results. Interactive parameter edits, disturbance history, and variable timestep schedules are not recorded; this snapshot is not an exact replay archive.',
+    },
     technology: 'Adaptive Resonant Field Router',
     simulationVersion: config.simulationVersion,
     seed: config.seed,
@@ -133,7 +153,7 @@ export function passportIdentity(
     },
     route: cloneRoute(config.route),
     energyProfile: config.energyProfile,
-    results: summary,
+    results: { ...summary },
     modelBoundary: {
       establishedSimulatorEquations: [
         'linear field superposition',
@@ -161,40 +181,31 @@ export function passportIdentity(
  * same scientific identity.
  */
 export async function createARFRPassport(input: ARFRPassportInput): Promise<ARFRExperimentPassport> {
-  const summary = input.summary ?? {
-    finalPositionError: input.state.metrics.positionError,
-    meanPositionError: input.state.metrics.positionError,
-    peakLockQuality: input.state.controller.lockQuality,
-    finalLockState: input.state.controller.lockState,
-    particleRetention: input.state.metrics.containment,
-    containment: input.state.metrics.containment,
-    routedDistance: input.state.energy.routedDistance,
-    totalEnergy: input.state.energy.fieldInput + input.state.energy.controlInput + input.state.energy.estimatedDissipation,
-    energyPerSimulatedMeter: input.state.energy.joulesPerSimulatedMeter,
-    joulesPerParticleRetained: input.state.energy.joulesPerParticleRetained,
-    stableConfinementTime: input.state.energy.stableConfinementTime,
-    splitDetected: input.state.metrics.splitDetected,
-    mergeDetected: input.state.metrics.mergeDetected,
-    pocketCount: input.state.metrics.pocketCount,
-  };
+  const summary = input.summary ?? summarizeExperiment(input.state);
   const identity = passportIdentity(input, summary);
   const identityHash = await sha256Text(canonicalJson(identity));
   return {
     ...identity,
     generatedAt: new Date().toISOString(),
     integrity: {
-      canonicalNumberVersion: 'scientific-e13.v1',
+      canonicalNumberVersion: CANONICAL_NUMBER_VERSION,
       identityHash,
     },
   };
 }
 
-export async function verifyARFRPassport(passport: ARFRExperimentPassport): Promise<boolean> {
-  const {
-    generatedAt: _generatedAt,
-    integrity: _integrity,
-    ...identity
-  } = passport;
-  const expected = await sha256Text(canonicalJson(identity));
-  return expected === passport.integrity.identityHash;
+/** Check content integrity, not authorship or physical validity. Malformed inputs fail closed. */
+export async function verifyARFRPassport(passport: unknown): Promise<boolean> {
+  try {
+    if (!passport || typeof passport !== 'object' || Array.isArray(passport)) return false;
+    const { generatedAt: _generatedAt, integrity, ...identity } = passport as ARFRExperimentPassport;
+    if (identity.schema !== 'arfr-experiment-passport.v2' ||
+        identity.technology !== 'Adaptive Resonant Field Router' ||
+        integrity?.canonicalNumberVersion !== CANONICAL_NUMBER_VERSION ||
+        typeof integrity.identityHash !== 'string' || !/^[a-f0-9]{64}$/.test(integrity.identityHash)) return false;
+    const expected = await sha256Text(canonicalJson(identity));
+    return expected === integrity.identityHash;
+  } catch {
+    return false;
+  }
 }
