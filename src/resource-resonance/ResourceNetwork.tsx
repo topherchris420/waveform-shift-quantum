@@ -197,11 +197,11 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
         </button>
       </div>
 
-      <div className="relative z-10 -mx-3 flex-1 overflow-x-auto px-3 pb-2 sm:mx-0 sm:overflow-visible sm:px-0">
-      <div className="relative mt-6 flex min-h-[390px] min-w-[620px] flex-1 items-stretch justify-between gap-4 sm:min-w-0">
+      <div className="relative z-10 min-w-0 flex-1 pb-2">
+      <div className="relative mt-4 flex min-h-[390px] min-w-0 flex-1 items-stretch justify-between gap-2 sm:mt-6 sm:gap-4">
         
         {/* SVG Layer */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" style={{ overflow: 'visible' }}>
+        <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full overflow-hidden">
           <defs>
             <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur stdDeviation="3" result="blur" />
@@ -259,7 +259,7 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
         </svg>
 
         {/* Left column: Offers */}
-        <div className="flex flex-col justify-between w-[25%] h-full my-auto z-20 relative">
+        <div className="relative z-20 my-auto flex h-full w-[30%] min-w-0 flex-col justify-between sm:w-[25%]">
           {offers.map((offer, index) => {
             const Icon = ICONS[offer.type] || ICONS['default'];
             const isMatched = animatedMatches.some(m => m.offerId === offer.id);
@@ -267,15 +267,15 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
             return (
               <div 
                 key={offer.id} 
-                className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-700 transform ${isMatched ? 'scale-105 z-10' : 'scale-100'} backdrop-blur-md`}
+                className={`flex min-w-0 items-center gap-1 border p-1 transition-all duration-700 sm:gap-3 sm:rounded-xl sm:p-3 ${isMatched ? 'z-10 scale-[1.02] sm:scale-105' : 'scale-100'} backdrop-blur-md`}
                 style={{ top: `${getOfferY(index)}%`, position: 'absolute', width: '100%', transform: `translateY(-50%) ${isMatched ? 'scale(1.05)' : ''}` }}
               >
-                <div className={`p-2 rounded-lg border ${isMatched ? 'border-current shadow-lg' : 'border-transparent bg-black/40'}`}>
-                  <Icon className={`w-4 h-4 ${isMatched ? COLORS[offer.type] + ' animate-pulse' : 'text-slate-500'}`} />
+                <div className={`hidden border p-2 sm:block sm:rounded-lg ${isMatched ? 'border-current shadow-lg' : 'border-transparent bg-black/40'}`}>
+                  <Icon className={`h-4 w-4 ${isMatched ? COLORS[offer.type] + ' animate-pulse' : 'text-slate-500'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="mb-0.5 font-mono text-[9px] uppercase tracking-widest text-slate-500">Offer</p>
-                  <p className={`break-words text-xs font-bold leading-snug ${isMatched ? 'text-white' : 'text-slate-300'}`}>{offer.amount} {offer.type.toUpperCase()}</p>
+                  <p className={`break-words text-[10px] font-bold leading-snug sm:text-xs ${isMatched ? 'text-white' : 'text-slate-300'}`}>{offer.amount} {offer.type.toUpperCase()}</p>
                 </div>
                 <div className={`absolute -right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${isMatched ? BG_COLORS[offer.type] : 'bg-slate-800'}`} />
               </div>
@@ -284,7 +284,7 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
         </div>
 
         {/* Center column: Relay Nodes & Core Engine */}
-        <div className="w-[20%] relative z-20 flex flex-col justify-between h-full">
+        <div className="relative z-20 flex h-full w-[24%] min-w-0 flex-col justify-between sm:w-[20%]">
            {relays.map((relay, index) => {
               const Icon = ICONS[relay.type] || ICONS['default'];
               const isMatched = animatedMatches.some(m => m.routeType === 'multi-hop' && m.relayNodeId === relay.id);
@@ -292,15 +292,15 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
               return (
                 <div 
                   key={relay.id} 
-                  className={`flex flex-col items-center gap-2 p-2 rounded-xl border transition-all duration-700 transform ${isMatched ? 'scale-105 z-10' : 'scale-100'} backdrop-blur-md bg-black/40`}
+                  className={`flex min-w-0 flex-col items-center gap-1 border bg-black/40 p-1 transition-all duration-700 sm:gap-2 sm:rounded-xl sm:p-2 ${isMatched ? 'z-10 scale-[1.02] sm:scale-105' : 'scale-100'} backdrop-blur-md`}
                   style={{ top: `${getRelayY(index)}%`, position: 'absolute', width: '100%', transform: `translateY(-50%) ${isMatched ? 'scale(1.05)' : ''}` }}
                 >
-                  <div className={`p-2 rounded-full border ${isMatched ? 'border-current shadow-[0_0_15px_currentColor]' : 'border-slate-700'} ${isMatched ? COLORS[relay.type] : 'text-slate-500'}`}>
-                    <Icon className={`w-4 h-4 ${isMatched ? 'animate-bounce' : ''}`} />
+                  <div className={`border p-1 sm:rounded-full sm:p-2 ${isMatched ? 'border-current shadow-[0_0_15px_currentColor]' : 'border-slate-700'} ${isMatched ? COLORS[relay.type] : 'text-slate-500'}`}>
+                    <Icon className={`h-3 w-3 sm:h-4 sm:w-4 ${isMatched ? 'animate-bounce' : ''}`} />
                   </div>
                   <div className="text-center">
                     <p className="break-words font-mono text-[8px] uppercase leading-snug tracking-widest text-slate-500">{relay.type} relay</p>
-                    <p className={`break-words text-[10px] font-bold leading-snug ${isMatched ? 'text-white' : 'text-slate-400'}`}>{relay.name}</p>
+                    <p className={`hidden break-words text-[10px] font-bold leading-snug sm:block ${isMatched ? 'text-white' : 'text-slate-400'}`}>{relay.name}</p>
                   </div>
                 </div>
               );
@@ -313,7 +313,7 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
         </div>
 
         {/* Right column: Needs */}
-        <div className="flex flex-col justify-between w-[25%] h-full my-auto z-20 relative">
+        <div className="relative z-20 my-auto flex h-full w-[30%] min-w-0 flex-col justify-between sm:w-[25%]">
           {needs.map((need, index) => {
             const Icon = ICONS[need.type] || ICONS['default'];
             const isMatched = animatedMatches.some(m => m.needId === need.id);
@@ -321,15 +321,15 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
             return (
               <div 
                 key={need.id} 
-                className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-700 transform ${isMatched ? 'scale-105 z-10' : 'scale-100'} backdrop-blur-md`}
+                className={`flex min-w-0 items-center gap-1 border p-1 transition-all duration-700 sm:gap-3 sm:rounded-xl sm:p-3 ${isMatched ? 'z-10 scale-[1.02] sm:scale-105' : 'scale-100'} backdrop-blur-md`}
                 style={{ top: `${getNeedY(index)}%`, position: 'absolute', width: '100%', transform: `translateY(-50%) ${isMatched ? 'scale(1.05)' : ''}` }}
               >
                 <div className={`absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${isMatched ? BG_COLORS[need.type] : 'bg-slate-800'}`} />
                 <div className="flex-1 min-w-0 text-right">
                   <p className="mb-0.5 font-mono text-[9px] uppercase tracking-widest text-slate-500">Need</p>
-                  <p className={`break-words text-xs font-bold leading-snug ${isMatched ? 'text-white' : 'text-slate-300'}`}>{need.amount} {need.type.toUpperCase()}</p>
+                  <p className={`break-words text-[10px] font-bold leading-snug sm:text-xs ${isMatched ? 'text-white' : 'text-slate-300'}`}>{need.amount} {need.type.toUpperCase()}</p>
                 </div>
-                <div className={`p-2 rounded-lg border ${isMatched ? 'border-current shadow-lg' : 'border-transparent bg-black/40'}`}>
+                <div className={`hidden border p-2 sm:block sm:rounded-lg ${isMatched ? 'border-current shadow-lg' : 'border-transparent bg-black/40'}`}>
                   <Icon className={`w-4 h-4 ${isMatched ? COLORS[need.type] + ' animate-pulse' : 'text-slate-500'}`} />
                 </div>
               </div>
