@@ -153,7 +153,7 @@ export const ResourceResonanceLab: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-foreground selection:bg-cyan-500/30">
+    <div className="min-h-screen min-w-0 overflow-x-hidden bg-black text-foreground selection:bg-cyan-500/30">
       <Toaster theme="dark" />
       <div className="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
         
@@ -188,8 +188,8 @@ export const ResourceResonanceLab: React.FC = () => {
            </div>
         </div>
 
-        <div className="grid gap-6 sm:gap-8 lg:grid-cols-[1fr_380px]">
-          <div className="space-y-6 sm:space-y-8">
+        <div className="grid min-w-0 gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="min-w-0 space-y-6 sm:space-y-8">
             <section>
               <ResourceNetwork 
                 offers={offers}
@@ -214,14 +214,14 @@ export const ResourceResonanceLab: React.FC = () => {
             <CoordinationRegimeMap params={params} />
           </div>
 
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             {/* Hierarchical Controls: Multi-Layer Toggles */}
             <div className="rounded-xl border border-indigo-900/50 bg-indigo-950/20 p-4 sm:p-6 space-y-4">
               <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-indigo-300 flex items-center gap-2">
                 <Layers className="w-4 h-4 text-indigo-400" />
                 Multi-Layer Engine Architecture
               </h3>
-              <div className="grid grid-cols-2 gap-3 pt-1">
+              <div className="grid grid-cols-1 gap-3 pt-1 min-[380px]:grid-cols-2">
                 <label className="flex items-center gap-2 text-[11px] font-mono text-slate-300 bg-slate-900/60 p-2.5 rounded border border-slate-800">
                   <input
                     type="checkbox"
