@@ -362,7 +362,7 @@ export const QuantumLab: React.FC = () => {
                 <br className="hidden sm:inline" />
                 One initial condition.{' '}
                 <br className="hidden sm:inline" />
-                <span className="text-primary">Find the experiment</span> that decides.
+                <span className="text-primary">Find the experiment</span> that falsifies.
               </h1>
               <div className="mt-10 flex flex-col items-start gap-8 md:flex-row md:items-end">
                 <p className="max-w-xl text-base leading-relaxed text-muted-foreground">
