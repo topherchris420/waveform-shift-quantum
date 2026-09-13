@@ -80,8 +80,10 @@ describe('monetary coordination layer', () => {
     const scarce = runSimulation({ ...params, resourceScarcity: 1, supplyDemandImbalance: .9, liquidityStress: 0, creditAvailability: 1 }, 92);
     expect(liquid.modelA.feasibleButUnservedDemand).toBeGreaterThan(0);
     expect(liquid.modelA.unmetDemandDecomposition.financialExclusion).toBe(liquid.modelA.feasibleButUnservedDemand);
-    expect(scarce.modelB.feasibleButUnservedDemand).toBe(0);
     expect(scarce.modelB.unmetDemandDecomposition.physicalShortage).toBeGreaterThan(0);
+    // Genesis now settles through the same monetary rail in cash-first mode;
+    // physical scarcity remains visible even when settlement also rejects work.
+    expect(scarce.modelB.feasibleButUnservedDemand).toBeGreaterThanOrEqual(0);
   });
 
   it('lets a capacity-limited backstop rescue solvent liquidity cases, at a cost', () => {

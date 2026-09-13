@@ -3,8 +3,38 @@ export interface ResourceVector {
   locationCost: number; energyCost: number; reliability: number; compatibility: number;
 }
 
-export interface ResourceOffer { id: string; providerId: string; type: string; amount: number; vector: ResourceVector }
-export interface ResourceNeed { id: string; requesterId: string; type: string; amount: number; vector: ResourceVector }
+/**
+ * A preference is an explicit human or community input, not something the
+ * router is allowed to infer from the physical telemetry.  The simulation
+ * uses synthetic declarations by default; a real deployment would collect
+ * these values through a consented human decision process.
+ */
+export interface SubjectivePreference {
+  declaredReservationValue: number;
+  priorityWeight: number;
+  qualityWeight: number;
+  localityWeight: number;
+  consent: boolean;
+  communityDecision: 'approved' | 'pending' | 'rejected';
+  source: 'human-declared' | 'community-declared' | 'synthetic';
+}
+
+export interface ResourceOffer {
+  id: string;
+  providerId: string;
+  type: string;
+  amount: number;
+  vector: ResourceVector;
+  subjectivePreference?: SubjectivePreference;
+}
+export interface ResourceNeed {
+  id: string;
+  requesterId: string;
+  type: string;
+  amount: number;
+  vector: ResourceVector;
+  subjectivePreference?: SubjectivePreference;
+}
 export interface MatchResult {
   offerId: string; needId: string; amount: number; score: number; routeType: 'direct' | 'multi-hop'; relayNodeId?: string;
   explanation: { compositeMatch: number; compatibility: number; energyAvailability: number; urgencyAlignment: number; networkCost: number; reliability: number };
@@ -52,6 +82,12 @@ export interface SimulationParams {
   marketClearingRounds?: number;
   /** How hard buyers re-bid each round (0 = passive, 1 = very aggressive escalation). */
   bidAggressiveness?: number;
+  /** Genesis is a coordination assist by default: cash/market settlement remains the anchor. */
+  genesisSettlementMode?: 'cash-first' | 'advisory';
+  /** When telemetry or the routing network is unavailable, use the cash-market fallback. */
+  genesisOfflineThreshold?: number;
+  /** Reliability assumption for the cash fallback when the computational grid is unavailable. */
+  cashSettlementReliability?: number;
 
   creditAvailability: number; liquidityStress: number; counterpartyRisk: number; collateralHaircut: number;
   settlementReliability: number; settlementLatency: number; fundingCost: number; priceSignalNoise: number;
@@ -163,6 +199,10 @@ export interface SimulationMetrics {
   shadowPrice: number;
   manipulationVulnerability: number;
   falseCriticalAllocationRate: number;
+  /** Share of Genesis draws that had to fall back to cash/market coordination. */
+  genesisFallbackRate: number;
+  /** Share of demand rejected by an explicit human/community preference gate. */
+  subjectiveRejectionRate: number;
 }
 
 export type RiskVerdict = 'improves-safely' | 'improves-with-risk' | 'no-improvement';
@@ -202,6 +242,7 @@ export const DEFAULT_SIMULATION_PARAMS: SimulationParams = {
   geographicalFriction: .3, participantReliability: .8, supplyDemandImbalance: .1, flexibleComputeShare: .65,
   marketOverhead: .04, hybridOverhead: .07, genesisOverhead: .09, telemetryVerificationCost: .08,
   deadlinePressure: .6, storageBridgeEfficiency: .88, marketClearingRounds: 4, bidAggressiveness: .5,
+  genesisSettlementMode: 'cash-first', genesisOfflineThreshold: .5, cashSettlementReliability: .98,
 
   creditAvailability: .78, liquidityStress: .18, counterpartyRisk: .1, collateralHaircut: .2,
   settlementReliability: .96, settlementLatency: .12, fundingCost: .05, priceSignalNoise: .08,
@@ -260,6 +301,17 @@ export function calculateMonetaryScore(o: ResourceVector, n: ResourceVector, p: 
 
 const clamp = (v: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
 function mulberry32(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function syntheticPreference(rand: () => number): SubjectivePreference {
+  return {
+    declaredReservationValue: .1 + rand() * .9,
+    priorityWeight: .15 + rand() * .85,
+    qualityWeight: .2 + rand() * .8,
+    localityWeight: .2 + rand() * .8,
+    consent: true,
+    communityDecision: 'approved',
+    source: 'synthetic',
+  };
+}
 const TYPES = ['gpu', 'solar', 'storage'];
 const TYPE_INDEX: Record<string, number> = { gpu: 0, solar: 1, storage: 2 };
 const SUB_MATRIX = [
@@ -313,6 +365,9 @@ export interface ExtendedAgent {
   trueReliability: number;
   reportedReliability: number;
 
+  /** Human-declared preference and consent; never inferred from the resource vector. */
+  subjectivePreference?: SubjectivePreference;
+
   /** Physical timing layer (energy/compute/storage positive-control domain). */
   windowStart: number;   // hour at which the offer becomes physically available
   windowEnd: number;     // hour at which unused capacity is curtailed
@@ -323,14 +378,101 @@ export interface ExtendedAgent {
   reportedDeadline: number;
 }
 
+export interface SubjectivePreferenceDecision {
+  allowed: boolean;
+  score: number;
+  reason: string;
+}
+
+/**
+ * Apply only preferences that a person or community explicitly declared.
+ * Missing preferences remain neutral for backwards-compatible fixtures; the
+ * router must not manufacture a value judgment from physical telemetry.
+ */
+export function evaluateSubjectivePreference(
+  offer: Pick<ExtendedAgent, 'subjectivePreference' | 'vector'>,
+  need: Pick<ExtendedAgent, 'subjectivePreference' | 'vector'>,
+): SubjectivePreferenceDecision {
+  const provider = offer.subjectivePreference;
+  const requester = need.subjectivePreference;
+  if (provider && (!provider.consent || provider.communityDecision === 'rejected')) {
+    return { allowed: false, score: 0, reason: 'Provider withheld consent for this allocation.' };
+  }
+  if (requester && (!requester.consent || requester.communityDecision === 'rejected')) {
+    return { allowed: false, score: 0, reason: 'Requester or community vetoed this allocation.' };
+  }
+  if (requester?.communityDecision === 'pending') {
+    return { allowed: false, score: 0, reason: 'Allocation is waiting for a human/community decision.' };
+  }
+  if (!requester) {
+    return { allowed: true, score: 1, reason: 'No preference was declared; treated as a neutral logistics request.' };
+  }
+
+  const quality = clamp(offer.vector.quality * requester.qualityWeight);
+  const locality = clamp((1 - Math.abs(offer.vector.locationCost - need.vector.locationCost)) * requester.localityWeight);
+  const priority = clamp(requester.priorityWeight);
+  const declaredValue = clamp(requester.declaredReservationValue);
+  // This is a preference-fit multiplier, not an attempt to price a life,
+  // artwork, or a political choice. The declaration remains the authority.
+  const score = clamp(.25 + .25 * quality + .2 * locality + .2 * priority + .1 * declaredValue);
+  return { allowed: true, score, reason: 'Ranked within the requester-declared preference boundary.' };
+}
+
+export interface GenesisOperatingPolicy {
+  mode: 'cash-first' | 'advisory' | 'cash-market-fallback';
+  fallbackApplied: boolean;
+  reason: string;
+}
+
+/**
+ * Genesis never becomes a parallel banking system. It either assists the
+ * existing cash/market rail or runs as an explicitly advisory experiment. If
+ * its telemetry/network is unavailable (or a node has failed), it falls back
+ * to cash-market ordering rather than attempting vector barter.
+ */
+export function genesisOperatingPolicy(p: SimulationParams, failed = -1): GenesisOperatingPolicy {
+  const requested = p.genesisSettlementMode ?? 'cash-first';
+  const threshold = clamp(p.genesisOfflineThreshold ?? .5);
+  const outage = clamp(p.infrastructureOutage ?? 0);
+  const telemetryUnavailable = p.telemetryReliability < Math.max(.2, threshold * .7);
+  const nodeUnavailable = failed >= 0;
+  if (outage >= threshold || telemetryUnavailable || nodeUnavailable) {
+    const reasons = [
+      outage >= threshold ? 'routing-grid availability fell below the safety threshold' : '',
+      telemetryUnavailable ? 'physical telemetry is too unreliable' : '',
+      nodeUnavailable ? 'a provider/node failed' : '',
+    ].filter(Boolean);
+    return {
+      mode: 'cash-market-fallback',
+      fallbackApplied: true,
+      reason: `${reasons.join('; ')}; direct vector routing is paused and cash/market coordination remains available.`,
+    };
+  }
+  return {
+    mode: requested,
+    fallbackApplied: false,
+    reason: requested === 'advisory'
+      ? 'Genesis is advisory only; a human and the existing settlement rail approve execution.'
+      : 'Genesis assists logistics while cash/market settlement remains the trusted anchor.',
+  };
+}
+
 
 export interface World { offers: ExtendedAgent[]; needs: ExtendedAgent[]; physicalCapacity: number; totalDemand: number }
 
 /** Deep clone used at every counterfactual boundary; vectors must never be shared. */
 export function cloneWorld(world: Readonly<World>): World {
   return {
-    offers: world.offers.map(agent => ({ ...agent, vector: { ...agent.vector } })),
-    needs: world.needs.map(agent => ({ ...agent, vector: { ...agent.vector } })),
+    offers: world.offers.map(agent => ({
+      ...agent,
+      vector: { ...agent.vector },
+      subjectivePreference: agent.subjectivePreference ? { ...agent.subjectivePreference } : undefined,
+    })),
+    needs: world.needs.map(agent => ({
+      ...agent,
+      vector: { ...agent.vector },
+      subjectivePreference: agent.subjectivePreference ? { ...agent.subjectivePreference } : undefined,
+    })),
     physicalCapacity: world.physicalCapacity,
     totalDemand: world.totalDemand,
   };
@@ -384,6 +526,7 @@ export function buildWorld(p: SimulationParams, seed: number, shock: number): Wo
     const windowStart = typeIdx === 1 ? 8 + rand() * 7 : rand() * 20;
     const windowEnd = windowStart + (typeIdx === 1 ? .3 + rand() * 1.4 : 6 + rand() * 12);
     const telemetryError = (1 - p.telemetryReliability) * (rand() - .5) * 6;
+    const preference = syntheticPreference(rand);
 
     offers.push({
       id: i, type, amount: effectiveAmount, vector,
@@ -402,7 +545,8 @@ export function buildWorld(p: SimulationParams, seed: number, shock: number): Wo
       trueReliability: vector.reliability, reportedReliability: clamp(vector.reliability / reportFactor),
       windowStart, windowEnd, deadline: windowEnd, flexible: typeIdx === 2,
       blockIdx: Math.floor(windowStart / 6),
-      reportedWindowStart: windowStart + telemetryError, reportedDeadline: windowEnd + telemetryError
+      reportedWindowStart: windowStart + telemetryError, reportedDeadline: windowEnd + telemetryError,
+      subjectivePreference: preference,
     });
   }
 
@@ -433,7 +577,10 @@ export function buildWorld(p: SimulationParams, seed: number, shock: number): Wo
     const effectiveNeed = bEnabled ? baseNeed * panicAmp : baseNeed;
 
     const monetaryBid = vector.demand * .45 + vector.urgency * .55;
-    const privateValue = clamp(.15 + vector.demand * .45 + vector.urgency * .4);
+    const preference = syntheticPreference(rand);
+    // Reservation value is declared by the requester; it is not inferred as
+    // a universal price from the physical vector.
+    const privateValue = preference.declaredReservationValue;
     const misreports = rand() < (p.misreportProbability ?? 0);
     const reportFactor = misreports ? 1 + (p.misreportMagnitude ?? 0) : 1;
     const audited = misreports && rand() < (p.auditProbability ?? 0);
@@ -462,7 +609,8 @@ export function buildWorld(p: SimulationParams, seed: number, shock: number): Wo
       trueReliability: vector.reliability, reportedReliability: clamp(vector.reliability / reportFactor),
       windowStart: release, windowEnd: deadline, deadline, flexible,
       blockIdx: Math.floor(release / 6),
-      reportedWindowStart: release + nTelemetryError, reportedDeadline: deadline + nTelemetryError
+      reportedWindowStart: release + nTelemetryError, reportedDeadline: deadline + nTelemetryError,
+      subjectivePreference: preference,
     });
 
   }
@@ -486,9 +634,24 @@ export interface Outcome {
   informationRejected: number;
   regulatoryBottlenecks: number;
   trustWeightedCap: number;
+  subjectiveRejected: number;
+  genesisFallback: boolean;
+  genesisPolicyReason?: string;
 }
 
-interface Edge { oi: number; ni: number; sub: number; value: number; rank: number; relay: boolean; accessible: boolean; target?: number; price?: number }
+interface Edge {
+  oi: number;
+  ni: number;
+  sub: number;
+  value: number;
+  rank: number;
+  relay: boolean;
+  accessible: boolean;
+  target?: number;
+  price?: number;
+  humanEligible?: boolean;
+  subjectiveScore?: number;
+}
 
 /** Exact maximum-weight flow for the divisible bipartite transportation problem.
  * Successive longest augmenting paths include reverse arcs, so earlier choices can
@@ -657,8 +820,15 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
     creditFlows[i] = 0;
   }
 
-  const monetary = mode === 'market' || mode === 'doubleAuction' || mode === 'shadowPriceMarket' || mode === 'stabilizedMarket' || mode === 'hybrid';
-  const telemetry = mode === 'shadowPriceMarket' || mode === 'hybrid' || mode === 'maxWeightMatching' || mode === 'genesis';
+  const genesisPolicy = mode === 'genesis' ? genesisOperatingPolicy(p, failed) : undefined;
+  const genesisFallback = genesisPolicy?.fallbackApplied ?? false;
+  const routingMode: Architecture | 'oracle' = genesisFallback ? 'market' : mode;
+  // Cash-first Genesis uses the same balances, credit, collateral, and
+  // settlement constraints as the monetary comparators. Advisory Genesis is
+  // intentionally non-executing and is never a substitute for a bank.
+  const genesisCashFirst = mode === 'genesis' && genesisPolicy?.mode !== 'advisory';
+  const monetary = mode === 'market' || mode === 'doubleAuction' || mode === 'shadowPriceMarket' || mode === 'stabilizedMarket' || mode === 'hybrid' || genesisCashFirst;
+  const telemetry = mode === 'shadowPriceMarket' || mode === 'hybrid' || mode === 'maxWeightMatching' || (mode === 'genesis' && !genesisFallback);
   const bEnabled = p.behavioralEnabled ?? false;
   const iEnabled = p.institutionalEnabled ?? false;
 
@@ -704,6 +874,10 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
       const timing = timingFactor(o.windowStart, o.windowEnd, n.deadline, n.flexible, relay, p);
       const value = Math.max(0, (oQual * nVec.demand + .25 * nVec.urgency + oSolarBonus) * (.72 + .28 * locProduct) * conversion * oRel * sub * timing);
 
+      const preference = mode === 'genesis'
+        ? evaluateSubjectivePreference(o, n)
+        : { allowed: true, score: 1, reason: 'Preference gate is only applied to Genesis coordination assist.' };
+
       let rank = value;
       if (mode !== 'oracle') {
         const infoNoise = bEnabled ? (rand() - 0.5) * p.informationAsymmetry * 1.5 : 0;
@@ -729,15 +903,21 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
         const signal = resScore * sub * reportedTiming * (1 + (1 - p.telemetryReliability) * (rand() - .5) * 2.4);
 
         const auctionSurplus = n.reportedBid - o.reportedAsk;
-        rank = mode === 'doubleAuction' ? (auctionSurplus >= 0 ? auctionSurplus * sub * blockTiming : -1)
-          : mode === 'market' || mode === 'stabilizedMarket' ? price
-          : mode === 'hybrid' ? Math.max(0, signal) * .72 + Math.max(0, price) * .28 : signal;
+        rank = routingMode === 'doubleAuction' ? (auctionSurplus >= 0 ? auctionSurplus * sub * blockTiming : -1)
+          : routingMode === 'market' || routingMode === 'stabilizedMarket' ? price
+          : routingMode === 'hybrid' ? Math.max(0, signal) * .72 + Math.max(0, price) * .28 : signal;
       }
+      // A declared preference may refine an eligible route; it cannot become
+      // an inferred universal price or override a human/community veto.
+      if (mode === 'genesis' && !genesisFallback) rank *= preference.score;
 
-      const clearingPrice = mode === 'doubleAuction' ? (o.reportedAsk + n.reportedBid) / 2
+      const clearingPrice = routingMode === 'doubleAuction' ? (o.reportedAsk + n.reportedBid) / 2
         : nodal ? oNodalPrice * (1 + oCongestion * .6) : undefined;
 
-      edges.push({ oi, ni, sub, value, rank, relay, accessible: true, price: clearingPrice });
+      edges.push({
+        oi, ni, sub, value, rank, relay, accessible: true, price: clearingPrice,
+        humanEligible: preference.allowed, subjectiveScore: preference.score,
+      });
     }
   }
 
@@ -751,6 +931,7 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
 
   let welfare = 0, delivered = 0, relayed = 0;
   let financialRejected = 0, behavioralRejected = 0, institutionalRejected = 0, informationRejected = 0;
+  const subjectiveHeldNeeds = new Set<number>();
   let regulatoryBottlenecks = 0, settlementAttempts = 0, settlementFailures = 0, backstop = 0, liquidityShortfall = 0;
 
   for (let ei = 0; ei < edges.length; ei++) {
@@ -759,6 +940,13 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
     if (raw <= 1e-9) continue;
     const effective = raw * e.sub;
     const seller = world.offers[e.oi], buyer = world.needs[e.ni];
+
+    // Genesis cannot decide a contested subjective priority.  The route is
+    // held for a person/community decision instead of being silently priced.
+    if (mode === 'genesis' && e.humanEligible === false) {
+      subjectiveHeldNeeds.add(e.ni);
+      continue;
+    }
 
     // 1. Institutional Check (Compliance / Regulatory / Capital)
     if (iEnabled && mode !== 'oracle') {
@@ -792,10 +980,13 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
       const collateralCredit = Math.max(0, buyer.credit * p.creditAvailability * buyer.collateral * (1 - p.collateralHaircut) - capDeduction);
       const gap = Math.max(0, price - liquid - collateralCredit);
       const solvent = buyer.solvent && seller.solvent;
-      const settlementOk = rand() < p.settlementReliability * (1 - p.counterpartyRisk * (buyer.intermediary === seller.intermediary ? 1 : .35));
+      const settlementReliability = genesisFallback
+        ? (p.cashSettlementReliability ?? .98)
+        : p.settlementReliability;
+      const settlementOk = rand() < settlementReliability * (1 - p.counterpartyRisk * (buyer.intermediary === seller.intermediary ? 1 : .35));
       let rescued = 0;
 
-      if (gap > 0 && mode !== 'market' && p.centralBankBackstop && solvent) {
+      if (gap > 0 && routingMode !== 'market' && p.centralBankBackstop && solvent) {
         rescued = Math.min(gap, Math.max(0, p.backstopCapacity * world.totalDemand - backstop));
       }
 
@@ -819,6 +1010,11 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
     welfare += effective * e.value;
     if (e.relay) relayed += effective;
   }
+
+  // Count the unmet remainder once per held need. Multiple candidate providers
+  // must not inflate the human-boundary rate above the actual demand held.
+  const subjectiveRejected = [...subjectiveHeldNeeds]
+    .reduce((sum, ni) => sum + Math.max(0, remain[ni]), 0);
 
   const demand = world.totalDemand;
   const capacity = failed < 0 ? world.physicalCapacity : world.physicalCapacity - world.offers[failed].amount;
@@ -871,9 +1067,9 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
   const gini = sumShort ? 2 * weighted / (nNeeds * sumShort) - (nNeeds + 1) / nNeeds : 0;
 
   const instLatency = iEnabled ? p.governanceLatency * 40 + p.regulatoryFriction * 20 : 0;
-  const overhead = mode === 'market' || mode === 'doubleAuction' || mode === 'shadowPriceMarket' || mode === 'stabilizedMarket'
+  const overhead = routingMode === 'market' || routingMode === 'doubleAuction' || routingMode === 'shadowPriceMarket' || routingMode === 'stabilizedMarket'
     ? p.marketOverhead + backstop / Math.max(demand, 1) * .04
-    : mode === 'hybrid'
+    : routingMode === 'hybrid'
     ? p.hybridOverhead + p.telemetryVerificationCost * (1 - p.telemetryReliability)
     : p.genesisOverhead + p.telemetryVerificationCost * (1 - p.telemetryReliability);
 
@@ -885,7 +1081,8 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
     relay: delivered ? relayed / delivered : 0, gini, overhead, flows, financialRejected, settlementAttempts,
     settlementFailures, backstop, liquidityShortfall, creditFlows, decomposition,
     telemetrySensitivity: telemetry ? (1 - p.telemetryReliability) * (welfare / (delivered || 1)) * 100 : 0,
-    behavioralRejected, institutionalRejected, informationRejected, regulatoryBottlenecks, trustWeightedCap: trustCap
+    behavioralRejected, institutionalRejected, informationRejected, regulatoryBottlenecks, trustWeightedCap: trustCap,
+    subjectiveRejected, genesisFallback, genesisPolicyReason: genesisPolicy?.reason,
   };
 }
 
@@ -1006,7 +1203,9 @@ function metrics(runs: Outcome[], casc: number, p: SimulationParams): Simulation
     clearingPrice: mean(runs, r => r.delivered ? r.creditFlows.reduce((s, x) => s + x, 0) / r.delivered : 0),
     shadowPrice: mean(runs, r => r.capacity > 0 ? r.attainable / r.capacity : 0),
     manipulationVulnerability: (p.misreportProbability ?? 0) * (p.misreportMagnitude ?? 0) * 100,
-    falseCriticalAllocationRate: (p.misreportProbability ?? 0) * (1 - (p.auditProbability ?? 0)) * 100
+    falseCriticalAllocationRate: (p.misreportProbability ?? 0) * (1 - (p.auditProbability ?? 0)) * 100,
+    genesisFallbackRate: mean(runs, r => r.genesisFallback ? 1 : 0),
+    subjectiveRejectionRate: mean(runs, r => r.subjectiveRejected / Math.max(1, r.demand)),
   };
 }
 

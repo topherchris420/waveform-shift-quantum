@@ -51,19 +51,19 @@ To ensure scientific rigor, all physics calculations and visual models are tagge
 
 ## The Genesis Protocol: Complex-Systems Resource Routing
 
-The Genesis Protocol extends Waveform Shift's experimental philosophy into economic coordination: run monetary exchange and computational resource routing from equivalent starting conditions, measure where their outcomes diverge, and search for the conditions under which each coordination mechanism performs better.
+The Genesis Protocol extends Waveform Shift's experimental philosophy into bounded economic coordination: compare ordinary monetary exchange with a logistics assist that uses physical-fit information, then record where each approach succeeds or fails.
 
-The laboratory now compares four architectures—Market, a lender-of-last-resort Stabilized Market, a telemetry-enabled Computational Market/Hybrid, and direct physical-resource Genesis routing—against one hidden oracle-welfare benchmark. Monetary trades must actually clear through balances, credit, collateral, counterparties, and settlement. The workstation reports feasible-but-unserved demand, stranded physical utility, a conserved unmet-demand decomposition, central-bank utilization, a transparent Thermodynamic Safety Valve, and a parameter-space Coordination Regime Map. Pure financial shocks preserve the physical world, while real-resource shocks bind every mechanism.
+The laboratory now compares four architectures—Market, a lender-of-last-resort Stabilized Market, a telemetry-enabled Computational Market/Hybrid, and Genesis coordination assistance—against one hidden physical-welfare benchmark. Monetary trades must actually clear through balances, credit, collateral, counterparties, and settlement. Genesis uses declared preferences only as consent and ranking inputs, settles through the same cash/credit rail by default, and falls back to market coordination when its routing data or nodes fail. Pure financial shocks preserve the physical world, while real-resource shocks bind every mechanism.
 
-Genesis is not an anti-money claim and cannot receive a hardcoded victory. Discovery and holdout seeds remain separate; superiority must beat the strongest monetary/hybrid comparator, clear confidence and oracle-gap requirements, pass systemic-risk gates, and survive overhead sensitivity. See [the monetary coordination model](docs/MONETARY_COORDINATION_MODEL.md) for mechanisms, assumptions, hypotheses, and falsification conditions.
+Genesis is not a banking replacement, an autonomous currency, or a civic preference calculator, and it cannot receive a hardcoded victory. Discovery and holdout seeds remain separate; a narrow logistics claim must beat the strongest monetary/hybrid comparator, clear confidence and oracle-gap requirements, pass systemic-risk gates, and survive overhead sensitivity. See [the operating boundaries](docs/GENESIS_OPERATING_BOUNDARIES.md) and [the monetary coordination model](docs/MONETARY_COORDINATION_MODEL.md) for mechanisms, assumptions, hypotheses, and falsification conditions.
 
-> **Core Principle:** Computation may outperform money for coordinating physically measurable resources (where the scarce information is how resources physically fit together), while markets remain superior where subjective preferences, price discovery, and financial risk carry the most valuable information.
+> **Core Principle:** Computation may assist with physically measurable logistics (where the scarce information is how resources physically fit together), while people, communities, and markets remain authoritative for subjective preferences, price discovery, liquidity, and financial risk.
 
 ### Key Simulation Components
 
-1. **Multidimensional Value Vectors**: Replaces single scalar monetary pricing with 8-dimensional resource vectors $\mathbf{V}_i(t) = f(S_i, D_i, U_i, Q_i, L_i, E_i, R_i, C_i)$ measuring scarcity ($S_i$), demand ($D_i$), urgency ($U_i$), quality ($Q_i$), location ($L_i$), energy cost ($E_i$), reliability ($R_i$), and compatibility ($C_i$).
-2. **CAISO Duck Curve Engine**: A 24-hour stochastic power grid simulator that models real-world energy availability anomalies.
-3. **Multi-Hop Triangulation**: Dynamic routing through intermediary relay nodes (Battery Storage, Compute Brokers, Data Hubs) to perform time-shifting and form-shifting resource allocation.
+1. **Operational fit signals**: Multiple physical fields measure scarcity, demand, urgency, quality, location, energy, reliability, and compatibility. They supplement—rather than replace—human value judgments or prices.
+2. **Seeded energy availability**: A 24-hour stochastic power-availability input exercises timing and outage assumptions without claiming to model a real utility.
+3. **Route preview**: Dynamic direct or relay paths show possible logistics choices; execution still requires the declared human boundary and cash/market settlement.
 
 ## Systemic Stress & Coordination Lab
 

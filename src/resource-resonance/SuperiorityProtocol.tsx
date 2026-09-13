@@ -48,11 +48,12 @@ export const SuperiorityProtocol: React.FC<Props> = ({ onAdopt, baseParams }) =>
     <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4 sm:p-6">
       <h3 className="font-mono text-xs sm:text-sm font-bold tracking-widest text-slate-200 uppercase flex items-center gap-2">
         <Search className="w-4 h-4 text-cyan-400 shrink-0" />
-        Superiority Protocol
+        Holdout Coordination Test
       </h3>
       <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-        Search parameter space for a predicted advantage, freeze the region and its prediction, then re-test it on
-        unseen seeds and shocks. Superiority is only granted if the holdout result clears the confidence and risk gates.
+        Search for a narrow logistics improvement, freeze the prediction, then re-test it on unseen seeds and shocks.
+        A passing result describes this modeled regime only; it never replaces money, civic choice, or the failure
+        fallback. Superiority is granted only if the holdout clears the confidence and risk gates.
       </p>
 
       {/* Stage rail */}
@@ -88,7 +89,7 @@ export const SuperiorityProtocol: React.FC<Props> = ({ onAdopt, baseParams }) =>
         ) : outcome ? (
           'Re-run protocol'
         ) : (
-          'Run superiority protocol'
+          'Test coordination assist'
         )}
       </Button>
 
@@ -143,7 +144,7 @@ export const SuperiorityProtocol: React.FC<Props> = ({ onAdopt, baseParams }) =>
                   outcome.granted ? 'text-emerald-400' : 'text-rose-400'
                 }`}
               >
-                {outcome.granted ? 'Computational superiority confirmed within this regime' : 'Claim not upheld'}
+                {outcome.granted ? 'Coordination assist supported in this regime' : 'Assist claim not upheld'}
               </h4>
               <p className="mt-1.5 text-[11px] leading-relaxed text-slate-300">{outcome.summary}</p>
             </div>

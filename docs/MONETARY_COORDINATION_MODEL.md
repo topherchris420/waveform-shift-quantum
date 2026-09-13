@@ -2,12 +2,12 @@
 
 ## Research Scope
 
-The Genesis Protocol is an experiment-discovery engine for comparing information and allocation systems across a multi-layer complex adaptive systems hierarchy:
+The Genesis Protocol is an experiment-discovery engine for comparing ordinary monetary coordination with a bounded physical-logistics assist. It is not a banking replacement or a civic preference calculator. The hierarchy below describes interfaces in the simulation, not a claim that computation supersedes money:
 
 ```
 Physical Reality
      ↓
-Resource Constraints & CAISO Grid Stochasticity
+Resource Constraints & Stochastic Energy Availability
      ↓
 Human Behavioral Dynamics (Heterogeneous & Stochastic)
      ↓
@@ -15,14 +15,16 @@ Institutional Constraints & Regulatory Realities
      ↓
 Financial / Monetary Clearing Layer
      ↓
-Computational / Genesis Routing Layer
+Genesis Logistics Assist (advisory or cash-first)
      ↓
 Observed System-Level Outcomes
 ```
 
-It does **not** claim that money, markets, or central banking are inherently harmful, nor does it grant an intrinsic hardcoded advantage to computational routing. Every architecture receives identical seeded agents, physical capacities, geography, conversion matrix, renewable shock, and hidden physical-welfare oracle. A result describes a simulated regime, not an economy-wide empirical conclusion.
+It does **not** claim that money, markets, or central banking are inherently harmful, nor does it grant an intrinsic hardcoded advantage to computational routing. Every architecture receives identical seeded agents, physical capacities, geography, conversion matrix, renewable shock, and hidden physical-welfare oracle. A result describes a simulated regime, not an economy-wide empirical conclusion. Physical vectors describe operational fit only; human and community declarations remain authoritative for subjective priorities, and cash/market settlement remains available when the routing layer is unavailable.
 
 The Quantum Mechanics / Physics Workstation remains epistemically segregated from this economic simulation engine.
+
+For the user-facing contract and failure behavior, see [Genesis operating boundaries](GENESIS_OPERATING_BOUNDARIES.md).
 
 ---
 
@@ -39,12 +41,16 @@ The Quantum Mechanics / Physics Workstation remains epistemically segregated fro
 
 Agents have deterministic seeded balances, private-credit limits, collateral, solvency state, trust scores, risk aversion factors, regulatory approval flags, and intermediary exposures.
 
+Genesis adds explicit preference boundaries: consent, priority, quality/locality weights, a requester-declared reservation value, and a community decision (`approved`, `pending`, or `rejected`). These values are inputs supplied by people or communities (synthetic in the seeded experiment), not values inferred by the router. A pending or rejected decision holds the route.
+
 A proposed trade clears only when:
 1. **Physical**: a compatible, geographically reachable physical route has capacity;
 2. **Institutional**: counterparties pass regulatory compliance holds and satisfy capital reserve bounds;
 3. **Behavioral**: joint counterparty trust exceeds transaction thresholds and no holdouts occur;
 4. **Monetary**: balance plus haircut-adjusted credit covers its simulated price;
 5. **Solvency & Settlement**: both counterparties are solvent and the settlement draw succeeds.
+
+For Genesis in its default `cash-first` mode, this same monetary check is mandatory. In `advisory` mode, Genesis may recommend a route but does not execute it. If its telemetry is too unreliable, the routing grid is unavailable, or a node fails, it pauses vector ordering and falls back to the market/cash path; this is recorded rather than treated as invisible barter capacity.
 
 ### 3. CONSERVED UNMET-DEMAND DECOMPOSITION
 

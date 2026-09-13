@@ -28,9 +28,9 @@ export const AssumptionSensitivity: React.FC<Props> = ({ params, onChange }) => 
     <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
       <h3 className="font-mono text-xs font-bold uppercase tracking-widest sm:text-sm">Physical timing &amp; sensitivity</h3>
       <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-        Ground truth is physical: surplus solar expires inside its window, jobs carry deadlines, flexible workloads can
-        shift, and batteries bridge the gap at a loss. Prices see only a coarse delivery block; routing sees noisy
-        telemetry; only the oracle sees the latent outcome.
+        The model is a logistics exercise: surplus solar expires inside its window, jobs carry deadlines, flexible
+        workloads can shift, and batteries bridge the gap at a loss. Physical vectors describe fit—not the value of
+        art, care, or a public decision—and cash/markets remain the settlement rail.
       </p>
 
       <div className="mt-4 space-y-4">
@@ -61,7 +61,7 @@ export const AssumptionSensitivity: React.FC<Props> = ({ params, onChange }) => 
         <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
         <p className="text-[11px] leading-relaxed text-muted-foreground">
           Coordination costs above are assumptions, not measurements — sweep them to see whether the direction of the
-          result survives halving and doubling the Genesis cost constant.
+          result survives halving and doubling the assumed coordination cost.
         </p>
       </div>
 

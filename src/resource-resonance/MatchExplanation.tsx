@@ -11,11 +11,11 @@ export const MatchExplanation: React.FC<MatchExplanationProps> = ({ match }) => 
   const { explanation } = match;
 
   const metrics = [
-    { label: 'Compute Compatibility', value: explanation.compatibility, icon: Cpu, tooltip: 'Vector C: Alignment between the provider hardware and request architecture.' },
-    { label: 'Energy Availability', value: explanation.energyAvailability, icon: Zap, tooltip: 'Vector E: Simulated via CAISO duck curve. Higher means cheaper/abundant energy.' },
-    { label: 'Urgency Alignment', value: explanation.urgencyAlignment, icon: AlignLeft, tooltip: 'Vector U: Distance between how fast the request is needed vs how fast the provider can deliver.' },
-    { label: 'Network Cost', value: explanation.networkCost, icon: Route, tooltip: 'Vector L: Geographical friction and multi-hop transport overhead.' },
-    { label: 'Reliability', value: explanation.reliability, icon: ShieldCheck, tooltip: 'Vector R: Cryptographic proof of uptime and historical success rate.' },
+    { label: 'Compatibility', value: explanation.compatibility, icon: Cpu, tooltip: 'How well the available resource fits the stated request.' },
+    { label: 'Energy availability', value: explanation.energyAvailability, icon: Zap, tooltip: 'Seeded energy availability for the selected hour.' },
+    { label: 'Urgency alignment', value: explanation.urgencyAlignment, icon: AlignLeft, tooltip: 'How closely the delivery timing fits the stated deadline.' },
+    { label: 'Network cost', value: explanation.networkCost, icon: Route, tooltip: 'Estimated location and transport friction.' },
+    { label: 'Reliability', value: explanation.reliability, icon: ShieldCheck, tooltip: 'Observed provider reliability in this synthetic run.' },
   ];
 
   return (
@@ -68,7 +68,7 @@ export const MatchExplanation: React.FC<MatchExplanationProps> = ({ match }) => 
       </div>
       
       <div className="mt-4 border-t border-slate-800 pt-3 text-[10px] leading-relaxed text-slate-500">
-        Routing decision based on dynamic multi-dimensional alignment rather than compressed monetary price.
+        Route preview based on the requester’s declared boundary and operating fit. It does not assign universal value or execute a trade.
       </div>
     </div>
   );

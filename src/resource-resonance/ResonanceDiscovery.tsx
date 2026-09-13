@@ -53,12 +53,11 @@ export const ResonanceDiscovery: React.FC<ResonanceDiscoveryProps> = ({ onDiscov
       <div className="mb-4">
         <h3 className="font-mono text-sm font-bold tracking-widest text-slate-200 uppercase flex items-center gap-2">
           <Search className="w-4 h-4 text-cyan-400" />
-          Discovery Engine
+          Routing Scenario Finder
         </h3>
         <p className="text-xs text-slate-400 mt-2 max-w-xl">
-          Sweep parameter space (scarcity, network friction, renewable volatility, reliability) to find 
-          <strong> Resonance Windows</strong> where direct routing drastically outperforms the monetary baseline, or 
-          <strong> Failure Regions</strong> where it collapses.
+          Sweep physical and settlement assumptions to find bounded coordination regimes where a route preview helps,
+          or failure regions where the system should defer to people and the cash/market baseline.
         </p>
       </div>
 
@@ -79,7 +78,7 @@ export const ResonanceDiscovery: React.FC<ResonanceDiscoveryProps> = ({ onDiscov
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="max-w-[250px] border-cyan-900/50 bg-slate-900 text-xs text-slate-300">
-              <p>Simulates thousands of multi-dimensional routing configurations to find edge cases where the physics of computation mathematically beats the compression of fiat pricing.</p>
+              <p>Simulates many logistics configurations to find edge cases where physical-fit information helps—and where ordinary money, markets, or human decisions should remain in charge.</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

@@ -177,7 +177,7 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
       <div className="relative z-20 mb-4 flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
         <h3 className="font-mono text-sm font-bold tracking-[0.2em] text-white uppercase drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] flex items-center gap-2">
           <Activity className="w-5 h-5 text-cyan-400" />
-          Triangulation Engine
+          Route Preview
         </h3>
         <button
           onClick={onRoute}
@@ -186,16 +186,19 @@ export const ResourceNetwork: React.FC<ResourceNetworkProps> = ({ offers, needs,
         >
           {isRouting ? (
             <span className="flex items-center gap-2">
-              <Activity className="w-4 h-4 animate-spin text-cyan-400" /> Calculating Multi-Hop Routes...
+              <Activity className="w-4 h-4 animate-spin text-cyan-400" /> Checking feasible routes…
             </span>
           ) : (
             <span className="flex items-center gap-2">
-              Route Native Capacity <Zap className="w-3 h-3 text-cyan-400" />
+              Preview Route Options <Zap className="w-3 h-3 text-cyan-400" />
             </span>
           )}
           <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
         </button>
       </div>
+      <p className="relative z-20 -mt-1 mb-3 text-[10px] leading-relaxed text-slate-500">
+        Preview only: routes use declared consent and physical fit; execution still requires human approval and cash/market settlement.
+      </p>
 
       <div className="relative z-10 min-w-0 flex-1 pb-2">
       <div className="relative mt-4 flex min-h-[390px] min-w-0 flex-1 items-stretch justify-between gap-2 sm:mt-6 sm:gap-4">

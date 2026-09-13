@@ -56,7 +56,7 @@ const POLICY_LABELS: Record<PolicyVariant, string> = {
   "settlement-support": "Settlement support",
   "network-matching": "Network matching",
   hybrid: "Hybrid coordination",
-  genesis: "Genesis experimental routing",
+  genesis: "Genesis constrained payment sequencing",
 };
 function NumberControl({
   label,
@@ -681,8 +681,9 @@ export default function SystemicLab() {
         </div>
         <p className="desk-note">
           Common starting balances, seeds and shocks. The selected facility and
-          market assumptions apply to every comparator. Genesis uses constrained
-          payment sequencing; it cannot invent money or resources.
+          market assumptions apply to every comparator. Genesis is a constrained
+          payment-ordering assist; it cannot replace banks, invent money, or
+          create resources.
         </p>
         {comparison ? (
           <>

@@ -7,7 +7,7 @@ import {
   LedgerEvent, 
   CatalystIntegrityInfo 
 } from '../lib/catalyst';
-import { SimulationParams, SimulationResult, runSimulation } from './engine';
+import { SimulationParams, SimulationResult, genesisOperatingPolicy } from './engine';
 
 export interface ResonanceCatalystSession {
   mode: string;
@@ -18,43 +18,51 @@ export interface ResonanceCatalystSession {
 
 export function compileResonanceSpec(s: ResonanceCatalystSession): ResearchSpec {
   return {
-    title: `Genesis Protocol: ${s.mode}`,
-    concept: 'Direct machine-mediated resource routing for narrow coordination problems where monetary intermediation creates unnecessary friction.',
+    title: `Genesis coordination assist: ${s.mode}`,
+    concept: 'Human-approved logistics assistance for narrow physical-resource coordination problems; it is not a bank, currency, or civic decision-maker.',
     domain: 'economic_coordination_simulation',
-    objective: 'Identify conditions where Resource Resonance outperforms monetary routing, while preserving fiat where price discovery is superior.',
+    objective: 'Identify narrow conditions where operational routing reduces waste while preserving money, markets, human preferences, and a conventional crisis fallback.',
     scientific_status: 'experimental',
     assumptions: [
-      'Nodes are able to communicate multi-dimensional state vectors',
-      'Matches are executed atomically via smart contract or trusted network',
-      'Value is contextual and not universally fungible',
-      'Fiat remains the superior coordination mechanism for general preference expression and price discovery'
+      'Providers and requesters can report noisy physical state to the coordination service',
+      'People or communities explicitly declare consent, priority, and reservation boundaries',
+      'Executed trades use the existing cash, credit, collateral, and settlement rail',
+      'A routing-grid outage or node failure switches to cash/market ordering instead of vector barter',
+      'Operational vectors describe fit; they do not price art, care, or a political choice'
     ],
     claims: [
       {
-        statement: 'Direct routing does not attempt to eliminate money universally.',
+        statement: 'Genesis is a logistics assist, not a banking or civic-decision replacement.',
         status: 'established',
-        rationale: 'Protocol explicitly bounds its application to specific coordination failures.',
+        rationale: 'The runtime requires cash-first settlement by default, exposes an advisory mode, and records human/community vetoes.',
         evidence_needed: []
       },
       {
-        statement: `Direct routing achieved ΔUtility = ${s.result.deltaUtility.toFixed(2)} in this specific narrow regime.`,
+        statement: `The coordination assist produced ΔUtility = ${s.result.deltaUtility.toFixed(2)} in this specific modeled regime.`,
         status: 'experimental',
         rationale: s.result.primaryDriver,
         evidence_needed: []
       }
     ],
     success_metrics: [
-      `Utility > Monetary Baseline in target regime (Δ > 0)`
+      `Operational utility exceeds the monetary baseline in the target regime (Δ > 0)`,
+      'No route executes without the declared human/community boundary',
+      'Outage and node-failure draws remain serviceable through cash/market fallback'
     ],
     falsification_tests: [
-      'Operate in a high-trust, general-preference regime to confirm fiat outperforms.'
+      'Operate in a high-trust, general-preference regime to confirm market coordination remains competitive.',
+      'Set routing-grid availability below threshold and verify that direct vector routing pauses.',
+      'Withdraw consent or leave a community decision pending and verify that the route is held.'
     ],
     constraints: [
-      'No universal token',
-      'No fixed conversion rates'
+      'No universal token or fixed conversion rate',
+      'No inferred normative utility from telemetry',
+      'No autonomous execution without consent and cash/market settlement',
+      'Cash-first operation with explicit crisis fallback'
     ],
     risks: [
-      'System complexity may obscure network bottlenecks'
+      'Complexity or stale telemetry may obscure an ordinary market solution',
+      'Declared preferences can be incomplete, contested, or captured by institutions'
     ],
     tags: ['resource_resonance', s.mode],
     seed: s.seed
@@ -64,12 +72,20 @@ export function compileResonanceSpec(s: ResonanceCatalystSession): ResearchSpec 
 export function runResonanceGates(s: ResonanceCatalystSession): Gate[] {
   return [
     {
-      id: 'no_money_gate',
-      label: 'Zero-currency verification',
-      detail: 'Ensure no single vector dominates as a universal currency.',
+      id: 'human_boundary_gate',
+      label: 'Human and currency boundary',
+      detail: 'Vectors remain operational signals; declared consent/community decisions and the existing settlement rail remain authoritative.',
       passed: true, // We enforce this structurally
       observed: 'Structural invariant',
       threshold: 'true'
+    },
+    {
+      id: 'cash_fallback_gate',
+      label: 'Cash/market crisis fallback',
+      detail: 'A simulated routing-grid outage must pause direct vector routing and keep cash/market coordination available.',
+      passed: genesisOperatingPolicy({ ...s.params, infrastructureOutage: 1 }).mode === 'cash-market-fallback',
+      observed: genesisOperatingPolicy({ ...s.params, infrastructureOutage: 1 }).mode,
+      threshold: 'cash-market-fallback'
     },
     {
       id: 'performance_delta',

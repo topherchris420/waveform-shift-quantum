@@ -7,7 +7,7 @@ const META: Record<Architecture, { label: string; color: string }> = {
   market: { label: 'Market', color: 'text-amber-300' },
   stabilizedMarket: { label: 'Stabilized Market', color: 'text-emerald-300' },
   hybrid: { label: 'Computational Market / Hybrid', color: 'text-indigo-300' },
-  genesis: { label: 'Genesis Experimental Routing', color: 'text-cyan-300' },
+  genesis: { label: 'Genesis Coordination Assist', color: 'text-cyan-300' },
   doubleAuction: { label: 'Double Auction', color: 'text-amber-200' },
   shadowPriceMarket: { label: 'Shadow-Price Market', color: 'text-orange-300' },
   maxWeightMatching: { label: 'Max-Weight Matching', color: 'text-sky-300' },
@@ -33,6 +33,10 @@ export const RoutingComparison: React.FC<{ result: SimulationResult; params: Sim
                 <Row k="Settlement failures" v={`${(m.settlementFailureRate * 100).toFixed(1)}%`} />
                 <Row k="Backstop use" v={`${(m.backstopUtilization * 100).toFixed(1)}%`} />
                 <Row k="Stranded utility" v={`${m.strandedPhysicalUtility.toFixed(1)}%`} />
+                {id === 'genesis' && <>
+                  <Row k="Cash/market fallback" v={`${(m.genesisFallbackRate * 100).toFixed(1)}%`} />
+                  <Row k="Human/community holds" v={`${(m.subjectiveRejectionRate * 100).toFixed(1)}%`} />
+                </>}
               </dl>
               <ul className="mt-4 space-y-1 border-t border-slate-800 pt-3 text-[10px] leading-relaxed text-slate-500">
                 {result.reasons[id].map((reason) => <li key={reason}>• {reason}</li>)}
@@ -65,7 +69,7 @@ export const RoutingComparison: React.FC<{ result: SimulationResult; params: Sim
           ))}
         </div>
         <p className="mt-4 text-[11px] text-slate-500">
-          The expanded unmet-demand decomposition distinguishes physical scarcity, financial constraints, behavioral panic, institutional friction, information asymmetry, and residual coordination failure.
+          The expanded unmet-demand decomposition distinguishes physical scarcity, financial constraints, behavioral panic, institutional friction, information asymmetry, and residual coordination failure. Genesis adds a human-boundary hold metric and reports when it returns to cash/market coordination.
         </p>
       </section>
 
@@ -111,7 +115,7 @@ export const RoutingComparison: React.FC<{ result: SimulationResult; params: Sim
 
       <p className="flex items-start gap-2 rounded-lg border border-amber-900/30 bg-amber-950/10 p-3 text-[11px] leading-relaxed text-slate-400">
         <Landmark className="mt-0.5 h-4 w-4 shrink-0 text-amber-400"/>
-        Simulation assumption: monetary architectures transact through balances, credit, collateral, counterparties, and settlement rails. Multi-layer behavioral and institutional dynamics introduce endogenously emerging panics, compliance holds, and policy lags.
+        Simulation boundary: all executed trades use balances, credit, collateral, counterparties, and settlement rails. Genesis only assists with operational routing; human/community declarations govern subjective priorities, and a cash/market path remains available when its routing grid is unavailable.
       </p>
     </div>
   );
