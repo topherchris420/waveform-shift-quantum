@@ -1,0 +1,47 @@
+{
+  "schema": "systemic-signal.v1",
+  "id": "synthetic-drr-001",
+  "institution": {
+    "id": "synthetic-fbo",
+    "name": "Synthetic FBO observation"
+  },
+  "date": "2026-09-12",
+  "affectedMetrics": [
+    {
+      "metric": "funding_pressure",
+      "direction": "increase",
+      "magnitude": 20,
+      "units": "percent",
+      "baseline": null
+    },
+    {
+      "metric": "collateral_value",
+      "direction": "decrease",
+      "magnitude": 15,
+      "units": "percent",
+      "baseline": null
+    }
+  ],
+  "peerContext": {
+    "group": "Synthetic peers",
+    "sampleSize": 12,
+    "percentile": 0.9
+  },
+  "direction": "deteriorating",
+  "magnitude": 2,
+  "persistenceDays": 14,
+  "confidence": 0.7,
+  "robustness": 0.6,
+  "topologyChanges": [],
+  "leadLagRelationships": [],
+  "provenance": [
+    {
+      "source": "Synthetic offline example",
+      "sourceDate": "2026-09-12",
+      "method": "Illustrative DRR-compatible artifact; no actual institution data."
+    }
+  ],
+  "evidenceIds": [
+    "synthetic-evidence-001"
+  ]
+}

@@ -63,15 +63,17 @@ $$ \text{Total Unmet Demand} = D_{\text{physical}} + D_{\text{financial}} + D_{\
 
 ---
 
-## Formal Causal Attribution Methodology
+## Constraint Contribution Analysis
 
-Causal attribution assigns the primary driver of unserved demand by evaluating the dominant factor in the conserved unmet-demand decomposition:
+Decomposition ranks the dominant simulated constraint of unserved demand by evaluating the dominant factor in the conserved unmet-demand decomposition:
 
 $$ \text{Primary Driver} = \arg\max_{k \in \mathcal{K}} D_k $$
 
+This ranking is descriptive and does not identify a cause. Paired ablation results are model-dependent counterfactuals, not empirical identification.
+
 where $\mathcal{K} = \{ \text{Physical}, \text{Financial}, \text{Behavioral}, \text{Institutional}, \text{Information}, \text{Coordination} \}$.
 
-### Certainty Level Matrix
+### Decomposition Dominance Matrix
 - **HIGH**: Primary factor accounts for $\ge 35\%$ of total unserved demand and total unmet demand $\ge 5\%$.
 - **MEDIUM**: Primary factor accounts for $< 35\%$ of total unserved demand but is the strict maximum.
 - **UNCERTAIN**: Total unmet demand $< 5\%$, or multiple factors are tied within $1\%$ margin.
@@ -119,7 +121,7 @@ Valid outcomes include Market superiority, Stabilized Market superiority, Hybrid
 
 ---
 
-## Thermodynamic Safety Valve
+## Resource Stress Response
 
 The visible policy state machine is:
 

@@ -112,8 +112,8 @@ describe('Multi-Layer Ablation Analysis & Interaction Coupling', () => {
   });
 });
 
-describe('Causal Attribution Methodology', () => {
-  it('correctly attributes primary driver to physical scarcity during extreme physical shortage', () => {
+describe('Constraint Contribution Methodology', () => {
+  it('reports physical scarcity as the dominant modeled constraint during extreme physical shortage', () => {
     const res = runSimulation({
       ...baseParams,
       resourceScarcity: 0.95,
@@ -121,11 +121,11 @@ describe('Causal Attribution Methodology', () => {
       liquidityStress: 0.05
     }, 606);
 
-    expect(res.modelA.causalAttribution.primaryCausalFactor).toBe('physicalScarcity');
-    expect(res.modelA.causalAttribution.certaintyLevel).toBe('HIGH');
+    expect(res.modelA.constraintContribution.dominantConstraint).toBe('physicalScarcity');
+    expect(res.modelA.constraintContribution.dominanceClarity).toBe('CLEAR');
   });
 
-  it('correctly attributes primary driver to financial constraints during credit freeze', () => {
+  it('reports financial constraints as dominant during the configured credit freeze', () => {
     const res = runSimulation({
       ...baseParams,
       resourceScarcity: 0.1,
@@ -134,7 +134,7 @@ describe('Causal Attribution Methodology', () => {
       centralBankBackstop: false
     }, 707);
 
-    expect(res.modelA.causalAttribution.primaryCausalFactor).toBe('financialConstraint');
-    expect(res.modelA.causalAttribution.certaintyLevel).toBe('HIGH');
+    expect(res.modelA.constraintContribution.dominantConstraint).toBe('financialConstraint');
+    expect(res.modelA.constraintContribution.dominanceClarity).toBe('CLEAR');
   });
 });

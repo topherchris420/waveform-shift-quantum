@@ -11,12 +11,14 @@ Evaluating standard quantum mechanics alongside the proposed **Woodyard (2026)**
 To ensure scientific rigor, all physics calculations and visual models are tagged under four explicit categories:
 
 ### 1. ESTABLISHED PHYSICS
+
 - **Standard Quantum Mechanics**: Schrödinger evolution $i\hbar \frac{\partial\psi}{\partial t} = \hat{H}\psi$, Born-rule outcome probabilities $P(i) = \left|\langle i|\psi\rangle\right|^2$.
 - **Barrier Tunneling**: 1D rectangular potential barrier transmission $T(E, V_0, a)$.
 - **Quantum Teleportation**: Bennett et al. (1993) 3-qubit discrete protocol via pre-shared entanglement and classical communication.
 - **Werner States & Entanglement**: Entanglement concurrence $C(\rho) = \max\left(0, \frac{3p-1}{2}\right)$ and Massar–Popescu classical limit $F \le \frac{2}{3}$.
 
 ### 2. PROPOSED MODEL (Woodyard 2026)
+
 - **Field-Modulated Two-Site System**: Hamiltonian
   $$H_2 = \begin{pmatrix} E_A + g\phi_A & \Delta \\ \Delta & E_B + g\phi_B \end{pmatrix}$$
   with matter-scalar coupling $g$.
@@ -26,9 +28,11 @@ To ensure scientific rigor, all physics calculations and visual models are tagge
 - **Numerical Time Evolution**: Unitary matrix propagation $U(\mathrm{d}t) = \exp\left(-\frac{i}{\hbar} H \,\mathrm{d}t\right)$ preserving state norm $P_A(t) + P_B(t) \equiv 1$.
 
 ### 3. INTERPRETIVE CLAIM
+
 - Conceptual framing of spatial location as an internal dynamical state modulated by scalar fields, rather than a fixed classical coordinate.
 
 ### 4. TESTABLE PREDICTIONS & FALSIFICATION CONDITIONS
+
 - **Interferometric Phase Shift**:
   $$\Delta\varphi_\phi = \frac{g}{\hbar} \int_0^T \left[\phi(x_1(t),t) - \phi(x_2(t),t)\right] \mathrm{d}t$$
 - **Falsification Rule**: If precision atom interferometry or optical clock experiments show zero phase deviation within modeled uncertainty ($\sigma < 10^{-4}$), the proposed field coupling parameter region is falsified and excluded.
@@ -56,10 +60,29 @@ Genesis is not an anti-money claim and cannot receive a hardcoded victory. Disco
 > **Core Principle:** Computation may outperform money for coordinating physically measurable resources (where the scarce information is how resources physically fit together), while markets remain superior where subjective preferences, price discovery, and financial risk carry the most valuable information.
 
 ### Key Simulation Components
+
 1. **Multidimensional Value Vectors**: Replaces single scalar monetary pricing with 8-dimensional resource vectors $\mathbf{V}_i(t) = f(S_i, D_i, U_i, Q_i, L_i, E_i, R_i, C_i)$ measuring scarcity ($S_i$), demand ($D_i$), urgency ($U_i$), quality ($Q_i$), location ($L_i$), energy cost ($E_i$), reliability ($R_i$), and compatibility ($C_i$).
 2. **CAISO Duck Curve Engine**: A 24-hour stochastic power grid simulator that models real-world energy availability anomalies.
 3. **Multi-Hop Triangulation**: Dynamic routing through intermediary relay nodes (Battery Storage, Compute Brokers, Data Hubs) to perform time-shifting and form-shifting resource allocation.
 
+## Systemic Stress & Coordination Lab
+
+`/systemic-lab` is a separate, offline-first financial research workstation. It represents institutions with reconciled balance sheets, collateral inventories, directed funding claims, payment obligations, market positions, margin agreements, ownership links, and explicit facility contracts. Three synthetic flagship experiments cover LFBO dollar-funding stress, an intraday settlement disruption, and a fire-sale/margin spiral.
+
+The Policy Desk supports public scenario-path imports, DRR `SystemicSignal` imports, competing-mechanism experiments, policy counterfactuals, parameter uncertainty, layer ablations, robustness checks, exploratory calibration, preregistered holdout evaluation, and exact-replay policy passports. Federal Reserve and BIS publications motivate mechanisms and input formats only. The lab is not a Federal Reserve model, supervisory system, regulatory-ratio implementation, forecast, or endorsement.
+
+Start with [Systemic Stress Lab](docs/SYSTEMIC_STRESS_LAB.md), then see the [financial mechanisms](docs/FINANCIAL_MECHANISMS.md), [validation boundary](docs/VALIDATION.md), and [model-risk review](docs/MODEL_RISK_AND_REVIEW.md).
+
+## Separate research workstations
+
+| Workstation                        | Route           | Epistemic domain                                                               |
+| ---------------------------------- | --------------- | ------------------------------------------------------------------------------ |
+| Quantum / Woodyard model           | `/`             | Established quantum mechanics versus a proposed physical model                 |
+| ARFR                               | `/arfr`         | Proposed physical technology and falsifiable simulation                        |
+| Genesis resource lab               | `/resonance`    | Stylized resource-allocation experiments                                       |
+| Systemic Stress & Coordination Lab | `/systemic-lab` | Established financial mechanisms implemented in a stylized economic simulation |
+
+Outputs from one domain are never evidence for another. Shared hashing and experiment infrastructure do not imply shared empirical validity.
 
 ---
 
@@ -67,15 +90,24 @@ Genesis is not an anti-money claim and cannot receive a hardcoded victory. Disco
 
 ```bash
 # Run scientific invariant and regression tests
-pnpm test
+npm test
 
 # Run ESLint linter
-pnpm run lint
+npm run lint
 
 # Build production bundle
-pnpm run build
+npm run build
+
+# Lint, typecheck, test, and production build
+npm run verify
+
+# Audit the resolved dependency tree
+npm run audit:dependencies
+
+# Emit a CycloneDX software bill of materials
+npm run --silent sbom > sbom.cdx.json
 ```
 
 ## ARFR experiment integrity
 
-ARFR uses refresh-independent fixed stepping, cumulative run statistics and versioned result passports with full current configuration and build provenance. See [timing, export boundaries and validation](docs/ARFR_EXPERIMENT_INTEGRITY.md). The three workstations load on demand, and pull requests run the test, typecheck, lint and build gates.
+ARFR uses refresh-independent fixed stepping, cumulative run statistics and versioned result passports with full current configuration and build provenance. See [timing, export boundaries and validation](docs/ARFR_EXPERIMENT_INTEGRITY.md). The four workstations load on demand, and pull requests run the test, typecheck, lint and build gates.

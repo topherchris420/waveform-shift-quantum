@@ -10,6 +10,7 @@ import { GlobalNav } from "./components/GlobalNav";
 // Load each scientific workstation only when its route is opened.
 const Index = lazy(() => import("./pages/Index"));
 const ResonanceIndex = lazy(() => import("./pages/ResonanceIndex"));
+const SystemicLab = lazy(() => import("./systemic-lab/SystemicLab"));
 const ARFR = lazy(() => import("./pages/ARFR"));
 
 const queryClient = new QueryClient();
@@ -19,7 +20,10 @@ interface ErrorBoundaryState {
   error?: Error;
 }
 
-class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  ErrorBoundaryState
+> {
   constructor(props: { children: ReactNode }) {
     super(props);
     this.state = { hasError: false };
@@ -30,21 +34,50 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("Quantum Laboratory Runtime Error:", error, errorInfo);
+    console.error("Laboratory Runtime Error:", error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: "clamp(20px, 6vw, 40px)", backgroundColor: "#f5f3ee", color: "#0d0d0d", fontFamily: "monospace", minHeight: "100vh", overflowWrap: "anywhere" }}>
-          <h2 style={{ color: "#ef4444" }}>QUANTUM LABORATORY DIAGNOSTIC EXCEPTION</h2>
-          <p style={{ color: "#6f6759" }}>A runtime exception was intercepted by the laboratory error boundary:</p>
-          <pre style={{ backgroundColor: "#e8e4dd", padding: "16px", borderRadius: "8px", overflow: "auto", color: "#7f1d1d" }}>
+        <div
+          style={{
+            padding: "clamp(20px, 6vw, 40px)",
+            backgroundColor: "#f5f3ee",
+            color: "#0d0d0d",
+            fontFamily: "monospace",
+            minHeight: "100vh",
+            overflowWrap: "anywhere",
+          }}
+        >
+          <h2 style={{ color: "#ef4444" }}>LABORATORY DIAGNOSTIC EXCEPTION</h2>
+          <p style={{ color: "#6f6759" }}>
+            A runtime exception was intercepted by the laboratory error
+            boundary:
+          </p>
+          <pre
+            style={{
+              backgroundColor: "#e8e4dd",
+              padding: "16px",
+              borderRadius: "8px",
+              overflow: "auto",
+              color: "#7f1d1d",
+            }}
+          >
             {this.state.error?.toString()}
           </pre>
           <button
             onClick={() => window.location.reload()}
-            style={{ marginTop: "16px", padding: "10px 20px", backgroundColor: "#0ea5b7", color: "#f5f3ee", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
+            style={{
+              marginTop: "16px",
+              padding: "10px 20px",
+              backgroundColor: "#0ea5b7",
+              color: "#f5f3ee",
+              border: "none",
+              borderRadius: "6px",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
           >
             RELOAD LABORATORY WORKSPACE
           </button>
@@ -61,12 +94,22 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <BrowserRouter>
           <GlobalNav />
-          <Suspense fallback={<div role="status" className="p-8 font-mono text-sm text-muted-foreground">Loading laboratory…</div>}>
+          <Suspense
+            fallback={
+              <div
+                role="status"
+                className="p-8 font-mono text-sm text-muted-foreground"
+              >
+                Loading laboratory…
+              </div>
+            }
+          >
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/resonance" element={<ResonanceIndex />} />
+              <Route path="/systemic-lab" element={<SystemicLab />} />
               <Route path="/arfr" element={<ARFR />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

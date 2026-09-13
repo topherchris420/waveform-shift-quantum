@@ -16,10 +16,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.22.2
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - run: npm run audit:dependencies -- --audit-level=high
       - run: npm run lint
       - run: npx tsc --noEmit -p tsconfig.app.json
       - run: npm test
       - run: npm run build
+      - run: npm run --silent sbom > sbom.cdx.json
+      - run: node -e "const b=require('./sbom.cdx.json'); if(b.bomFormat!=='CycloneDX'||!b.components?.length) process.exit(1)"

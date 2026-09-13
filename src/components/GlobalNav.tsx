@@ -1,10 +1,11 @@
-import { Activity, ArrowUpRight, Atom, Network, Zap } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Activity, ArrowUpRight, Atom, Network, Zap } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 export const GlobalNav = () => {
   const location = useLocation();
-  const isResonance = location.pathname === '/resonance';
-  const isARFR = location.pathname === '/arfr';
+  const isResonance = location.pathname === "/resonance";
+  const isSystemic = location.pathname === "/systemic-lab";
+  const isARFR = location.pathname === "/arfr";
 
   return (
     <header className="topline-nav sticky top-0 z-50 border-x-0 border-t-0 shadow-none">
@@ -15,37 +16,56 @@ export const GlobalNav = () => {
           className="group flex shrink-0 items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <span className="relative grid h-9 w-9 place-items-center overflow-hidden bg-foreground text-background">
-            <Atom className="h-5 w-5 transition-transform duration-500 group-hover:rotate-90" />
-            <span className="absolute bottom-0 left-0 h-0.5 w-full origin-left scale-x-50 bg-primary transition-transform group-hover:scale-x-100" />
+            <Atom className="h-5 w-5 transition-transform duration-500 group-hover:rotate-90 motion-reduce:transition-none motion-reduce:group-hover:rotate-0" />
+            <span className="absolute bottom-0 left-0 h-0.5 w-full origin-left scale-x-50 bg-primary transition-transform group-hover:scale-x-100 motion-reduce:transition-none motion-reduce:group-hover:scale-x-50" />
           </span>
           <span className="hidden sm:block">
-            <span className="block font-display text-sm font-extrabold uppercase leading-none tracking-[-0.02em]">Waveform</span>
-            <span className="mt-1 block font-mono text-[8px] uppercase tracking-[0.25em] text-muted-foreground">Quantum systems lab</span>
+            <span className="block font-display text-sm font-extrabold uppercase leading-none tracking-[-0.02em]">
+              Waveform
+            </span>
+            <span className="mt-1 block font-mono text-[8px] uppercase tracking-[0.25em] text-muted-foreground">
+              Research workstations
+            </span>
           </span>
         </Link>
 
-        <span className="hidden h-6 w-px bg-foreground/20 sm:block" aria-hidden="true" />
+        <span
+          className="hidden h-6 w-px bg-foreground/20 sm:block"
+          aria-hidden="true"
+        />
 
-        <nav aria-label="Primary navigation" className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scrollbar-none">
+        <nav
+          aria-label="Primary navigation"
+          className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scrollbar-none"
+        >
           <Link
             to="/"
-            aria-current={!isResonance && !isARFR ? 'page' : undefined}
-            className={`nav-tab ${!isResonance && !isARFR ? 'nav-tab--active' : ''}`}
+            aria-current={
+              !isResonance && !isARFR && !isSystemic ? "page" : undefined
+            }
+            className={`nav-tab ${!isResonance && !isARFR && !isSystemic ? "nav-tab--active" : ""}`}
           >
             Physics lab
           </Link>
           <Link
             to="/resonance"
-            aria-current={isResonance ? 'page' : undefined}
-            className={`nav-tab ${isResonance ? 'nav-tab--active' : ''}`}
+            aria-current={isResonance ? "page" : undefined}
+            className={`nav-tab ${isResonance ? "nav-tab--active" : ""}`}
           >
             <Network className="hidden h-3 w-3 sm:block" />
-            Resonance
+            Resource lab
+          </Link>
+          <Link
+            to="/systemic-lab"
+            aria-current={isSystemic ? "page" : undefined}
+            className={`nav-tab ${isSystemic ? "nav-tab--active" : ""}`}
+          >
+            Systemic lab
           </Link>
           <Link
             to="/arfr"
-            aria-current={isARFR ? 'page' : undefined}
-            className={`nav-tab ${isARFR ? 'nav-tab--active' : ''}`}
+            aria-current={isARFR ? "page" : undefined}
+            className={`nav-tab ${isARFR ? "nav-tab--active" : ""}`}
           >
             <Zap className="hidden h-3 w-3 sm:block" />
             ARFR
@@ -54,14 +74,16 @@ export const GlobalNav = () => {
 
         <div className="hidden items-center gap-2 border-l border-foreground/20 pl-4 md:flex">
           <span className="relative flex h-2 w-2" aria-hidden="true">
-            <span className="absolute inline-flex h-full w-full animate-ping bg-primary opacity-40" />
+            <span className="absolute inline-flex h-full w-full animate-ping bg-primary opacity-40 motion-reduce:animate-none" />
             <span className="relative inline-flex h-2 w-2 bg-primary" />
           </span>
           <Activity className="h-3.5 w-3.5 text-primary" />
-          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Live simulation</span>
+          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            Live simulation
+          </span>
         </div>
 
-        {!isResonance && !isARFR && (
+        {!isResonance && !isARFR && !isSystemic && (
           <a href="#reality-split" className="nav-launch">
             <span className="hidden sm:inline">Open workspace</span>
             <span className="sm:hidden">Open</span>

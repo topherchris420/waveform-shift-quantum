@@ -3,10 +3,10 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { defineMcp } from "npm:@lovable.dev/mcp-js@0.24.0";
+import { defineMcp } from "npm:@lovable.dev/mcp-js@2.0.4";
 
 // src/lib/mcp/tools/barrier-transmission.ts
-import { defineTool } from "npm:@lovable.dev/mcp-js@0.24.0";
+import { defineTool } from "npm:@lovable.dev/mcp-js@2.0.4";
 import { z } from "npm:zod@^4.4.3";
 
 // src/lib/physics.ts
@@ -68,7 +68,7 @@ var barrier_transmission_default = defineTool({
 });
 
 // src/lib/mcp/tools/double-slit-intensity.ts
-import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.24.0";
+import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@2.0.4";
 import { z as z2 } from "npm:zod@^4.4.3";
 var double_slit_intensity_default = defineTool2({
   name: "double_slit_intensity",
@@ -91,7 +91,7 @@ var double_slit_intensity_default = defineTool2({
 });
 
 // src/lib/mcp/tools/born-probabilities.ts
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.24.0";
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@2.0.4";
 import { z as z3 } from "npm:zod@^4.4.3";
 var born_probabilities_default = defineTool3({
   name: "born_probabilities",
@@ -111,7 +111,7 @@ var born_probabilities_default = defineTool3({
 });
 
 // src/lib/mcp/tools/teleportation-fidelity.ts
-import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.24.0";
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@2.0.4";
 import { z as z4 } from "npm:zod@^4.4.3";
 var teleportation_fidelity_default = defineTool4({
   name: "teleportation_fidelity",
@@ -133,7 +133,7 @@ var teleportation_fidelity_default = defineTool4({
 });
 
 // src/lib/mcp/tools/pauli-correction.ts
-import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.24.0";
+import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@2.0.4";
 import { z as z5 } from "npm:zod@^4.4.3";
 var OPERATORS = {
   "00": { op: "I", description: "Identity \u2014 no correction needed" },
@@ -176,5 +176,5 @@ var mcp_default = defineMcp({
 });
 
 // lovable-mcp-supabase-entry.ts
-import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.24.0/stacks/supabase";
+import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@2.0.4/stacks/supabase";
 Deno.serve(createSupabaseHandler(mcp_default, { functionName: "mcp" }));

@@ -1,0 +1,1461 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "systemic-scenario.v1"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^[A-Za-z0-9_.:/-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "horizonHours": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 100000
+    },
+    "stepHours": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 100000
+    },
+    "maxRounds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "convergenceTolerance": {
+      "type": "number",
+      "minimum": 1e-9,
+      "maximum": 0.01
+    },
+    "actors": {
+      "minItems": 2,
+      "maxItems": 80,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "commercial-bank",
+              "bank-holding-company",
+              "foreign-parent",
+              "ihc",
+              "branch-agency",
+              "broker-dealer",
+              "money-market-fund",
+              "hedge-fund",
+              "insurer",
+              "ccp",
+              "central-bank",
+              "settlement-utility",
+              "corporate-borrower",
+              "deposit-sector",
+              "secured-funding-provider",
+              "unsecured-funding-provider"
+            ]
+          },
+          "jurisdiction": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 40
+          },
+          "parentId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120,
+                "pattern": "^[A-Za-z0-9_.:/-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "balanceSheet": {
+            "type": "object",
+            "properties": {
+              "assets": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "enum": [
+                    "cash",
+                    "reserves",
+                    "securities",
+                    "loans",
+                    "interbankAssets",
+                    "repoAssets",
+                    "derivativesCollateral",
+                    "marginReceivables",
+                    "paymentReceivables",
+                    "centralBankLoans"
+                  ]
+                },
+                "additionalProperties": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1000000000
+                },
+                "required": [
+                  "cash",
+                  "reserves",
+                  "securities",
+                  "loans",
+                  "interbankAssets",
+                  "repoAssets",
+                  "derivativesCollateral",
+                  "marginReceivables",
+                  "paymentReceivables",
+                  "centralBankLoans"
+                ]
+              },
+              "liabilities": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "enum": [
+                    "retailDeposits",
+                    "uninsuredDeposits",
+                    "operationalDeposits",
+                    "wholesaleDeposits",
+                    "securedBorrowing",
+                    "unsecuredBorrowing",
+                    "repo",
+                    "commercialPaper",
+                    "interbankBorrowing",
+                    "centralBankBorrowing",
+                    "reserveLiabilities",
+                    "marginPayables",
+                    "marginCollateralLiability",
+                    "paymentPayables"
+                  ]
+                },
+                "additionalProperties": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1000000000
+                },
+                "required": [
+                  "retailDeposits",
+                  "uninsuredDeposits",
+                  "operationalDeposits",
+                  "wholesaleDeposits",
+                  "securedBorrowing",
+                  "unsecuredBorrowing",
+                  "repo",
+                  "commercialPaper",
+                  "interbankBorrowing",
+                  "centralBankBorrowing",
+                  "reserveLiabilities",
+                  "marginPayables",
+                  "marginCollateralLiability",
+                  "paymentPayables"
+                ]
+              },
+              "equity": {
+                "type": "number",
+                "minimum": -1000000000,
+                "maximum": 1000000000
+              }
+            },
+            "required": [
+              "assets",
+              "liabilities",
+              "equity"
+            ],
+            "additionalProperties": false
+          },
+          "collateral": {
+            "maxItems": 40,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "pattern": "^[A-Za-z0-9_.:/-]+$"
+                },
+                "assetClass": {
+                  "type": "string",
+                  "enum": [
+                    "cash",
+                    "treasury",
+                    "agency",
+                    "mbs",
+                    "corporate",
+                    "loans",
+                    "other"
+                  ]
+                },
+                "account": {
+                  "type": "string",
+                  "enum": [
+                    "cash",
+                    "reserves",
+                    "securities",
+                    "loans"
+                  ]
+                },
+                "quantity": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1000000000
+                },
+                "price": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1000000000
+                },
+                "haircut": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "liquidityClass": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "const": 1
+                    },
+                    {
+                      "type": "number",
+                      "const": 2
+                    },
+                    {
+                      "type": "number",
+                      "const": 3
+                    }
+                  ]
+                },
+                "eligibleFacilities": {
+                  "maxItems": 10,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "pattern": "^[A-Za-z0-9_.:/-]+$"
+                  }
+                },
+                "valuationUncertainty": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "maturityHours": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "durationYears": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "priceSensitivity": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                "pledges": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "pattern": "^[A-Za-z0-9_.:/-]+$"
+                  },
+                  "additionalProperties": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1000000000
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "assetClass",
+                "account",
+                "quantity",
+                "price",
+                "haircut",
+                "liquidityClass",
+                "eligibleFacilities",
+                "valuationUncertainty",
+                "maturityHours",
+                "durationYears",
+                "priceSensitivity",
+                "pledges"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "behavior": {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": [
+                  "depositor",
+                  "dealer",
+                  "lender",
+                  "treasury",
+                  "fund"
+                ]
+              },
+              "withdrawalElasticity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "riskAversion": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "hoarding": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "herding": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "stigmaSensitivity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "calibrationType": {
+                "type": "string",
+                "enum": [
+                  "PUBLIC_DATA_DERIVED",
+                  "LITERATURE_DERIVED",
+                  "EMPIRICALLY_ESTIMATED",
+                  "STYLIZED_ASSUMPTION",
+                  "EXPERIMENTAL"
+                ]
+              }
+            },
+            "required": [
+              "role",
+              "withdrawalElasticity",
+              "riskAversion",
+              "hoarding",
+              "herding",
+              "stigmaSensitivity",
+              "calibrationType"
+            ],
+            "additionalProperties": false
+          },
+          "capitalFloor": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "riskWeight": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "liquidityBuffer": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "outageUntil": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "resolved": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "jurisdiction",
+          "parentId",
+          "balanceSheet",
+          "collateral",
+          "behavior",
+          "capitalFloor",
+          "riskWeight",
+          "liquidityBuffer",
+          "outageUntil",
+          "resolved"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "exposures": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "creditor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "debtor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "unsecured",
+              "repo",
+              "derivative",
+              "committed-liquidity",
+              "intragroup",
+              "securities-financing"
+            ]
+          },
+          "fundingKind": {
+            "type": "string",
+            "enum": [
+              "retail-deposits",
+              "uninsured-deposits",
+              "operational-deposits",
+              "wholesale-deposits",
+              "secured-wholesale",
+              "unsecured-wholesale",
+              "repo",
+              "commercial-paper",
+              "interbank",
+              "central-bank"
+            ]
+          },
+          "principal": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "creditorAccount": {
+            "type": "string",
+            "enum": [
+              "cash",
+              "reserves",
+              "securities",
+              "loans",
+              "interbankAssets",
+              "repoAssets",
+              "derivativesCollateral",
+              "marginReceivables",
+              "paymentReceivables",
+              "centralBankLoans"
+            ]
+          },
+          "debtorAccount": {
+            "type": "string",
+            "enum": [
+              "retailDeposits",
+              "uninsuredDeposits",
+              "operationalDeposits",
+              "wholesaleDeposits",
+              "securedBorrowing",
+              "unsecuredBorrowing",
+              "repo",
+              "commercialPaper",
+              "interbankBorrowing",
+              "centralBankBorrowing",
+              "reserveLiabilities",
+              "marginPayables",
+              "marginCollateralLiability",
+              "paymentPayables"
+            ]
+          },
+          "securedAmount": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "collateralIds": {
+            "maxItems": 40,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "pattern": "^[A-Za-z0-9_.:/-]+$"
+            }
+          },
+          "maturityHour": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "rolloverProbability": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "lossGivenDefault": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "fundingDependency": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "transferLimit": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "transferRestricted": {
+            "type": "boolean"
+          },
+          "spreadBps": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          }
+        },
+        "required": [
+          "id",
+          "creditor",
+          "debtor",
+          "kind",
+          "fundingKind",
+          "principal",
+          "creditorAccount",
+          "debtorAccount",
+          "securedAmount",
+          "collateralIds",
+          "maturityHour",
+          "rolloverProbability",
+          "lossGivenDefault",
+          "fundingDependency",
+          "transferLimit",
+          "transferRestricted",
+          "spreadBps"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "payments": {
+      "maxItems": 1000,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "from": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "to": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "remaining": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "settled": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "writtenOff": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "lossGivenDefault": {
+            "default": 0.5,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "createdHour": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "dueHour": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "deadlineHour": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "payment",
+              "funding-withdrawal",
+              "margin",
+              "facility-repayment",
+              "intragroup"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "SETTLED",
+              "FAILED"
+            ]
+          },
+          "settledHour": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "releasePledges": {
+            "maxItems": 40,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "actorId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "pattern": "^[A-Za-z0-9_.:/-]+$"
+                },
+                "lotId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "pattern": "^[A-Za-z0-9_.:/-]+$"
+                },
+                "contractId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "pattern": "^[A-Za-z0-9_.:/-]+$"
+                },
+                "quantity": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1000000000
+                }
+              },
+              "required": [
+                "actorId",
+                "lotId",
+                "contractId",
+                "quantity"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "from",
+          "to",
+          "amount",
+          "remaining",
+          "settled",
+          "writtenOff",
+          "lossGivenDefault",
+          "createdHour",
+          "dueHour",
+          "deadlineHour",
+          "priority",
+          "kind",
+          "status",
+          "settledHour",
+          "releasePledges"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "margins": {
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "payer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "receiver": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "assetClass": {
+            "type": "string",
+            "enum": [
+              "cash",
+              "treasury",
+              "agency",
+              "mbs",
+              "corporate",
+              "loans",
+              "other"
+            ]
+          },
+          "notional": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "initialMargin": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "postedInitialMargin": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "frequencyHours": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "sensitivity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "lastPrice": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "nextHour": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "collateralSubstitution": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "payer",
+          "receiver",
+          "assetClass",
+          "notional",
+          "initialMargin",
+          "postedInitialMargin",
+          "threshold",
+          "frequencyHours",
+          "sensitivity",
+          "lastPrice",
+          "nextHour",
+          "collateralSubstitution"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "markets": {
+      "maxItems": 7,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "liquidityProviderId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "assetClass": {
+            "type": "string",
+            "enum": [
+              "cash",
+              "treasury",
+              "agency",
+              "mbs",
+              "corporate",
+              "loans",
+              "other"
+            ]
+          },
+          "price": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000000
+          },
+          "initialPrice": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000000
+          },
+          "marketDepth": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000000000
+          },
+          "elasticity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "volatility": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "liquidityTier": {
+            "anyOf": [
+              {
+                "type": "number",
+                "const": 1
+              },
+              {
+                "type": "number",
+                "const": 2
+              },
+              {
+                "type": "number",
+                "const": 3
+              }
+            ]
+          }
+        },
+        "required": [
+          "liquidityProviderId",
+          "assetClass",
+          "price",
+          "initialPrice",
+          "marketDepth",
+          "elasticity",
+          "volatility",
+          "liquidityTier"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "facilities": {
+      "maxItems": 10,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "centralBankId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "eligibleCounterparties": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "commercial-bank",
+                "bank-holding-company",
+                "foreign-parent",
+                "ihc",
+                "branch-agency",
+                "broker-dealer",
+                "money-market-fund",
+                "hedge-fund",
+                "insurer",
+                "ccp",
+                "central-bank",
+                "settlement-utility",
+                "corporate-borrower",
+                "deposit-sector",
+                "secured-funding-provider",
+                "unsecured-funding-provider"
+              ]
+            }
+          },
+          "eligibleCollateral": {
+            "maxItems": 7,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "cash",
+                "treasury",
+                "agency",
+                "mbs",
+                "corporate",
+                "loans",
+                "other"
+              ]
+            }
+          },
+          "haircutSchedule": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "enum": [
+                "cash",
+                "treasury",
+                "agency",
+                "mbs",
+                "corporate",
+                "loans",
+                "other"
+              ]
+            },
+            "additionalProperties": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "valuationRule": {
+            "type": "string",
+            "const": "market-minus-uncertainty"
+          },
+          "spreadBps": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "termHours": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "borrowingCap": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "counterpartyLimit": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "capacity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000000
+          },
+          "responseLagHours": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "repaymentRule": {
+            "type": "string",
+            "const": "bullet"
+          },
+          "renewalRule": {
+            "type": "string",
+            "enum": [
+              "none",
+              "reassess"
+            ]
+          },
+          "maxRenewals": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "stigma": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "usagePreference": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "disclosure": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "requireSolvent": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "centralBankId",
+          "eligibleCounterparties",
+          "eligibleCollateral",
+          "haircutSchedule",
+          "valuationRule",
+          "spreadBps",
+          "termHours",
+          "borrowingCap",
+          "counterpartyLimit",
+          "capacity",
+          "responseLagHours",
+          "repaymentRule",
+          "renewalRule",
+          "maxRenewals",
+          "stigma",
+          "usagePreference",
+          "disclosure",
+          "requireSolvent"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "shocks": {
+      "maxItems": 200,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "hour": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "withdrawal",
+              "price",
+              "haircut",
+              "outage",
+              "default",
+              "physical",
+              "spread",
+              "payment-demand"
+            ]
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "magnitude": {
+            "type": "number",
+            "minimum": -1000000000,
+            "maximum": 1000000000
+          },
+          "durationHours": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "evidenceIds": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "pattern": "^[A-Za-z0-9_.:/-]+$"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "hour",
+          "kind",
+          "target",
+          "magnitude",
+          "durationHours",
+          "evidenceIds"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "layers": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "enum": [
+          "physical",
+          "financial",
+          "market-price",
+          "settlement",
+          "counterparty",
+          "behavioral",
+          "institutional",
+          "policy-intervention",
+          "computational-routing"
+        ]
+      },
+      "additionalProperties": {
+        "type": "boolean"
+      },
+      "required": [
+        "physical",
+        "financial",
+        "market-price",
+        "settlement",
+        "counterparty",
+        "behavioral",
+        "institutional",
+        "policy-intervention",
+        "computational-routing"
+      ]
+    },
+    "physical": {
+      "type": "object",
+      "properties": {
+        "capacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000000000
+        },
+        "demand": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000000000
+        },
+        "units": {
+          "type": "string",
+          "const": "resource units"
+        }
+      },
+      "required": [
+        "capacity",
+        "demand",
+        "units"
+      ],
+      "additionalProperties": false
+    },
+    "evidence": {
+      "maxItems": 10000,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9_.:/-]+$"
+          },
+          "value": {
+            "type": "number",
+            "minimum": -1000000000,
+            "maximum": 1000000000
+          },
+          "units": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "lower": {
+            "type": "number",
+            "minimum": -1000000000,
+            "maximum": 1000000000
+          },
+          "upper": {
+            "type": "number",
+            "minimum": -1000000000,
+            "maximum": 1000000000
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "sourceDate": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "calibrationType": {
+            "type": "string",
+            "enum": [
+              "PUBLIC_DATA_DERIVED",
+              "LITERATURE_DERIVED",
+              "EMPIRICALLY_ESTIMATED",
+              "STYLIZED_ASSUMPTION",
+              "EXPERIMENTAL"
+            ]
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "notes": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "id",
+          "value",
+          "units",
+          "lower",
+          "upper",
+          "source",
+          "sourceDate",
+          "calibrationType",
+          "confidence",
+          "notes"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "settlement": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "gross",
+            "bilateral-netting"
+          ]
+        },
+        "reliability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "liquidityRecycling": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "mode",
+        "reliability",
+        "liquidityRecycling"
+      ],
+      "additionalProperties": false
+    },
+    "behavior": {
+      "type": "object",
+      "properties": {
+        "withdrawalAcceleration": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "confidenceThreshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "marginHaircutFeedback": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "withdrawalAcceleration",
+        "confidenceThreshold",
+        "marginHaircutFeedback"
+      ],
+      "additionalProperties": false
+    },
+    "policy": {
+      "type": "object",
+      "properties": {
+        "allowAssetSales": {
+          "type": "boolean"
+        },
+        "routing": {
+          "type": "string",
+          "enum": [
+            "fifo",
+            "network-matching",
+            "hybrid",
+            "genesis"
+          ]
+        },
+        "routingOverheadBps": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10000
+        }
+      },
+      "required": [
+        "allowAssetSales",
+        "routing",
+        "routingOverheadBps"
+      ],
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "synthetic",
+            "historically-inspired",
+            "public-data-calibrated"
+          ]
+        },
+        "sources": {
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "sourceVintage": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+        },
+        "assumptions": {
+          "minItems": 1,
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "sources",
+        "sourceVintage",
+        "assumptions"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema",
+    "id",
+    "name",
+    "description",
+    "seed",
+    "horizonHours",
+    "stepHours",
+    "maxRounds",
+    "convergenceTolerance",
+    "actors",
+    "exposures",
+    "payments",
+    "margins",
+    "markets",
+    "facilities",
+    "shocks",
+    "layers",
+    "physical",
+    "evidence",
+    "settlement",
+    "behavior",
+    "policy",
+    "provenance"
+  ],
+  "additionalProperties": false,
+  "$id": "https://github.com/topherchris420/waveform-shift-quantum/blob/main/docs/schemas/systemic-scenario.v1.schema.json"
+}
