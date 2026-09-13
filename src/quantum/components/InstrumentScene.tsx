@@ -272,7 +272,7 @@ export const InstrumentScene: React.FC<InstrumentSceneProps> = ({
   }, [drawScene, isRunning]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950/90">
+    <div className="min-w-0 overflow-hidden rounded-xl border border-slate-800 bg-slate-950/90">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 bg-slate-900/60 px-4 py-2.5">
         <div className="flex items-center gap-2">
           <EpistemicTag kind={epistemicKind} />

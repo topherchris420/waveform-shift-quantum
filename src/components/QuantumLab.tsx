@@ -668,8 +668,8 @@ export const QuantumLab: React.FC = () => {
           <EpistemicTag kind={activeExperiment.epistemic} size="sm" />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
-          <div className="space-y-4">
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
+          <div className="min-w-0 space-y-4">
             <InstrumentScene
               mode={sceneMode}
               fieldIntensity={fieldIntensity[0]}
@@ -690,7 +690,7 @@ export const QuantumLab: React.FC = () => {
             />
           </div>
 
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <section className="instrument-panel p-4">
               <PanelHeader
                 eyebrow={activeExperiment.eyebrow}
