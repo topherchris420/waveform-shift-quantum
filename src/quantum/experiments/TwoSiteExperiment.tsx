@@ -91,13 +91,13 @@ export const TwoSiteExperiment: React.FC<TwoSiteExperimentProps> = ({ parameters
   });
 
   return (
-    <div className="space-y-4 rounded-xl border border-slate-800 bg-slate-900/90 p-5 shadow-xl">
+    <div className="min-w-0 space-y-4 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl sm:p-5">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
-        <div>
-          <div className="flex items-center gap-2">
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-start gap-2">
             <Activity className="h-5 w-5 text-cyan-400" />
-            <h3 className="font-mono text-sm font-bold uppercase tracking-wider text-slate-100">
+            <h3 className="min-w-0 break-words font-mono text-xs font-bold uppercase tracking-normal text-slate-100 sm:text-sm sm:tracking-wider">
               NUMERICAL TIME EVOLUTION: iħ d|ψ⟩/dt = H(t)|ψ⟩
             </h3>
           </div>
@@ -106,7 +106,7 @@ export const TwoSiteExperiment: React.FC<TwoSiteExperimentProps> = ({ parameters
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <Button
             variant="outline"
             size="sm"
@@ -129,7 +129,7 @@ export const TwoSiteExperiment: React.FC<TwoSiteExperimentProps> = ({ parameters
       </div>
 
       {/* Live Numerical Indicators */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 font-mono text-xs">
+      <div className="grid min-w-0 grid-cols-1 gap-3 font-mono text-xs sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-3">
           <div className="text-[10px] text-cyan-400">PA(t) = |cA(t)|²</div>
           <div className="text-xl font-bold text-cyan-200">{currentPA.toFixed(4)}</div>
@@ -151,14 +151,14 @@ export const TwoSiteExperiment: React.FC<TwoSiteExperimentProps> = ({ parameters
       </div>
 
       {/* SVG Time-Series Chart for PA(t) and PB(t) */}
-      <div className="relative h-44 rounded-lg border border-slate-800 bg-slate-950/90 p-2">
-        <div className="absolute left-3 top-2 font-mono text-[10px] text-slate-400">
+      <div className="relative min-w-0 overflow-hidden rounded-lg border border-slate-800 bg-slate-950/90 p-2 pt-12 sm:h-44 sm:pt-2">
+        <div className="absolute left-3 right-3 top-2 flex flex-wrap gap-x-3 gap-y-1 font-mono text-[10px] text-slate-400">
           <span className="mr-3 text-cyan-300">━ PA(t)</span>
           <span className="mr-3 text-violet-300">━ PB(t)</span>
           <span className="text-emerald-400">┄ Norm (1.0)</span>
         </div>
 
-        <svg className="h-full w-full overflow-visible" viewBox="0 0 400 120" preserveAspectRatio="none">
+        <svg className="h-36 w-full overflow-hidden sm:h-full" viewBox="0 0 400 120" preserveAspectRatio="none">
           {/* Grid lines */}
           <line x1="0" y1="20" x2="400" y2="20" stroke="rgba(13,13,13,0.18)" strokeDasharray="3 3" strokeWidth="0.5" />
           <line x1="0" y1="70" x2="400" y2="70" stroke="rgba(13,13,13,0.18)" strokeDasharray="3 3" strokeWidth="0.5" />
