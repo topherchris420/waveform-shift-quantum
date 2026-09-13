@@ -1,0 +1,220 @@
+{
+  "schema": "public-scenario-path.v1",
+  "scenarioYear": 2026,
+  "name": "Synthetic adverse path",
+  "kind": "adverse",
+  "source": "Synthetic offline fixture",
+  "publicationDate": "2026-09-12",
+  "rows": [
+    {
+      "quarter": "2026Q1",
+      "variable": "treasury_yield",
+      "value": 4,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2026Q1",
+      "variable": "unemployment",
+      "value": 4,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2026Q1",
+      "variable": "corporate_spread",
+      "value": 1,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2026Q2",
+      "variable": "treasury_yield",
+      "value": 4.1,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2026Q2",
+      "variable": "unemployment",
+      "value": 4.3,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2026Q2",
+      "variable": "corporate_spread",
+      "value": 1.1,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2026Q3",
+      "variable": "treasury_yield",
+      "value": 4.2,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2026Q3",
+      "variable": "unemployment",
+      "value": 4.6,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2026Q3",
+      "variable": "corporate_spread",
+      "value": 1.2,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2026Q4",
+      "variable": "treasury_yield",
+      "value": 4.3,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2026Q4",
+      "variable": "unemployment",
+      "value": 4.9,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2026Q4",
+      "variable": "corporate_spread",
+      "value": 1.3,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2027Q1",
+      "variable": "treasury_yield",
+      "value": 4.4,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2027Q1",
+      "variable": "unemployment",
+      "value": 5.2,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2027Q1",
+      "variable": "corporate_spread",
+      "value": 1.4,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2027Q2",
+      "variable": "treasury_yield",
+      "value": 4.5,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2027Q2",
+      "variable": "unemployment",
+      "value": 5.5,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2027Q2",
+      "variable": "corporate_spread",
+      "value": 1.5,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2027Q3",
+      "variable": "treasury_yield",
+      "value": 4.6,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2027Q3",
+      "variable": "unemployment",
+      "value": 5.5,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2027Q3",
+      "variable": "corporate_spread",
+      "value": 1.6,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2027Q4",
+      "variable": "treasury_yield",
+      "value": 4.7,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2027Q4",
+      "variable": "unemployment",
+      "value": 5.5,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2027Q4",
+      "variable": "corporate_spread",
+      "value": 1.7000000000000002,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2028Q1",
+      "variable": "treasury_yield",
+      "value": 4.8,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2028Q1",
+      "variable": "unemployment",
+      "value": 5.5,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2028Q1",
+      "variable": "corporate_spread",
+      "value": 1.8,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2028Q2",
+      "variable": "treasury_yield",
+      "value": 4.9,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2028Q2",
+      "variable": "unemployment",
+      "value": 5.5,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    },
+    {
+      "quarter": "2028Q2",
+      "variable": "corporate_spread",
+      "value": 1.9,
+      "units": "percent",
+      "provenance": "Synthetic illustrative path; not Federal Reserve data."
+    }
+  ]
+}

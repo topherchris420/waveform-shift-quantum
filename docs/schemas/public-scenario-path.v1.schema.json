@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "public-scenario-path.v1"
+    },
+    "scenarioYear": {
+      "type": "integer",
+      "minimum": 2000,
+      "maximum": 2100
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 150
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "baseline",
+        "adverse",
+        "exploratory"
+      ]
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "publicationDate": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+    },
+    "rows": {
+      "minItems": 10,
+      "maxItems": 140,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "quarter": {
+            "type": "string",
+            "pattern": "^20\\d{2}Q[1-4]$"
+          },
+          "variable": {
+            "type": "string",
+            "enum": [
+              "unemployment",
+              "real_gdp_growth",
+              "inflation",
+              "treasury_yield",
+              "mortgage_rate",
+              "corporate_spread",
+              "equity_index",
+              "house_price_index",
+              "cre_price_index",
+              "volatility",
+              "foreign_gdp_growth",
+              "foreign_inflation",
+              "foreign_yield",
+              "exchange_rate"
+            ]
+          },
+          "value": {
+            "type": "number",
+            "minimum": -100000,
+            "maximum": 100000000
+          },
+          "units": {
+            "type": "string",
+            "enum": [
+              "percent",
+              "index",
+              "basis points",
+              "ratio"
+            ]
+          },
+          "provenance": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "quarter",
+          "variable",
+          "value",
+          "units",
+          "provenance"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "scenarioYear",
+    "name",
+    "kind",
+    "source",
+    "publicationDate",
+    "rows"
+  ],
+  "additionalProperties": false,
+  "$id": "https://github.com/topherchris420/waveform-shift-quantum/blob/main/docs/schemas/public-scenario-path.v1.schema.json"
+}

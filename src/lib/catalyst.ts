@@ -18,7 +18,7 @@ export interface Claim {
 export interface ResearchSpec {
   title: string;
   concept: string;
-  domain: 'quantum_navigation_simulation';
+  domain: 'quantum_navigation_simulation' | 'economic_coordination_simulation';
   objective: string;
   scientific_status: ScientificStatus;
   assumptions: string[];
@@ -106,7 +106,7 @@ export interface CatalystIntegrityInfo {
   isValid: boolean;
 }
 
-export interface CatalystArtifact {
+export interface CatalystArtifact<Session = CatalystSession> {
   run_id: string;
   created_at: string;
   backend: 'browser-deterministic';
@@ -118,7 +118,7 @@ export interface CatalystArtifact {
     edges: { from: string; to: string; rel: string }[];
     mermaid: string;
   };
-  session: CatalystSession;
+  session: Session;
   ledger: LedgerEvent[];
   integrity: CatalystIntegrityInfo;
   anomalyProtocol?: AnomalyProtocol;
@@ -309,7 +309,7 @@ export async function compileRun(session: CatalystSession): Promise<CatalystArti
   await appendEvent(ledger, 'local_validation', { gates, failed });
 
   const created_at = new Date().toISOString();
-  const run_id = `${created_at.replace(/[-:.]/g, '').slice(0, 15)}Z-${(ledger[0].hash || '').slice(0, 8)}`;
+  const run_id = `${created_at.split('-').join('').split(':').join('').split('.').join('').slice(0, 15)}Z-${(ledger[0].hash || '').slice(0, 8)}`;
 
   const parameterHash = await computeParameterHash(session.parameters ?? { purity: session.purity, theta: session.theta, phi: session.phi });
   const commitSha = __SOURCE_COMMIT__;

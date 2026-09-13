@@ -140,12 +140,15 @@ export const ResourceResonanceLab: React.FC = () => {
     try {
       const session: ResonanceCatalystSession = {
         mode: `Genesis_Protocol_Grid_${simulatedTime}00`,
-        seed: Math.floor(Math.random() * 1000000),
+        seed: 20260813,
         params,
         result
       };
       const artifact = await compileResonanceRun(session);
-      toast.success(`Catalyst artifact ${artifact.run_id} compiled successfully.`);
+      const url = URL.createObjectURL(new Blob([JSON.stringify(artifact, null, 2)], { type: 'application/json' }));
+      const link = document.createElement('a'); link.href = url; link.download = `${artifact.run_id}.json`; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success(`Catalyst artifact ${artifact.run_id} exported.`);
     } catch (e) {
       console.error(e);
       toast.error("Failed to generate Catalyst artifact.");
@@ -155,6 +158,11 @@ export const ResourceResonanceLab: React.FC = () => {
   return (
     <div className="min-h-screen min-w-0 overflow-x-hidden bg-black text-foreground selection:bg-cyan-500/30">
       <Toaster theme="dark" />
+      <header className="mx-auto max-w-7xl px-6 pt-8">
+        <p className="font-mono text-xs text-amber-300">STYLIZED ECONOMIC SIMULATION · EXPERIMENTAL COORDINATION MECHANISM</p>
+        <h1 className="mt-2 text-2xl text-white">Resource Coordination Experiment</h1>
+        <p className="mt-2 text-sm text-slate-300">Genesis competes with six market and network alternatives. These simulations do not inherit evidence from the physics or ARFR workstations.</p>
+      </header>
       <div className="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
         
         {/* TIME CONTROLLER */}
@@ -208,7 +216,7 @@ export const ResourceResonanceLab: React.FC = () => {
                     Routing Baseline Comparison
                   </h2>
                 </div>
-                <RoutingComparison result={result} />
+                <RoutingComparison result={result} params={params} />
               </section>
             )}
             <CoordinationRegimeMap params={params} />

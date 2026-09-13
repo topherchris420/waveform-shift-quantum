@@ -114,15 +114,15 @@ export interface UnmetDemandDecomposition {
   residualCoordinationFailure: number;
 }
 
-export interface CausalAttribution {
+export interface ConstraintContributionAnalysis {
   physicalScarcityPct: number;
   financialConstraintPct: number;
   behavioralFrictionPct: number;
   institutionalFrictionPct: number;
   informationFrictionPct: number;
   coordinationFailurePct: number;
-  primaryCausalFactor: string;
-  certaintyLevel: 'HIGH' | 'MEDIUM' | 'LOW' | 'UNCERTAIN';
+  dominantConstraint: string;
+  dominanceClarity: 'CLEAR' | 'MIXED' | 'WEAK' | 'TIED';
   explanation: string;
 }
 
@@ -154,7 +154,7 @@ export interface SimulationMetrics {
   policyResponseLag: number;
   interventionUtilization: number;
   deadweightLoss: number;
-  causalAttribution: CausalAttribution;
+  constraintContribution: ConstraintContributionAnalysis;
   oracleWelfare: number;
   architectureWelfare: number;
   oracleGap: number;
@@ -896,7 +896,7 @@ export function evaluateArchitecture(world: Readonly<World>, p: SimulationParams
 
 function mean<T>(xs: T[], f: (x:T)=>number) { return xs.reduce((s,x)=>s+f(x),0)/xs.length; }
 
-function computeCausalAttribution(dec: UnmetDemandDecomposition): CausalAttribution {
+export function computeConstraintContribution(dec: UnmetDemandDecomposition): ConstraintContributionAnalysis {
   const factors: [string, number][] = [
     ['physicalScarcity', dec.physicalShortage],
     ['financialConstraint', dec.financialExclusion],
@@ -910,9 +910,10 @@ function computeCausalAttribution(dec: UnmetDemandDecomposition): CausalAttribut
   const primary = factors[0];
   const totalUnmet = factors.reduce((sum, f) => sum + f[1], 0) || 1;
 
-  let certainty: 'HIGH' | 'MEDIUM' | 'LOW' | 'UNCERTAIN' = 'HIGH';
-  if (primary[1] / totalUnmet < 0.35) certainty = 'MEDIUM';
-  if (primary[1] < 5) certainty = 'UNCERTAIN';
+  let clarity: ConstraintContributionAnalysis['dominanceClarity'] = 'CLEAR';
+  if (primary[1] / totalUnmet < 0.5) clarity = 'MIXED';
+  if (primary[1] / totalUnmet < 0.35) clarity = 'WEAK';
+  if (primary[1] < 5 || Math.abs(primary[1] - factors[1][1]) <= totalUnmet * .01) clarity = 'TIED';
 
   const explanations: Record<string, string> = {
     physicalScarcity: 'Resource allocation was primarily bound by real physical supply limits.',
@@ -930,8 +931,8 @@ function computeCausalAttribution(dec: UnmetDemandDecomposition): CausalAttribut
     institutionalFrictionPct: (dec.institutionalFriction / totalUnmet) * 100,
     informationFrictionPct: (dec.informationFriction / totalUnmet) * 100,
     coordinationFailurePct: ((dec.residualCoordinationFailure + dec.networkConstraint + dec.compatibilityConstraint) / totalUnmet) * 100,
-    primaryCausalFactor: primary[0],
-    certaintyLevel: certainty,
+    dominantConstraint: primary[0],
+    dominanceClarity: clarity,
     explanation: explanations[primary[0]] || 'Multi-factor coupling produced unserved demand.'
   };
 }
@@ -953,7 +954,7 @@ function metrics(runs: Outcome[], casc: number, p: SimulationParams): Simulation
     residualCoordinationFailure: dec('residualCoordinationFailure')
   };
 
-  const causalAttribution = computeCausalAttribution(fullDecomp);
+  const constraintContribution = computeConstraintContribution(fullDecomp);
 
   return {
     fulfilledNeeds: mean(runs,r=>r.delivered/r.demand)*100,
@@ -997,7 +998,7 @@ function metrics(runs: Outcome[], casc: number, p: SimulationParams): Simulation
     policyResponseLag: p.institutionalEnabled ? 4 * (1 - p.policyResponsiveness) : 0,
     interventionUtilization: mean(runs, r => r.backstop / Math.max(r.demand, 1)),
     deadweightLoss: mean(runs, r => r.overhead * 100),
-    causalAttribution,
+    constraintContribution,
     oracleWelfare: mean(runs, r => r.attainable),
     architectureWelfare: mean(runs, r => r.welfare),
     oracleGap: mean(runs, r => Math.max(0, r.attainable - r.welfare)),
@@ -1125,7 +1126,7 @@ export interface AblationLayerMetrics {
   trustWeightedCapacity: number;
   cascadingFailureProbability: number;
   recoveryTime: number;
-  causalAttribution: CausalAttribution;
+  constraintContribution: ConstraintContributionAnalysis;
 }
 
 export interface AblationAnalysisResult {
@@ -1164,7 +1165,7 @@ export function runAblationAnalysis(input: SimulationParams, seed = 20260813): A
     trustWeightedCapacity: m.trustWeightedCapacity,
     cascadingFailureProbability: m.cascadingFailureProbability,
     recoveryTime: m.recoveryTime,
-    causalAttribution: m.causalAttribution
+    constraintContribution: m.constraintContribution
   });
 
   const baseline = extract('1. Baseline (Physical + Financial)', resBase.modelA);

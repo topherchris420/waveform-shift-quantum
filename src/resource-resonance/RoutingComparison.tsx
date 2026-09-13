@@ -1,5 +1,5 @@
-import React from 'react';
-import { Architecture, DEFAULT_SIMULATION_PARAMS, SimulationResult, runAblationAnalysis } from './engine';
+import React, { useMemo } from 'react';
+import { Architecture, SimulationParams, SimulationResult, runAblationAnalysis } from './engine';
 import { Activity, Landmark, Network, ShieldCheck, Layers } from 'lucide-react';
 import { AblationComparisonPanel } from './AblationComparison';
 
@@ -7,19 +7,14 @@ const META: Record<Architecture, { label: string; color: string }> = {
   market: { label: 'Market', color: 'text-amber-300' },
   stabilizedMarket: { label: 'Stabilized Market', color: 'text-emerald-300' },
   hybrid: { label: 'Computational Market / Hybrid', color: 'text-indigo-300' },
-  genesis: { label: 'Genesis', color: 'text-cyan-300' },
+  genesis: { label: 'Genesis Experimental Routing', color: 'text-cyan-300' },
   doubleAuction: { label: 'Double Auction', color: 'text-amber-200' },
   shadowPriceMarket: { label: 'Shadow-Price Market', color: 'text-orange-300' },
   maxWeightMatching: { label: 'Max-Weight Matching', color: 'text-sky-300' },
 };
 
-export const RoutingComparison: React.FC<{ result: SimulationResult }> = ({ result }) => {
-  // Compute ablation analysis for the current simulation sample
-  const ablation = runAblationAnalysis({
-    ...DEFAULT_SIMULATION_PARAMS,
-    resourceScarcity: result.modelA.unmetDemandDecomposition.physicalShortage / 100,
-    liquidityStress: result.modelA.feasibleButUnservedDemand / 100
-  });
+export const RoutingComparison: React.FC<{ result: SimulationResult; params: SimulationParams }> = ({ result, params }) => {
+  const ablation = useMemo(() => runAblationAnalysis(params, 20260813), [params]);
 
   return (
     <div className="space-y-6">
@@ -74,13 +69,13 @@ export const RoutingComparison: React.FC<{ result: SimulationResult }> = ({ resu
         </p>
       </section>
 
-      {/* Thermodynamic Safety Valve & Systemic-Risk Ledger */}
+      {/* Stress Response (resource experiment) & Systemic-Risk Ledger */}
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-cyan-900/50 bg-cyan-950/10 p-5">
           <div className="flex items-center gap-2">
             <Network className="h-4 w-4 text-cyan-400"/>
             <h3 className="font-mono text-[11px] font-bold uppercase tracking-widest text-cyan-300">
-              Thermodynamic Safety Valve: {result.safetyValve.state}
+              Stress Response (resource experiment): {result.safetyValve.state}
             </h3>
           </div>
           <p className="mt-2 text-xs text-slate-400">{result.safetyValve.explanation}</p>

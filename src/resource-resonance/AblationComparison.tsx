@@ -26,31 +26,31 @@ export const AblationComparisonPanel: React.FC<{ ablation: AblationAnalysisResul
       </div>
 
       <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/50 p-3.5 rounded-lg border border-slate-800">
-        <span className="font-mono text-indigo-400 font-bold uppercase tracking-wide">Causal Insights: </span>
+        <span className="font-mono text-indigo-400 font-bold uppercase tracking-wide">Modeled contributions: </span>
         {explanation}
       </p>
 
-      {/* Primary Causal Attribution Bar */}
+      {/* Dominant simulated constraint Bar */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs font-mono">
-          <span className="text-slate-400 uppercase tracking-wider text-[10px]">Full Model Causal Attribution</span>
-          <span className="text-cyan-400 text-[10px]">Certainty: {full.causalAttribution.certaintyLevel}</span>
+          <span className="text-slate-400 uppercase tracking-wider text-[10px]">Full Model Constraint Contributions</span>
+          <span className="text-cyan-400 text-[10px]">Decomposition dominance: {full.constraintContribution.dominanceClarity}</span>
         </div>
         <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-800 p-0.5">
-          <AttrBar pct={full.causalAttribution.physicalScarcityPct} color="bg-cyan-500" title="Physical Scarcity" />
-          <AttrBar pct={full.causalAttribution.financialConstraintPct} color="bg-amber-500" title="Financial Constraint" />
-          <AttrBar pct={full.causalAttribution.behavioralFrictionPct} color="bg-rose-500" title="Behavioral Panic" />
-          <AttrBar pct={full.causalAttribution.institutionalFrictionPct} color="bg-indigo-500" title="Institutional Friction" />
-          <AttrBar pct={full.causalAttribution.informationFrictionPct} color="bg-purple-500" title="Information Asymmetry" />
-          <AttrBar pct={full.causalAttribution.coordinationFailurePct} color="bg-slate-600" title="Coordination Failure" />
+          <AttrBar pct={full.constraintContribution.physicalScarcityPct} color="bg-cyan-500" title="Physical Scarcity" />
+          <AttrBar pct={full.constraintContribution.financialConstraintPct} color="bg-amber-500" title="Financial Constraint" />
+          <AttrBar pct={full.constraintContribution.behavioralFrictionPct} color="bg-rose-500" title="Behavioral Panic" />
+          <AttrBar pct={full.constraintContribution.institutionalFrictionPct} color="bg-indigo-500" title="Institutional Friction" />
+          <AttrBar pct={full.constraintContribution.informationFrictionPct} color="bg-purple-500" title="Information Asymmetry" />
+          <AttrBar pct={full.constraintContribution.coordinationFailurePct} color="bg-slate-600" title="Coordination Failure" />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-[10px] font-mono pt-1">
-          <LegendItem label="Physical" pct={full.causalAttribution.physicalScarcityPct} color="bg-cyan-500" />
-          <LegendItem label="Financial" pct={full.causalAttribution.financialConstraintPct} color="bg-amber-500" />
-          <LegendItem label="Behavioral" pct={full.causalAttribution.behavioralFrictionPct} color="bg-rose-500" />
-          <LegendItem label="Institutional" pct={full.causalAttribution.institutionalFrictionPct} color="bg-indigo-500" />
-          <LegendItem label="Information" pct={full.causalAttribution.informationFrictionPct} color="bg-purple-500" />
-          <LegendItem label="Residual" pct={full.causalAttribution.coordinationFailurePct} color="bg-slate-600" />
+          <LegendItem label="Physical" pct={full.constraintContribution.physicalScarcityPct} color="bg-cyan-500" />
+          <LegendItem label="Financial" pct={full.constraintContribution.financialConstraintPct} color="bg-amber-500" />
+          <LegendItem label="Behavioral" pct={full.constraintContribution.behavioralFrictionPct} color="bg-rose-500" />
+          <LegendItem label="Institutional" pct={full.constraintContribution.institutionalFrictionPct} color="bg-indigo-500" />
+          <LegendItem label="Information" pct={full.constraintContribution.informationFrictionPct} color="bg-purple-500" />
+          <LegendItem label="Residual" pct={full.constraintContribution.coordinationFailurePct} color="bg-slate-600" />
         </div>
       </div>
 
