@@ -318,11 +318,12 @@ export const ResourceResonanceLab: React.FC = () => {
             {/* Behavioral Environment Controls */}
             {params.behavioralEnabled && (
               <div className="rounded-xl border border-rose-900/40 bg-rose-950/10 p-4 sm:p-6 space-y-3">
-                <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-rose-300 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-rose-400" />
-                  Behavioral Environment
-                </h3>
-                {([
+              <h3 className="font-mono text-xs font-bold uppercase tracking-widest text-rose-300 flex items-center gap-2">
+                <Users className="w-4 h-4 text-rose-400" />
+                Behavioral Environment
+              </h3>
+              <p className="text-[11px] leading-relaxed text-slate-500">Mood, trust, risk, and hoarding change how people act under stress; these controls are scenario assumptions, not a universal psychology.</p>
+              {([
                   ['riskAversion', 'Risk aversion'],
                   ['lossAversion', 'Loss aversion'],
                   ['herdingIntensity', 'Herding intensity'],

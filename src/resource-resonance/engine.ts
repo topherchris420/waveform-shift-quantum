@@ -840,6 +840,7 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
   const nodal = monetary ? clearNodalPrices(world, p) : undefined;
 
   const edges: Edge[] = [];
+  const subjectiveEligibleNeeds = new Set<number>();
   for (let oi = 0; oi < nOffers; oi++) {
     const o = world.offers[oi];
     const oVec = o.vector;
@@ -918,6 +919,7 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
         oi, ni, sub, value, rank, relay, accessible: true, price: clearingPrice,
         humanEligible: preference.allowed, subjectiveScore: preference.score,
       });
+      if (mode === 'genesis' && preference.allowed) subjectiveEligibleNeeds.add(ni);
     }
   }
 
@@ -1012,9 +1014,11 @@ function allocate(world: World, p: SimulationParams, mode: Architecture | 'oracl
   }
 
   // Count the unmet remainder once per held need. Multiple candidate providers
-  // must not inflate the human-boundary rate above the actual demand held.
+  // must not inflate the human-boundary rate above the actual demand held. If
+  // at least one consented route exists, later failure is attributed to its
+  // actual check (financial, behavioral, or institutional), not to preference.
   const subjectiveRejected = [...subjectiveHeldNeeds]
-    .reduce((sum, ni) => sum + Math.max(0, remain[ni]), 0);
+    .reduce((sum, ni) => subjectiveEligibleNeeds.has(ni) ? sum : sum + Math.max(0, remain[ni]), 0);
 
   const demand = world.totalDemand;
   const capacity = failed < 0 ? world.physicalCapacity : world.physicalCapacity - world.offers[failed].amount;
