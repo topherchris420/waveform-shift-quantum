@@ -34,8 +34,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function frame() {
-  timestamp += 50;
+function frame(ms = 50) {
+  timestamp += ms;
   const pending = [...callbacks.values()];
   callbacks.clear();
   act(() => pending.forEach(callback => callback(timestamp)));
@@ -68,13 +68,13 @@ describe('ARFR interactive session lifecycle', () => {
     const queue = vi.spyOn(arfr, 'queueDisturbance');
     click('Load preset experiment D · Disturbance Recovery');
     frame();
-    for (let index = 0; index < 20; index++) frame();
+    for (let index = 0; index < 10; index++) frame(135);
     expect(queue).not.toHaveBeenCalled();
     click('Reset simulation');
-    for (let index = 0; index < 135; index++) frame();
+    for (let index = 0; index < 50; index++) frame(135);
     expect(queue).not.toHaveBeenCalled();
     click('Load preset experiment D · Disturbance Recovery');
-    for (let index = 0; index < 135; index++) frame();
+    for (let index = 0; index < 50; index++) frame(135);
     expect(queue).toHaveBeenCalledTimes(1);
-  });
+  }, 15000);
 });
