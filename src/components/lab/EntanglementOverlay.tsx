@@ -65,7 +65,7 @@ export const EntanglementOverlay: React.FC<EntanglementOverlayProps> = ({
         </span>
       </div>
 
-      <div className={`mt-2 grid gap-2 ${compact ? 'grid-cols-2' : 'grid-cols-3'}`}>
+      <div className={`mt-2 grid min-w-0 gap-2 ${compact ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`}>
         <MetricLine label="C(ρ)" value={concurrence.toFixed(3)} />
         <MetricLine label="⟨ZZ⟩" value={zz.toFixed(3)} />
         {!compact && <MetricLine label="Purity p" value={purity.toFixed(3)} />}

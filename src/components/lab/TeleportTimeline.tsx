@@ -122,7 +122,7 @@ export const TeleportTimeline: React.FC<TeleportTimelineProps> = ({
               : `step ${scrubStep}/4`}
           </span>
         </div>
-        <div className="mt-1.5 grid grid-cols-4 gap-1">
+        <div className="mt-1.5 grid grid-cols-2 gap-1 min-[380px]:grid-cols-4">
           {([1, 2, 3, 4] as const).map((s) => {
             const currentStep = isLive ? liveStep : scrubStep;
             const reached = currentStep >= s;
@@ -147,7 +147,7 @@ export const TeleportTimeline: React.FC<TeleportTimelineProps> = ({
                   step {s}
                 </p>
                 <p
-                  className="mt-0.5 font-mono text-[10.5px]"
+                  className="mt-0.5 break-words font-mono text-[10px] leading-tight min-[380px]:text-[10.5px]"
                   style={{
                     color: active ? 'hsl(var(--primary))' : reached ? 'hsl(var(--lime))' : 'hsl(var(--foreground) / 0.6)',
                   }}
