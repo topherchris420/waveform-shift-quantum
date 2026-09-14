@@ -227,7 +227,7 @@ export const DiscoveryModePanel: React.FC<DiscoveryModePanelProps> = ({
           </div>
 
           {/* Rejection tally — evidence the search was real */}
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-slate-800 bg-slate-800 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-slate-800 bg-slate-800 min-[380px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 [&>*]:min-w-0 [&>*]:break-words">
             <Tally label="Outside stable g·α" value={result.rejected.unstable} />
             <Tally label="Below your Δ limit" value={result.rejected.belowSensitivity} />
             <Tally label="Degenerate / null" value={result.rejected.degenerate} />

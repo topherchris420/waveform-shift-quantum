@@ -154,14 +154,14 @@ export const TeleportationWorkspace: React.FC<TeleportationWorkspaceProps> = ({
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         {/* Input / output states */}
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg border border-slate-800 bg-slate-950/70 p-3">
+          <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="min-w-0 overflow-hidden rounded-lg border border-slate-800 bg-slate-950/70 p-3">
               <p className="mb-1 text-center font-mono text-[10px] uppercase tracking-wider text-slate-400">
                 Alice input |ψ⟩
               </p>
               <BlochSphere theta={inputTheta[0]} phi={inputPhi[0]} size={150} label="|ψ_in⟩" />
             </div>
-            <div className="rounded-lg border border-slate-800 bg-slate-950/70 p-3">
+            <div className="min-w-0 overflow-hidden rounded-lg border border-slate-800 bg-slate-950/70 p-3">
               <p className="mb-1 text-center font-mono text-[10px] uppercase tracking-wider text-slate-400">
                 Bob output
               </p>

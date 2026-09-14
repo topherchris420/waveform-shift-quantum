@@ -205,7 +205,7 @@ export const PauliCorrectionVisualizer: React.FC<PauliCorrectionVisualizerProps>
       >
         <div className="flex items-center justify-between">
           <p className="section-eyebrow">State transformation</p>
-          <span className="font-mono text-[9.5px] uppercase tracking-widest text-muted-foreground">
+          <span className="ml-2 text-right font-mono text-[9px] uppercase tracking-normal text-muted-foreground min-[380px]:text-[9.5px] min-[380px]:tracking-widest">
             |ψ_pre⟩ → U|ψ_pre⟩ = |ψ⟩
           </span>
         </div>
@@ -216,12 +216,12 @@ export const PauliCorrectionVisualizer: React.FC<PauliCorrectionVisualizerProps>
           </p>
         ) : (
           <div
-            className="relative mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2"
+            className="relative mt-2 grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 min-[380px]:gap-2"
             style={{ minHeight: 54 }}
           >
             {/* Pre state */}
             <div
-              className="rounded border border-white/10 bg-white/[0.03] px-2 py-1.5 transition-all duration-500"
+              className="min-w-0 overflow-hidden rounded border border-white/10 bg-white/[0.03] px-1.5 py-1.5 transition-all duration-500 min-[380px]:px-2"
               style={{
                 opacity: phase === 'run' && applied ? 0.55 : 1,
                 transform: phase === 'run' && applied ? 'translateX(-4px)' : 'translateX(0)',
@@ -231,11 +231,11 @@ export const PauliCorrectionVisualizer: React.FC<PauliCorrectionVisualizerProps>
               <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
                 |ψ_pre⟩ on C
               </p>
-              <p className="mt-0.5 font-mono text-[13px] text-foreground">{selected.preState}</p>
+              <p className="mt-0.5 break-words font-mono text-[10px] leading-tight text-foreground min-[380px]:text-[12px] sm:text-[13px]">{selected.preState}</p>
             </div>
 
             {/* Operator moving along the wire */}
-            <div className="relative flex h-[42px] w-16 items-center justify-center">
+            <div className="relative flex h-[42px] w-9 items-center justify-center min-[380px]:w-12 sm:w-16">
               <span
                 aria-hidden
                 className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2"
