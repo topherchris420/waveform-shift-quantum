@@ -1,113 +1,233 @@
-# R.A.I.N. Lab (experiment #9)
+<div align="center">
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-Evaluating standard quantum mechanics alongside the proposed **Woodyard (2026)** field-modulated spatial localization model.
-
-> **Research Instrument Notice:** This app is designed as a rigorous scientific workstation. Established quantum mechanics and proposed physical extensions are strictly segregated, with explicit falsification conditions and cryptographically verifiable research artifacts.
-
-## Epistemic Classification Framework
-
-To ensure scientific rigor, all physics calculations and visual models are tagged under four explicit categories:
-
-### 1. ESTABLISHED PHYSICS
-
-- **Standard Quantum Mechanics**: Schrödinger evolution $i\hbar \frac{\partial\psi}{\partial t} = \hat{H}\psi$, Born-rule outcome probabilities $P(i) = \left|\langle i|\psi\rangle\right|^2$.
-- **Barrier Tunneling**: 1D rectangular potential barrier transmission $T(E, V_0, a)$.
-- **Quantum Teleportation**: Bennett et al. (1993) 3-qubit discrete protocol via pre-shared entanglement and classical communication.
-- **Werner States & Entanglement**: Entanglement concurrence $C(\rho) = \max\left(0, \frac{3p-1}{2}\right)$ and Massar–Popescu classical limit $F \le \frac{2}{3}$.
-
-### 2. PROPOSED MODEL (Woodyard 2026)
-
-- **Field-Modulated Two-Site System**: Hamiltonian
-  $$H_2 = \begin{pmatrix} E_A + g\phi_A & \Delta \\ \Delta & E_B + g\phi_B \end{pmatrix}$$
-  with matter-scalar coupling $g$.
-- **Localization Response Kernel**: Biased spatial density profile
-  $$P_{\mathrm{loc}}(x) = \frac{\chi(x) P_B(x)}{\int \chi(x') P_B(x') \,\mathrm{d}x'}$$
-  with kernel factor $\chi(x) = \exp\left[\alpha L(x)\right]$.
-- **Numerical Time Evolution**: Unitary matrix propagation $U(\mathrm{d}t) = \exp\left(-\frac{i}{\hbar} H \,\mathrm{d}t\right)$ preserving state norm $P_A(t) + P_B(t) \equiv 1$.
-
-### 3. INTERPRETIVE CLAIM
-
-- Conceptual framing of spatial location as an internal dynamical state modulated by scalar fields, rather than a fixed classical coordinate.
-
-### 4. TESTABLE PREDICTIONS & FALSIFICATION CONDITIONS
-
-- **Interferometric Phase Shift**:
-  $$\Delta\varphi_\phi = \frac{g}{\hbar} \int_0^T \left[\phi(x_1(t),t) - \phi(x_2(t),t)\right] \mathrm{d}t$$
-- **Falsification Rule**: If precision atom interferometry or optical clock experiments show zero phase deviation within modeled uncertainty ($\sigma < 10^{-4}$), the proposed field coupling parameter region is falsified and excluded.
-
----
-
-## Core Lab Features
-
-1. **Standard QM vs. Woodyard Model Comparison Mode**: Simultaneous dual predictions, numerical difference $\Delta P$, percentage deviation, and explicit "WHAT WOULD FALSIFY THIS?" controls.
-2. **Anomaly Engine**: Automated parameter space sweep searching for states that maximize measurable deviation from standard QM baseline, ranked by numerical stability, score, and experimental feasibility.
-3. **Catalyst OS Integration**: Generate exportable JSON research artifacts with SHA-256 canonical hash chains, source commit SHA, parameter digests, and root artifact verification.
-4. **Numerical Two-Site Time Evolution**: Live propagation of $|\psi(t)\rangle$ displaying $P_A(t)$ and $P_B(t)$ oscillations, avoided crossings, and exact norm preservation.
-5. **Model Context Protocol (MCP) Tools**: Expose quantum physics calculation endpoints over Deno/Supabase Edge Functions.
-
----
-
-## The Genesis Protocol: Complex-Systems Resource Routing
-
-The Genesis Protocol extends Waveform Shift's experimental philosophy into bounded economic coordination: compare ordinary monetary exchange with a logistics assist that uses physical-fit information, then record where each approach succeeds or fails.
-
-The laboratory now compares four architectures—Market, a lender-of-last-resort Stabilized Market, a telemetry-enabled Computational Market/Hybrid, and Genesis coordination assistance—against one hidden physical-welfare benchmark. Monetary trades must actually clear through balances, credit, collateral, counterparties, and settlement. Genesis uses declared preferences only as consent and ranking inputs, settles through the same cash/credit rail by default, and falls back to market coordination when its routing data or nodes fail. Pure financial shocks preserve the physical world, while real-resource shocks bind every mechanism.
-
-Genesis is not a banking replacement, an autonomous currency, or a civic preference calculator, and it cannot receive a hardcoded victory. Discovery and holdout seeds remain separate; a narrow logistics claim must beat the strongest monetary/hybrid comparator, clear confidence and oracle-gap requirements, pass systemic-risk gates, and survive overhead sensitivity. See [the operating boundaries](docs/GENESIS_OPERATING_BOUNDARIES.md) and [the monetary coordination model](docs/MONETARY_COORDINATION_MODEL.md) for mechanisms, assumptions, hypotheses, and falsification conditions.
-
-> **Core Principle:** Computation may assist with physically measurable logistics (where the scarce information is how resources physically fit together), while people, communities, and markets remain authoritative for subjective preferences, price discovery, liquidity, and financial risk.
-
-### Key Simulation Components
-
-1. **Operational fit signals**: Multiple physical fields measure scarcity, demand, urgency, quality, location, energy, reliability, and compatibility. They supplement—rather than replace—human value judgments or prices.
-2. **Seeded energy availability**: A 24-hour stochastic power-availability input exercises timing and outage assumptions without claiming to model a real utility.
-3. **Route preview**: Dynamic direct or relay paths show possible logistics choices; execution still requires the declared human boundary and cash/market settlement.
-
-## Systemic Stress & Coordination Lab
-
-`/systemic-lab` is a separate, offline-first financial research workstation. It represents institutions with reconciled balance sheets, collateral inventories, directed funding claims, payment obligations, market positions, margin agreements, ownership links, and explicit facility contracts. Three synthetic flagship experiments cover LFBO dollar-funding stress, an intraday settlement disruption, and a fire-sale/margin spiral.
-
-The Policy Desk supports public scenario-path imports, DRR `SystemicSignal` imports, competing-mechanism experiments, policy counterfactuals, parameter uncertainty, layer ablations, robustness checks, exploratory calibration, preregistered holdout evaluation, and exact-replay policy passports. Federal Reserve and BIS publications motivate mechanisms and input formats only. The lab is not a Federal Reserve model, supervisory system, regulatory-ratio implementation, forecast, or endorsement.
-
-Start with [Systemic Stress Lab](docs/SYSTEMIC_STRESS_LAB.md), then see the [financial mechanisms](docs/FINANCIAL_MECHANISMS.md), [validation boundary](docs/VALIDATION.md), and [model-risk review](docs/MODEL_RISK_AND_REVIEW.md).
-
-## Separate research workstations
-
-| Workstation                        | Route           | Epistemic domain                                                               |
-| ---------------------------------- | --------------- | ------------------------------------------------------------------------------ |
-| Quantum / Woodyard model           | `/`             | Established quantum mechanics versus a proposed physical model                 |
-| ARFR                               | `/arfr`         | Proposed physical technology and falsifiable simulation                        |
-| Genesis resource lab               | `/resonance`    | Stylized resource-allocation experiments                                       |
-| Systemic Stress & Coordination Lab | `/systemic-lab` | Established financial mechanisms implemented in a stylized economic simulation |
-
-Outputs from one domain are never evidence for another. Shared hashing and experiment infrastructure do not imply shared empirical validity.
-
----
-
-## Verification & Build Suite
-
-```bash
-# Run scientific invariant and regression tests
-npm test
-
-# Run ESLint linter
-npm run lint
-
-# Build production bundle
-npm run build
-
-# Lint, typecheck, test, and production build
-npm run verify
-
-# Audit the resolved dependency tree
-npm run audit:dependencies
-
-# Emit a CycloneDX software bill of materials
-npm run --silent sbom > sbom.cdx.json
+```
+  ██████╗  █████╗ ██╗███╗   ██╗     ██╗      █████╗ ███╗   ██╗
+  ██╔══██╗██╔══██╗██║████╗  ██║     ██║     ██╔══██╗████╗  ██║
+  ██████╔╝███████║██║██╔██╗ ██║     ██║     ███████║██╔██╗ ██║
+  ██╔══██╗██╔══██║██║██║╚██╗██║     ██║     ██╔══██║██║╚██╗██║
+  ██║  ██║██║  ██║██║██║ ╚████║     ███████╗██║  ██║██║ ╚████║
+  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝
 ```
 
-## ARFR experiment integrity
+### **R.A.I.N. Lab — Experiment #9**
+*Rigorous Scientific Workstation & Multi-Domain Physics/Economic Simulation Platform*
 
-ARFR uses refresh-independent fixed stepping, cumulative run statistics and versioned result passports with full current configuration and build provenance. See [timing, export boundaries and validation](docs/ARFR_EXPERIMENT_INTEGRITY.md). The four workstations load on demand, and pull requests run the test, typecheck, lint and build gates.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-6.1-646CFF.svg)](https://vitejs.dev/)
+[![React](https://img.shields.io/badge/React-18.3-61DAFB.svg)](https://react.dev/)
+[![Vitest](https://img.shields.io/badge/Testing-Vitest-6E9F18.svg)](https://vitest.dev/)
+
+---
+
+[🔬 Research Workstations](#-interactive-research-workstations) •
+[📐 Epistemic Framework](#-epistemic-classification-framework) •
+[⚡ Core Features](#-core-lab-features) •
+[🌐 Genesis Protocol](#-the-genesis-protocol-complex-systems-resource-routing) •
+[🏦 Systemic Stress Lab](#-systemic-stress--coordination-lab) •
+[🚀 Quickstart & Commands](#-developer-quickstart--command-reference)
+
+---
+
+</div>
+
+> ⚠️ **Research Instrument Notice:** R.A.I.N. Lab is engineered as a high-fidelity, interactive scientific workstation. Established physical laws and proposed physical/economic extensions are strictly segregated, with explicit falsification conditions, invariant tests, and cryptographically verifiable research artifacts (SHA-256 canonical hash chains).
+
+---
+
+## 🔬 Interactive Research Workstations
+
+The laboratory consists of four isolated interactive research environments. Outputs from one domain are strictly segregated and never serve as empirical evidence for another.
+
+| Workstation | Route | Epistemic Domain | Key Capabilities & Documentation |
+| :--- | :--- | :--- | :--- |
+| **Quantum & Woodyard Model** | [`/`](#) | Established Quantum Mechanics vs. Proposed Scalar Field Model | Dual live predictions, numerical residual $\Delta P$, Anomaly Engine, Catalyst OS export |
+| **Adaptive Resonant Field Router** | [`/arfr`](#) | Field-Modulated Routing & Wavefront Dynamics | Physics engine, interactive canvas, real-time spatial wave packet propagation ([Docs](docs/ARFR_EXPERIMENT_INTEGRITY.md)) |
+| **Genesis Resource Lab** | [`/resonance`](#) | Complex-Systems Resource Routing & Logistics | Bounded economic coordination, physical-fit signals vs. monetary clearing ([Docs](docs/GENESIS_OPERATING_BOUNDARIES.md)) |
+| **Systemic Stress & Coordination** | [`/systemic-lab`](#) | Reconciled Financial Balance Sheets & Liquidity Cascades | Intraday settlement disruption, dollar funding stress, margin spirals ([Docs](docs/SYSTEMIC_STRESS_LAB.md)) |
+
+---
+
+## 📐 Epistemic Classification Framework
+
+To enforce strict scientific integrity, all visual models, mathematical computations, and simulation parameters are classified into four explicit categories:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    EPISTEMIC CLASSIFICATION SYSTEM                      │
+├───────────────────┬───────────────────┬───────────────────┬─────────────┤
+│ 1. ESTABLISHED    │ 2. PROPOSED MODEL │ 3. INTERPRETIVE   │ 4. TESTABLE │
+│    PHYSICS        │    (Woodyard '26) │    CLAIMS         │    PREDICTS │
+└───────────────────┴───────────────────┴───────────────────┴─────────────┘
+```
+
+### 1. Established Physics
+Validated standard quantum mechanical formulations operating as ground-truth baselines:
+
+* **Schrödinger Time Evolution:**
+  $$i\hbar \frac{\partial\psi}{\partial t} = \hat{H}\psi$$
+* **Born-Rule Outcome Probabilities:**
+  $$P(i) = \left|\langle i|\psi\rangle\right|^2$$
+* **1D Barrier Tunneling:** Rectangular potential barrier transmission coefficient $T(E, V_0, a)$.
+* **Quantum Teleportation:** Bennett et al. (1993) 3-qubit discrete protocol using pre-shared EPR entanglement and classical signaling.
+* **Werner States & Entanglement Bounds:** Concurrence $C(\rho) = \max\left(0, \frac{3p-1}{2}\right)$ and Massar–Popescu classical fidelity limit $F \le \frac{2}{3}$.
+
+---
+
+### 2. Proposed Model (Woodyard 2026)
+Hypothetical matter-scalar field coupling model introducing field-modulated spatial localization:
+
+* **Field-Modulated Two-Site System:** Hamiltonian with scalar field coupling $g$:
+  $$H_2 = \begin{pmatrix} E_A + g\phi_A & \Delta \\ \Delta & E_B + g\phi_B \end{pmatrix}$$
+
+* **Localization Response Kernel:** Spatial density profile biased by scalar kernel $\chi(x) = \exp\left[\alpha L(x)\right]$:
+  $$P_{\mathrm{loc}}(x) = \frac{\chi(x) P_B(x)}{\int \chi(x') P_B(x') \,\mathrm{d}x'}$$
+
+* **Unitary Time Evolution:** Norm-preserving propagator matrix preserving total state probability $P_A(t) + P_B(t) \equiv 1$:
+  $$U(\mathrm{d}t) = \exp\left(-\frac{i}{\hbar} H \,\mathrm{d}t\right)$$
+
+---
+
+### 3. Interpretive Claim
+Conceptual framing of spatial position not as a static classical coordinate, but as an internal dynamical quantum state continuously modulated by background scalar fields.
+
+---
+
+### 4. Testable Predictions & Falsification Criteria
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       FALSIFICATION PROTOCOL                            │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  Phase Deviation:   Δφ_ϕ = (g / ℏ) ∫ [ ϕ(x₁(t),t) - ϕ(x₂(t),t) ] dt     │
+│                                                                         │
+│  RULE: If atom interferometry or optical clock precision measures      │
+│  zero phase deviation within σ < 10⁻⁴, the scalar coupling parameter    │
+│  region g is strictly FALSIFIED and discarded.                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ⚡ Core Lab Features
+
+* **Real-time Comparative Engine:** Dual rendering of standard QM versus Woodyard predictions with live display of $\Delta P$ residuals, percentage deviation, and interactive parameter controls.
+* **Automated Anomaly Engine:** Algorithmic parameter space search that scans for states maximizing deviation from standard quantum mechanics while verifying numerical stability and feasibility limits.
+* **Catalyst OS Verification:** Exportable canonical JSON research artifacts secured with SHA-256 hash chains, git commit SHA binding, and parameter digests.
+* **Numerical Time Propagation:** Live interactive integration of $|\psi(t)\rangle$ showing energy level avoided crossings and probability oscillations.
+* **Model Context Protocol (MCP):** Native integration points for AI/agent tool calling and automated quantum computation endpoints.
+
+---
+
+## 🌐 The Genesis Protocol: Complex-Systems Resource Routing
+
+The Genesis Protocol extends experimental field mechanics to logistics and economic coordination under physical resource constraints:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      GENESIS ROUTING ARCHITECTURE                       │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│   [ Physical Fields ] ───►  [ Operational Fit Signals ]                 │
+│   (Scarcity, Energy,           │                                        │
+│    Urgency, Quality)           ▼                                        │
+│                     [ Genesis Route Engine ] ──► [ Cash / Credit Rail ] │
+│                                │                     (Settlement)       │
+│                                ▼                                        │
+│                     [ Fallback to Market ] ───► [ Price Discovery ]     │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Key Architectural Pillars
+1. **Multi-Field Signals:** Physical fields measure spatial scarcity, demand, quality, energy availability, and compatibility without replacing price discovery or human consent.
+2. **Stochastic Power Constraints:** 24-hour time-varying energy profiles simulate real-world grid intermittency and power outages.
+3. **Dynamic Path Preview:** Real-time routing algorithms evaluate direct vs. relay paths, falling back to market mechanisms when routing nodes or telemetry fail.
+
+> Read the [Genesis Operating Boundaries](docs/GENESIS_OPERATING_BOUNDARIES.md) and [Monetary Coordination Model](docs/MONETARY_COORDINATION_MODEL.md).
+
+---
+
+## 🏦 Systemic Stress & Coordination Lab
+
+Located at `/systemic-lab`, this offline-first financial research workstation simulates institutional financial networks with full balance sheet reconciliation:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                  SYSTEMIC FINANCIAL STRESS NETWORK                      │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│   [ Fed / Central Bank ] ◄──► [ Direct Funding Claims ]                 │
+│          ▲                              │                               │
+│          │                              ▼                               │
+│   [ Collateral Pools ] ◄────► [ Settlement Liquidity ] ──► [ Margin ]   │
+│                                         │                     │         │
+│                                         ▼                     ▼         │
+│                               [ Intraday Payments ]  [ Fire Sales ]    │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Core Experiments
+* **LFBO Dollar-Funding Stress:** Cross-border liquidity shocks and collateral haircuts.
+* **Intraday Settlement Disruption:** Gridlock resolution under time-critical payment queues.
+* **Margin Spiral & Fire Sales:** Asset liquidation feedback loops and solvency degradation.
+
+> Explore [Systemic Stress Lab Documentation](docs/SYSTEMIC_STRESS_LAB.md), [Financial Mechanisms](docs/FINANCIAL_MECHANISMS.md), and [Model Risk Review](docs/MODEL_RISK_AND_REVIEW.md).
+
+---
+
+## 🚀 Developer Quickstart & Command Reference
+
+### Prerequisites
+* **Node.js**: `v22.x` (or newer)
+* **Package Manager**: `pnpm`
+
+### Installation & Development
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start local development server
+pnpm dev
+
+# Run Vitest unit & invariant tests
+pnpm test
+
+# Run ESLint linter
+pnpm lint
+
+# Perform TypeScript typechecking
+pnpm typecheck
+
+# Full verification suite (lint, typecheck, test, build)
+pnpm verify
+
+# Build production bundle
+pnpm build
+
+# Audit dependencies
+pnpm audit:dependencies
+
+# Export CycloneDX Software Bill of Materials (SBOM)
+pnpm sbom > sbom.cdx.json
+```
+
+---
+
+## 🔬 Experiment Integrity & Verification Standards
+
+All simulation engines in R.A.I.N. Lab adhere to strict reproducibility guidelines:
+* **Deterministic Stepping:** Time evolution engines utilize refresh-rate independent, fixed delta-t simulation steps.
+* **Build & Parameter Provenance:** Exported experiment passports embed git commit SHAs, active parameter configurations, and timestamped audit logs.
+* **Automated CI/CD Verification:** Continuous Integration workflows enforce linting, strict TypeScript checks, invariant tests, and bundle compilation on every pull request.
+
+---
+
+<div align="center">
+
+*R.A.I.N. Lab — Bridging Quantum Physics, Complex Systems, and Financial Network Dynamics.*
+
+</div>
