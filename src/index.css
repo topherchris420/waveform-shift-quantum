@@ -89,10 +89,31 @@
   }
 
   .katex-display {
-    max-width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 0.2rem;
+    width: max-content;
+    min-width: 100%;
+    max-width: none;
+    margin: 0.45rem 0;
+    overflow: visible;
+    padding: 0.15rem 0 0.35rem;
+  }
+
+  .equation-scroll {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-color: hsl(var(--primary) / 0.55) hsl(var(--secondary));
+  }
+
+  .equation-scroll .katex {
+    font-size: clamp(0.92rem, 3.8vw, 1.1rem);
+  }
+
+  @media (max-width: 640px) {
+    .equation-block {
+      border-color: hsl(var(--primary) / 0.22);
+    }
+
+    .equation-scroll {
+      padding-inline: 0.35rem;
+    }
   }
 
   /* Keep KaTeX's screen-reader layer from contributing its full equation width. */

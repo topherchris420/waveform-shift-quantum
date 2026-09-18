@@ -452,7 +452,7 @@ export const QuantumLab: React.FC = () => {
 
           {/* Parameter rail */}
           <aside className="space-y-4">
-            <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-4">
+            <div className="rounded-xl border border-slate-800 bg-panel p-4">
               <PanelHeader eyebrow="Comparison" title="What is being split" icon={Split} />
               <div className="mt-3 grid grid-cols-2 gap-1.5">
                 {SPLIT_MODES.map((option) => (
@@ -464,7 +464,7 @@ export const QuantumLab: React.FC = () => {
                     className={`rounded-md border px-2.5 py-2 font-mono text-[11px] transition ${
                       splitMode === option.id
                         ? 'border-cyan-400/70 bg-cyan-500/20 text-cyan-100'
-                        : 'border-slate-700 bg-slate-950/60 text-slate-400 hover:border-slate-600'
+                        : 'border-slate-700 bg-secondary/80 text-slate-400 hover:border-slate-600'
                     }`}
                   >
                     {option.label}
@@ -484,7 +484,7 @@ export const QuantumLab: React.FC = () => {
                   id="stage-platform"
                   value={platformId}
                   onChange={(event) => setPlatformId(event.target.value)}
-                  className="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-2 font-mono text-[11px] text-slate-200 outline-none focus:border-cyan-500"
+                  className="w-full rounded-md border border-slate-700 bg-secondary px-2.5 py-2 font-mono text-[11px] text-slate-200 outline-none focus:border-cyan-500"
                 >
                   {PLATFORMS.map((option) => (
                     <option key={option.id} value={option.id}>
@@ -498,7 +498,7 @@ export const QuantumLab: React.FC = () => {
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-4">
+            <div className="rounded-xl border border-slate-800 bg-panel p-4">
               <PanelHeader eyebrow="Direct manipulation" title="Field & coupling" icon={Waves} />
               <div className="mt-4 space-y-4">
                 <LabSlider
@@ -588,7 +588,7 @@ export const QuantumLab: React.FC = () => {
               </div>
               <Button
                 variant="outline"
-                className="mt-4 w-full border-slate-700 bg-slate-950 font-mono text-[11px] text-slate-300 hover:bg-slate-800"
+                className="mt-4 w-full border-slate-700 bg-secondary font-mono text-[11px] text-slate-300 hover:bg-slate-800"
                 onClick={() => {
                   setSplitParams(DEFAULT_SPLIT_PARAMS);
                   setStatusMessage('Parameters reset to the paper’s reference regime.');
@@ -617,7 +617,7 @@ export const QuantumLab: React.FC = () => {
               variant="outline"
               onClick={exportCSV}
               disabled={measurements.length === 0}
-              className="border-slate-700 bg-slate-950 font-mono text-[11px] text-slate-300 hover:bg-slate-800"
+              className="border-slate-700 bg-secondary font-mono text-[11px] text-slate-300 hover:bg-slate-800"
             >
               <Download className="mr-1.5 h-3.5 w-3.5" />
               EXPORT CSV
