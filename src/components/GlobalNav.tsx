@@ -15,7 +15,7 @@ export const GlobalNav = () => {
           aria-label="Waveform Quantum home"
           className="group flex shrink-0 items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
-          <span className="relative grid h-9 w-9 place-items-center overflow-hidden bg-foreground text-background">
+          <span className="relative grid h-9 w-9 place-items-center overflow-hidden rounded-[0.3rem] border border-primary/40 bg-foreground text-background shadow-[0_0_24px_hsl(var(--primary)/0.18)]">
             <Atom className="h-5 w-5 transition-transform duration-500 group-hover:rotate-90 motion-reduce:transition-none motion-reduce:group-hover:rotate-0" />
             <span className="absolute bottom-0 left-0 h-0.5 w-full origin-left scale-x-50 bg-primary transition-transform group-hover:scale-x-100 motion-reduce:transition-none motion-reduce:group-hover:scale-x-50" />
           </span>

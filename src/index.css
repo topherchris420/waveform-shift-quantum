@@ -7,63 +7,63 @@
 
 @layer base {
   :root {
-    /* Paper Lab — warm paper, ink, single cyan plot accent. */
-    --background: 43 26% 95%;
-    --foreground: 0 0% 5%;
+    /* Observatory — deep ink, mineral panels, and a measured cyan signal. */
+    --background: 222 34% 7%;
+    --foreground: 210 24% 93%;
 
-    --card: 40 20% 98%;
-    --card-foreground: 0 0% 5%;
+    --card: 220 28% 11%;
+    --card-foreground: 210 24% 93%;
 
-    --panel: 40 24% 92%;
+    --panel: 221 25% 14%;
 
-    --popover: 40 20% 98%;
-    --popover-foreground: 0 0% 5%;
+    --popover: 220 28% 11%;
+    --popover-foreground: 210 24% 93%;
 
-    --primary: 187 86% 38%;
-    --primary-foreground: 43 26% 96%;
+    --primary: 186 92% 58%;
+    --primary-foreground: 222 34% 7%;
 
-    --secondary: 40 20% 89%;
-    --secondary-foreground: 0 0% 12%;
+    --secondary: 220 23% 18%;
+    --secondary-foreground: 210 24% 93%;
 
-    --muted: 40 18% 90%;
-    --muted-foreground: 36 8% 38%;
+    --muted: 220 22% 16%;
+    --muted-foreground: 215 14% 62%;
 
-    --accent: 187 86% 38%;
-    --accent-foreground: 43 26% 96%;
+    --accent: 186 92% 58%;
+    --accent-foreground: 222 34% 7%;
 
-    --destructive: 3 68% 44%;
-    --destructive-foreground: 43 26% 96%;
+    --destructive: 5 78% 60%;
+    --destructive-foreground: 210 24% 93%;
 
-    --border: 38 14% 80%;
-    --input: 38 14% 80%;
-    --ring: 187 86% 38%;
+    --border: 215 22% 25%;
+    --input: 215 22% 25%;
+    --ring: 186 92% 58%;
 
-    --radius: 0rem;
+    --radius: 0.35rem;
 
-    --ink: 0 0% 5%;
-    --paper: 43 26% 95%;
-    --paper-deep: 40 24% 89%;
+    --ink: 210 24% 93%;
+    --paper: 222 34% 7%;
+    --paper-deep: 220 28% 11%;
 
-    --quantum-field: 43 26% 95%;
-    --quantum-glow: 187 86% 38%;
-    --quantum-wave: 160 62% 30%;
-    --quantum-entangle: 258 52% 45%;
-    --quantum-collapse: 28 82% 42%;
-    --copper: 28 82% 42%;
-    --copper-foreground: 28 60% 18%;
-    --lime: 160 62% 30%;
-    --lime-foreground: 160 50% 16%;
-    --violet: 258 52% 45%;
-    --violet-foreground: 258 44% 22%;
+    --quantum-field: 222 34% 7%;
+    --quantum-glow: 186 92% 58%;
+    --quantum-wave: 160 70% 48%;
+    --quantum-entangle: 268 82% 72%;
+    --quantum-collapse: 28 92% 64%;
+    --copper: 28 92% 64%;
+    --copper-foreground: 28 80% 86%;
+    --lime: 160 70% 48%;
+    --lime-foreground: 160 60% 82%;
+    --violet: 268 82% 72%;
+    --violet-foreground: 268 70% 90%;
 
-    --sidebar-background: 43 26% 95%;
-    --sidebar-foreground: 0 0% 5%;
-    --sidebar-primary: 187 86% 38%;
-    --sidebar-primary-foreground: 43 26% 96%;
-    --sidebar-accent: 40 20% 89%;
-    --sidebar-accent-foreground: 0 0% 5%;
-    --sidebar-border: 38 14% 80%;
-    --sidebar-ring: 187 86% 38%;
+    --sidebar-background: 222 34% 7%;
+    --sidebar-foreground: 210 24% 93%;
+    --sidebar-primary: 186 92% 58%;
+    --sidebar-primary-foreground: 222 34% 7%;
+    --sidebar-accent: 220 23% 18%;
+    --sidebar-accent-foreground: 210 24% 93%;
+    --sidebar-border: 215 22% 25%;
+    --sidebar-ring: 186 92% 58%;
   }
 
   * {
@@ -190,17 +190,30 @@
   .experience-background {
     background-color: hsl(var(--paper));
     background-image:
-      linear-gradient(90deg, hsl(var(--ink) / 0.045) 1px, transparent 1px),
-      linear-gradient(0deg, hsl(var(--ink) / 0.035) 1px, transparent 1px);
-    background-size: 96px 96px, 96px 96px;
+      radial-gradient(circle at 72% 8%, hsl(var(--primary) / 0.11), transparent 28rem),
+      radial-gradient(circle at 12% 88%, hsl(var(--quantum-entangle) / 0.08), transparent 24rem),
+      linear-gradient(90deg, hsl(var(--ink) / 0.055) 1px, transparent 1px),
+      linear-gradient(0deg, hsl(var(--ink) / 0.04) 1px, transparent 1px);
+    background-size: auto, auto, 96px 96px, 96px 96px;
+  }
+
+  .lab-background::before,
+  .experience-background::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.16;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+    mix-blend-mode: screen;
   }
 
   .command-bar,
   .topline-nav {
-    border: 1px solid hsl(var(--ink));
-    border-radius: 0;
-    background: hsl(var(--paper));
-    box-shadow: 4px 4px 0 hsl(var(--ink) / 0.9);
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    background: hsl(var(--paper) / 0.82);
+    box-shadow: 0 14px 40px hsl(222 34% 2% / 0.24), inset 0 1px hsl(var(--foreground) / 0.06);
   }
 
   .topline-nav {
@@ -260,10 +273,10 @@
   .lab-surface,
   .instrument-panel,
   .field-shell {
-    border: 1px solid hsl(var(--ink) / 0.9);
-    border-radius: 0;
-    background: hsl(var(--card));
-    box-shadow: none;
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    background: linear-gradient(145deg, hsl(var(--card) / 0.98), hsl(var(--panel) / 0.92));
+    box-shadow: 0 18px 48px hsl(222 34% 2% / 0.22), inset 0 1px hsl(var(--foreground) / 0.055);
   }
 
   .lab-panel {
