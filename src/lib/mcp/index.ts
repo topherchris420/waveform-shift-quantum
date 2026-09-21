@@ -10,7 +10,7 @@ export default defineMcp({
   title: "Vers3Dynamics Teleportation",
   version: "0.1.0",
   instructions:
-    "Analytical quantum-mechanics tools backing the Vers3Dynamics Teleportation lab. Use `barrier_transmission` for 1D rectangular-barrier transmission (tunneling/resonant/oscillatory), `double_slit_intensity` for Fraunhofer double-slit fringes, `born_probabilities` for single-qubit measurement probabilities, `teleportation_fidelity` for Werner-state teleportation fidelity and concurrence, and `pauli_correction` to look up the Pauli operator required for a given pair of Bell-basis measurement bits.",
+    "Analytical quantum-mechanics tools backing the Vers3Dynamics Teleportation lab. Use `barrier_transmission` for 1D rectangular-barrier transmission (tunneling/resonant/oscillatory), `double_slit_intensity` for Fraunhofer double-slit fringes, `born_probabilities` for single-qubit measurement probabilities, `teleportation_fidelity` for Horodecki Werner-state teleportation fidelity F=(2f+1)/3 and concurrence, and `pauli_correction` to look up the Pauli operator required for a given pair of Bell-basis measurement bits.",
   tools: [
     barrierTransmissionTool,
     doubleSlitIntensityTool,

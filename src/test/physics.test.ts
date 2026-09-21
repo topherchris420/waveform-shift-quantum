@@ -4,11 +4,15 @@ import {
   twoSiteModel,
   barrierTransmission,
   wernerConcurrence,
+  wernerSingletFraction,
   teleportationFidelity,
+  pauliCorrection,
+  pearsonChiSquared,
   localizationKernel,
   observedLocalizationDensity,
   evolveTwoSiteState,
   compareModels,
+  doubleSlitIntensity,
 } from '../lib/physics';
 import { searchAnomalies } from '../lib/anomalyEngine';
 
@@ -79,6 +83,47 @@ describe('Scientific Invariant Tests for Waveform Shift Quantum Laboratory', () 
   it('Ideal teleportation fidelity approaches 1 under ideal conditions', () => {
     const idealFidelity = teleportationFidelity(1.0, 0.0);
     expect(idealFidelity).toBeCloseTo(1.0, 10);
+  });
+
+  it('Horodecki fidelity equals (2f+1)/3 and hits the classical bound at p = 1/3', () => {
+    expect(wernerSingletFraction(1, 0)).toBeCloseTo(1, 10);
+    expect(wernerSingletFraction(1 / 3, 0)).toBeCloseTo(0.5, 10);
+    expect(wernerSingletFraction(0, 0)).toBeCloseTo(0.25, 10);
+
+    expect(teleportationFidelity(1 / 3, 0)).toBeCloseTo(2 / 3, 10);
+    expect(teleportationFidelity(0, 0)).toBeCloseTo(0.5, 10);
+    expect(teleportationFidelity(1, 1)).toBeCloseTo(0.5, 10);
+
+    const p = 0.8;
+    const d = 0.25;
+    const f = wernerSingletFraction(p, d);
+    expect(teleportationFidelity(p, d)).toBeCloseTo((2 * f + 1) / 3, 12);
+    expect(teleportationFidelity(p, d)).toBeCloseTo((1 + p * (1 - d)) / 2, 12);
+  });
+
+  it('Pauli correction maps Bell bits onto I, X, Z, X·Z', () => {
+    expect(pauliCorrection(0, 0).operator).toBe('I');
+    expect(pauliCorrection(0, 1).operator).toBe('X');
+    expect(pauliCorrection(1, 0).operator).toBe('Z');
+    expect(pauliCorrection(1, 1).operator).toBe('X·Z');
+  });
+
+  it('Fraunhofer double-slit intensity is 1 on axis and vanishes at the first minimum', () => {
+    expect(doubleSlitIntensity(0, 100, 633, 1000)).toBeCloseTo(1, 10);
+    // First minimum: π d sinθ / λ = π/2  ⇒  d_nm sinθ / λ = 1/2
+    const d_um = 100;
+    const lambda_nm = 633;
+    const L_mm = 1000;
+    const sinTheta = lambda_nm / (2 * d_um * 1000);
+    const y_mm = Math.tan(Math.asin(sinTheta)) * L_mm;
+    expect(doubleSlitIntensity(y_mm, d_um, lambda_nm, L_mm)).toBeCloseTo(0, 8);
+  });
+
+  it('Pearson χ² is zero when observed counts match the Born expectation', () => {
+    const { p0, p1 } = bornProbabilities(Math.PI / 3);
+    const n = 1000;
+    expect(pearsonChiSquared([n * p0, n * p1], [n * p0, n * p1])).toBeCloseTo(0, 10);
+    expect(pearsonChiSquared([n, 0], [n * p0, n * p1])).toBeGreaterThan(0);
   });
 
   it('Zero localization response α → 0 reproduces unmodified Born distribution', () => {

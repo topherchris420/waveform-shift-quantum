@@ -1,8 +1,13 @@
-import { useMemo, useState } from 'react';
-import { Loader2, Play, Terminal, Wrench } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Play, Terminal, Wrench } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { twoSiteModel, localizationKernel } from '@/lib/physics';
+import {
+  evaluateInstrument,
+  INSTRUMENT_TOOLS_FOR_MODE,
+  type InstrumentName,
+  type LabInstrumentMode,
+} from '@/lib/instruments';
 
 type FieldType = 'number' | 'bit';
 
@@ -29,13 +34,6 @@ interface ToolDef {
 /** Structured MCP output is untyped JSON; these narrow it at the render edge. */
 const num = (v: unknown) => (typeof v === 'number' ? v : Number(v ?? 0));
 const str = (v: unknown) => (v == null ? '' : String(v));
-
-const SUPABASE_URL =
-  (import.meta.env.VITE_SUPABASE_URL as string) || 'https://wpkvetwoxcrggyeaidfs.supabase.co';
-const SUPABASE_KEY =
-  (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string) ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwa3ZldHdveGNyZ2d5ZWFpZGZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NjQ3MjksImV4cCI6MjEwMDI0MDcyOX0.hgyxt4aNslA_9asnNTd3UqSweKh3iaibsRdP_1QA1Oc';
-const MCP_URL = `${SUPABASE_URL}/functions/v1/mcp`;
 
 function Bar({ value, label, tone = 'cyan' }: { value: number; label: string; tone?: 'cyan' | 'violet' | 'amber' }) {
   const pct = Math.max(0, Math.min(1, value)) * 100;
@@ -68,31 +66,21 @@ const TOOLS: ToolDef[] = [
       { name: 'mixing_delta', label: 'Mixing Δ', type: 'number', default: 0.2, min: 0.01, step: 0.05, unit: 'eV' },
     ],
 
-    visualize: (o) => {
-      const res = twoSiteModel({
-        EA: (o.bare_EA as number) ?? 1.0,
-        EB: (o.bare_EB as number) ?? 1.0,
-        phiA: (o.field_phiA as number) ?? -0.5,
-        phiB: (o.field_phiB as number) ?? 0.5,
-        g: (o.coupling_g as number) ?? 0.8,
-        delta: (o.mixing_delta as number) ?? 0.2,
-      });
-      return (
+    visualize: (o) => (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="border-cyan-500/40 bg-cyan-500/10 text-cyan-200">
-              Detuning δ = {res.detuning.toFixed(3)} eV
+              Detuning δ = {num(o.detuning).toFixed(3)} eV
             </Badge>
-            <span className="font-mono text-xs text-slate-400">θ = {(res.theta * (180 / Math.PI)).toFixed(1)}°</span>
+            <span className="font-mono text-xs text-slate-400">θ = {(num(o.theta) * (180 / Math.PI)).toFixed(1)}°</span>
           </div>
-          <Bar value={res.PA} label="Site A Occupation PA" tone="cyan" />
-          <Bar value={res.PB} label="Site B Occupation PB" tone="violet" />
+          <Bar value={num(o.PA)} label="Site A Occupation PA" tone="cyan" />
+          <Bar value={num(o.PB)} label="Site B Occupation PB" tone="violet" />
           <div className="font-mono text-xs text-slate-300">
-            Occupation Imbalance z(t) = <span className="text-amber-300 font-bold">{res.z.toFixed(4)}</span>
+            Occupation Imbalance z(t) = <span className="text-amber-300 font-bold">{num(o.z).toFixed(4)}</span>
           </div>
         </div>
-      );
-    },
+      ),
   },
   {
     name: 'field_localization_kernel',
@@ -106,32 +94,20 @@ const TOOLS: ToolDef[] = [
       { name: 'gamma', label: 'Linewidth Γ', type: 'number', default: 1.5, min: 0.1, step: 0.1 },
       { name: 'alpha', label: 'Strength α', type: 'number', default: 1.0, step: 0.1 },
     ],
-    visualize: (o) => {
-      const res = localizationKernel({
-        omega0: (o.omega0 as number) ?? 10.0,
-        beta: (o.beta as number) ?? 2.0,
-        kappa: 0,
-        phi: (o.phi as number) ?? 1.2,
-        d2phi: 0,
-        omega_w: (o.drive_w as number) ?? 12.4,
-        gamma: (o.gamma as number) ?? 1.5,
-        alpha: (o.alpha as number) ?? 1.0,
-      });
-      return (
+    visualize: (o) => (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="border-violet-500/40 bg-violet-500/10 text-violet-200">
-              ω_loc = {res.omega_loc.toFixed(2)} GHz
+              ω_loc = {num(o.omega_loc).toFixed(2)} GHz
             </Badge>
-            <span className="font-mono text-xs text-slate-400">Response L(x) = {res.L.toFixed(4)}</span>
+            <span className="font-mono text-xs text-slate-400">Response L(x) = {num(o.L).toFixed(4)}</span>
           </div>
-          <Bar value={res.L} label="Response Profile L(x)" tone="amber" />
+          <Bar value={num(o.L)} label="Response Profile L(x)" tone="amber" />
           <div className="font-mono text-xs text-cyan-200">
-            Kernel Factor χ(x) = exp(α L) = <span className="font-bold text-cyan-100">{res.chi.toFixed(4)}</span>
+            Kernel Factor χ(x) = exp(α L) = <span className="font-bold text-cyan-100">{num(o.chi).toFixed(4)}</span>
           </div>
         </div>
-      );
-    },
+      ),
   },
   {
     name: 'barrier_transmission',
@@ -186,15 +162,16 @@ const TOOLS: ToolDef[] = [
   },
   {
     name: 'teleportation_fidelity',
-    title: 'Teleportation fidelity',
-    summary: 'F for a Werner Bell pair with decoherence d, plus concurrence.',
+    title: 'Horodecki teleportation fidelity',
+    summary: 'F = (2f+1)/3 for a Werner Bell pair with depolarizing decoherence d.',
     fields: [
       { name: 'bell_purity', label: 'Bell purity p', type: 'number', default: 0.9, min: 0, max: 1, step: 0.01 },
       { name: 'decoherence', label: 'Decoherence d', type: 'number', default: 0.1, min: 0, max: 1, step: 0.01 },
     ],
     visualize: (o) => (
       <div className="space-y-3">
-        <Bar value={num(o.fidelity)} label="Fidelity F" tone="cyan" />
+        <Bar value={num(o.fidelity)} label="Horodecki F = (2f+1)/3" tone="cyan" />
+        <Bar value={num(o.singlet_fraction)} label="Singlet fraction f" tone="amber" />
         <Bar value={num(o.concurrence)} label="Concurrence C" tone="violet" />
         <div className="font-mono text-[11px] text-slate-400">
           entangled: <span className={o.entangled ? 'text-emerald-300' : 'text-rose-300'}>{String(o.entangled)}</span>
@@ -224,53 +201,58 @@ const TOOLS: ToolDef[] = [
   },
 ];
 
-export function PhysicsToolRunner() {
+interface PhysicsToolRunnerProps {
+  /** When set, only the instruments that belong to the active lab mode are shown. */
+  mode?: LabInstrumentMode;
+}
+
+export function PhysicsToolRunner({ mode }: PhysicsToolRunnerProps) {
+  const tools = useMemo(() => {
+    if (!mode) return TOOLS;
+    const allowed = new Set(INSTRUMENT_TOOLS_FOR_MODE[mode]);
+    return TOOLS.filter((t) => allowed.has(t.name as InstrumentName));
+  }, [mode]);
+
   const [selected, setSelected] = useState(TOOLS[0].name);
-  const tool = useMemo(() => TOOLS.find((t) => t.name === selected)!, [selected]);
-  const [values, setValues] = useState<Record<string, number>>(() =>
-    Object.fromEntries(tool.fields.map((f) => [f.name, f.default])),
+  const tool = useMemo(
+    () => tools.find((t) => t.name === selected) ?? tools[0],
+    [selected, tools],
   );
-  const [loading, setLoading] = useState(false);
+  const [values, setValues] = useState<Record<string, number>>(() =>
+    Object.fromEntries((tool?.fields ?? []).map((f) => [f.name, f.default])),
+  );
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ structured: Record<string, unknown> | null; text: string } | null>(null);
 
+  useEffect(() => {
+    if (!tool) return;
+    if (!tools.some((t) => t.name === selected)) {
+      setSelected(tool.name);
+      setValues(Object.fromEntries(tool.fields.map((f) => [f.name, f.default])));
+      setResult(null);
+      setError(null);
+    }
+  }, [selected, tool, tools]);
+
+  if (!tool) return null;
+
   function pick(name: string) {
-    const next = TOOLS.find((t) => t.name === name)!;
+    const next = tools.find((t) => t.name === name);
+    if (!next) return;
     setSelected(name);
     setValues(Object.fromEntries(next.fields.map((f) => [f.name, f.default])));
     setResult(null);
     setError(null);
   }
 
-  async function run() {
-    setLoading(true);
+  function run() {
     setError(null);
-    setResult(null);
     try {
-      const res = await fetch(`${MCP_URL}/.mcp/invoke-tool/${tool.name}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json, text/event-stream',
-          apikey: SUPABASE_KEY,
-        },
-        body: JSON.stringify(values),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-      const data = await res.json();
-      type ContentItem = { type?: string; text?: string };
-      const text = Array.isArray(data?.content)
-        ? (data.content as ContentItem[])
-            .filter((c) => c?.type === 'text')
-            .map((c) => c.text ?? '')
-            .join('\n')
-        : '';
-      setResult({ structured: (data?.structuredContent as Record<string, unknown>) ?? null, text });
+      const out = evaluateInstrument(tool.name as InstrumentName, values);
+      setResult({ structured: out.structured, text: out.text });
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      setError(message);
-    } finally {
-      setLoading(false);
+      setResult(null);
+      setError(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -279,18 +261,18 @@ export function PhysicsToolRunner() {
       <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Wrench className="h-4 w-4 text-cyan-300" />
-          <h2 className="font-serif text-xl text-slate-100">Run physics tool</h2>
+          <h2 className="font-serif text-xl text-slate-100">Local instruments</h2>
           <Badge variant="outline" className="border-slate-700 bg-slate-900/60 font-mono text-[10px] uppercase tracking-widest text-slate-400">
-            MCP · live
+            Analytic · in-process
           </Badge>
         </div>
         <p className="max-w-md text-xs text-slate-400">
-          Direct calls to the app's MCP tools. Pick a function, set inputs, and visualize the analytic output.
+          Closed-form evaluators that share physics.ts with the MCP tools. No network hop — the active lab mode gates which benches are armed.
         </p>
       </header>
 
       <div className="mb-5 flex flex-wrap gap-2">
-        {TOOLS.map((t) => {
+        {tools.map((t) => {
           const active = t.name === selected;
           return (
             <button
@@ -354,9 +336,9 @@ export function PhysicsToolRunner() {
               </label>
             ))}
           </div>
-          <Button onClick={run} disabled={loading} className="mt-4 w-full gap-2 bg-cyan-500 text-slate-950 hover:bg-cyan-400">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-            {loading ? 'Invoking…' : 'Invoke tool'}
+          <Button onClick={run} className="mt-4 w-full gap-2 bg-cyan-500 text-slate-950 hover:bg-cyan-400">
+            <Play className="h-4 w-4" />
+            Evaluate locally
           </Button>
         </div>
 

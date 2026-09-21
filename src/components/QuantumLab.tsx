@@ -21,6 +21,8 @@ import { InlineMath } from 'react-katex';
 import { EquationBlock } from '@/components/lab/EquationBlock';
 import { ReferencesFooter } from '@/components/lab/ReferencesFooter';
 import { PhysicsToolRunner } from '@/components/lab/PhysicsToolRunner';
+import { DoubleSlitBench } from '@/components/lab/DoubleSlitBench';
+import { BornRuleBench } from '@/components/lab/BornRuleBench';
 import { CatalystRunPanel } from '@/components/lab/CatalystRunPanel';
 import { PaperReaderModal } from '@/components/lab/PaperReaderModal';
 import { EpistemicLegend, EpistemicTag } from '@/components/lab/EpistemicTag';
@@ -45,6 +47,7 @@ import {
   toCSV,
   twoSiteModel,
 } from '@/lib/physics';
+import { INSTRUMENT_TOOLS_FOR_MODE } from '@/lib/instruments';
 import { Reveal } from '@/hooks/use-reveal';
 
 type ExperimentMode =
@@ -134,16 +137,16 @@ const experiments: Record<ExperimentMode, ExperimentDefinition> = {
   },
   teleportation: {
     label: 'Teleportation Protocol',
-    eyebrow: 'Bennett et al. (1993)',
+    eyebrow: 'Bennett et al. (1993); Horodecki et al. (1999)',
     icon: Radio,
     premise:
-      'Discrete state teleportation via a shared Bell pair and two classical bits. Included as the control case: a protocol whose predictions are settled.',
+      'Discrete state teleportation via a shared Bell pair and two classical bits. Average fidelity uses the Horodecki relation F = (2f+1)/3 on the Werner singlet fraction. Included as the control case: a protocol whose predictions are settled.',
     instruction:
       'Set the input state on the Bloch sphere, then step through Bell measurement and Pauli correction to reconstruct |ψ⟩ at Bob.',
     equation:
-      '|\\Phi^{+}\\rangle = \\tfrac{1}{\\sqrt{2}}(|00\\rangle+|11\\rangle),\\quad F = |\\langle\\psi_{\\text{in}}|\\psi_{\\text{out}}\\rangle|^{2}',
+      'F = \\frac{2f+1}{3},\\quad f = \\frac{1+3p(1-d)}{4},\\quad |\\Phi^{+}\\rangle = \\tfrac{1}{\\sqrt{2}}(|00\\rangle+|11\\rangle)',
     equationNote:
-      'No matter or energy traverses the channel; the protocol transfers state via entanglement plus classical communication.',
+      'No matter or energy traverses the channel; F = 2/3 at the Werner entanglement threshold p = 1/3 is the Massar–Popescu classical bound.',
     epistemic: 'established',
   },
   interference: {
@@ -342,8 +345,12 @@ export const QuantumLab: React.FC = () => {
     );
   }, []);
 
-  const sceneMode: SceneMode =
-    experimentMode === 'two_site_transfer' ? 'scalar_kernel' : (experimentMode as SceneMode);
+  const showSplitInstruments =
+    experimentMode === 'two_site_transfer' ||
+    experimentMode === 'scalar_kernel' ||
+    experimentMode === 'signatures' ||
+    experimentMode === 'classical_limit';
+  const decoherence = 1 - fieldIntensity[0] * 0.7;
 
   return (
     <main className="experience-background min-h-screen text-foreground">
@@ -639,7 +646,7 @@ export const QuantumLab: React.FC = () => {
             gamma: splitParams.gamma,
             omega_w: splitParams.omega_w,
             purity: teleportSession.purity,
-            decoherence: 1 - fieldIntensity[0] * 0.7,
+            decoherence,
           }}
         />
       </Reveal>
@@ -670,24 +677,38 @@ export const QuantumLab: React.FC = () => {
 
         <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
           <div className="min-w-0 space-y-4">
-            <InstrumentScene
-              mode={sceneMode}
-              fieldIntensity={fieldIntensity[0]}
-              couplingG={splitParams.g}
-              responseAlpha={splitParams.alpha}
-              phaseShift={phaseShift}
-              epistemicKind={activeExperiment.epistemic}
-              caption={activeExperiment.premise}
-            />
-
-            <TwoSiteExperiment
-              parameters={{
-                g: splitParams.g,
-                phiA: splitParams.phiA,
-                phiB: splitParams.phiB,
-                delta: splitParams.delta,
-              }}
-            />
+            {showSplitInstruments && (
+              <>
+                <InstrumentScene
+                  mode={experimentMode === 'two_site_transfer' ? 'scalar_kernel' : (experimentMode as SceneMode)}
+                  fieldIntensity={fieldIntensity[0]}
+                  couplingG={splitParams.g}
+                  responseAlpha={splitParams.alpha}
+                  phaseShift={phaseShift}
+                  epistemicKind={activeExperiment.epistemic}
+                  caption={activeExperiment.premise}
+                />
+                {(experimentMode === 'two_site_transfer' || experimentMode === 'scalar_kernel') && (
+                  <TwoSiteExperiment
+                    parameters={{
+                      g: splitParams.g,
+                      phiA: splitParams.phiA,
+                      phiB: splitParams.phiB,
+                      delta: splitParams.delta,
+                    }}
+                  />
+                )}
+              </>
+            )}
+            {experimentMode === 'interference' && <DoubleSlitBench />}
+            {experimentMode === 'superposition' && <BornRuleBench />}
+            {experimentMode === 'teleportation' && (
+              <TeleportationWorkspace
+                decoherence={decoherence}
+                onSessionChange={setTeleportSession}
+              />
+            )}
+            {experimentMode === 'qdp' && <QDPWorkspace />}
           </div>
 
           <div className="min-w-0 space-y-4">
@@ -772,23 +793,11 @@ export const QuantumLab: React.FC = () => {
         </div>
       </Reveal>
 
-      {/* Teleportation bench (established-physics control case) */}
-      <Reveal as="section" variant="up" className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
-        <TeleportationWorkspace
-          decoherence={1 - fieldIntensity[0] * 0.7}
-          onSessionChange={setTeleportSession}
-        />
-      </Reveal>
-
-      {/* Quantum Dynamic Programming Workspace */}
-      <Reveal as="section" variant="up" className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
-        <QDPWorkspace />
-      </Reveal>
-
-      {/* Analytical tool runner */}
-      <Reveal as="section" variant="up" className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
-        <PhysicsToolRunner />
-      </Reveal>
+      {INSTRUMENT_TOOLS_FOR_MODE[experimentMode].length > 0 && (
+        <Reveal as="section" variant="up" className="mx-auto mt-6 max-w-[1700px] px-4 sm:px-6 lg:px-8">
+          <PhysicsToolRunner mode={experimentMode} />
+        </Reveal>
+      )}
 
       {/* Catalyst verification */}
       <Reveal id="catalyst-panel" variant="mask" className="mt-6">
@@ -798,7 +807,7 @@ export const QuantumLab: React.FC = () => {
             shots: teleportSession.shots,
             bits: teleportSession.bits,
             purity: teleportSession.purity,
-            decoherence: 1 - fieldIntensity[0] * 0.7,
+            decoherence,
             fidelity: teleportSession.fidelity,
             concurrence: teleportSession.concurrence,
             zz: teleportSession.zz,

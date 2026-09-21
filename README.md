@@ -52,6 +52,10 @@ Every model is classified before it is visualized or exported.
 
   $$C(\rho) = \max\left(0, \frac{3p - 1}{2}\right)$$
 
+- **Horodecki average teleportation fidelity** (Werner pair of purity \(p\), depolarizing decoherence \(d\)):
+
+  $$F = \frac{2f + 1}{3},\qquad f = \frac{1 + 3p(1-d)}{4}$$
+
 - **Massar–Popescu classical fidelity bound:**
 
   $$F \leq \frac{2}{3}$$

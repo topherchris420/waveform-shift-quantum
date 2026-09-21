@@ -77,6 +77,22 @@ const refs = [
     venue: 'Reviews of Modern Physics, vol. 75, no. 3, pp. 715–775',
     topic: 'Einselection of spatial pointer states & classical limit emergence',
   },
+  {
+    id: 9,
+    title: 'Teleporting an unknown quantum state',
+    authors: 'C. H. Bennett, G. Brassard, C. Crépeau, R. Jozsa, A. Peres, and W. K. Wootters',
+    year: 1993,
+    venue: 'Physical Review Letters, vol. 70, no. 13, pp. 1895–1899',
+    topic: 'Bennett protocol: Bell measurement, two classical bits, Pauli correction',
+  },
+  {
+    id: 10,
+    title: 'General teleportation channel, singlet fraction, and quasidistillation',
+    authors: 'M. Horodecki, P. Horodecki, and R. Horodecki',
+    year: 1999,
+    venue: 'Physical Review A, vol. 60, no. 3, pp. 1888–1898',
+    topic: 'Average teleportation fidelity F = (2f+1)/3 from the fully entangled fraction',
+  },
 ];
 
 export const ReferencesFooter: React.FC = () => (
@@ -140,7 +156,7 @@ export const ReferencesFooter: React.FC = () => (
         </div>
         <div>
           <p className="section-eyebrow">Paper Literature References</p>
-          <h3 className="mt-1 text-sm font-semibold text-foreground">Woodyard (2026) Citations [1]–[8]</h3>
+          <h3 className="mt-1 text-sm font-semibold text-foreground">Woodyard (2026) Citations [1]–[8] · teleportation [9]–[10]</h3>
         </div>
       </div>
       <ul className="mt-4 grid gap-3 md:grid-cols-2">

@@ -54,7 +54,10 @@ export const TeleportationWorkspace: React.FC<TeleportationWorkspaceProps> = ({
     () => teleportationFidelity(bellPurity[0], decoherence),
     [bellPurity, decoherence]
   );
-  const concurrence = useMemo(() => wernerConcurrence(bellPurity[0]), [bellPurity]);
+  const concurrence = useMemo(
+    () => wernerConcurrence(bellPurity[0], decoherence),
+    [bellPurity, decoherence]
+  );
   const zz = useMemo(() => zzCorrelation(history.slice(-32).map((r) => r.bits)), [history]);
 
   useEffect(() => {
@@ -122,10 +125,10 @@ export const TeleportationWorkspace: React.FC<TeleportationWorkspaceProps> = ({
           </div>
           <div>
             <h3 className="font-mono text-sm font-bold uppercase tracking-wider text-slate-100">
-              Teleportation Bench — Bennett et al. (1993)
+              Teleportation Bench — Horodecki fidelity
             </h3>
             <p className="text-xs text-slate-400">
-              The control case: a protocol whose predictions are not in dispute.
+              Bennett protocol control case. Average fidelity F = (2f+1)/3 from the Werner singlet fraction.
             </p>
           </div>
         </div>
@@ -249,7 +252,7 @@ export const TeleportationWorkspace: React.FC<TeleportationWorkspaceProps> = ({
       </div>
 
       <div className="mt-4 grid gap-px overflow-hidden rounded-lg border border-slate-800 bg-slate-800 sm:grid-cols-4">
-        <MetricCell label="Fidelity F" value={fidelity.toFixed(4)} note="classical bound 2/3" />
+        <MetricCell label="Horodecki F" value={fidelity.toFixed(4)} note="(2f+1)/3 · bound 2/3" />
         <MetricCell label="Concurrence C" value={concurrence.toFixed(4)} note="entangled iff C > 0" />
         <MetricCell label="⟨ZZ⟩" value={zz.toFixed(4)} note={`${history.length} shots`} />
         <MetricCell
