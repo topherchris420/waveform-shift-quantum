@@ -39,11 +39,29 @@ function bornProbabilities(theta) {
   const p0 = Math.cos(theta / 2) ** 2;
   return { p0, p1: 1 - p0 };
 }
-function teleportationFidelity(bellPurity, decoherence) {
-  return clamp(bellPurity * (1 - decoherence * 0.5) + 0.25 * (1 - bellPurity));
+function wernerSingletFraction(purity, decoherence = 0) {
+  const p = clamp(purity);
+  const d = clamp(decoherence);
+  return (1 + 3 * p * (1 - d)) / 4;
 }
-function wernerConcurrence(purity) {
-  return Math.max(0, (3 * purity - 1) / 2);
+function teleportationFidelity(bellPurity, decoherence) {
+  const f = wernerSingletFraction(bellPurity, decoherence);
+  return clamp((2 * f + 1) / 3);
+}
+var PAULI_CORRECTIONS = {
+  "00": { operator: "I", description: "Identity \u2014 no correction needed" },
+  "01": { operator: "X", description: "Bit flip on Bob's qubit" },
+  "10": { operator: "Z", description: "Phase flip on Bob's qubit" },
+  "11": { operator: "X\xB7Z", description: "Bit flip followed by phase flip" }
+};
+function pauliCorrection(m1, m2) {
+  const bits = `${m1}${m2}`;
+  const { operator, description } = PAULI_CORRECTIONS[bits];
+  return { bits, operator, description };
+}
+function wernerConcurrence(purity, decoherence = 0) {
+  const pEff = clamp(purity) * (1 - clamp(decoherence));
+  return Math.max(0, (3 * pEff - 1) / 2);
 }
 
 // src/lib/mcp/tools/barrier-transmission.ts
@@ -116,7 +134,7 @@ import { z as z4 } from "npm:zod@^4.4.3";
 var teleportation_fidelity_default = defineTool4({
   name: "teleportation_fidelity",
   title: "Teleportation fidelity",
-  description: "Estimate the average teleportation fidelity F using a Werner Bell-pair of purity p degraded by a decoherence factor d \u2208 [0, 1]. Also returns the Werner concurrence of the shared pair.",
+  description: "Horodecki average teleportation fidelity F = (2f+1)/3 for a Werner Bell pair of purity p degraded by depolarizing decoherence d \u2208 [0, 1], where f = [1+3p(1-d)]/4 is the singlet fraction. Also returns concurrence.",
   inputSchema: {
     bell_purity: z4.number().min(0).max(1).describe("Bell-pair Werner purity p \u2208 [0, 1]."),
     decoherence: z4.number().min(0).max(1).describe("Decoherence factor d \u2208 [0, 1] (0 = ideal).")
@@ -124,10 +142,11 @@ var teleportation_fidelity_default = defineTool4({
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: ({ bell_purity, decoherence }) => {
     const F = teleportationFidelity(bell_purity, decoherence);
-    const C = wernerConcurrence(bell_purity);
+    const C = wernerConcurrence(bell_purity, decoherence);
+    const f = wernerSingletFraction(bell_purity, decoherence);
     return {
-      content: [{ type: "text", text: `F = ${F.toFixed(6)}, concurrence C = ${C.toFixed(6)}` }],
-      structuredContent: { fidelity: F, concurrence: C, entangled: C > 0 }
+      content: [{ type: "text", text: `F = ${F.toFixed(6)} (Horodecki), singlet fraction f = ${f.toFixed(6)}, concurrence C = ${C.toFixed(6)}` }],
+      structuredContent: { fidelity: F, concurrence: C, singlet_fraction: f, entangled: C > 0, formula: "(2f+1)/3" }
     };
   }
 });
@@ -135,12 +154,6 @@ var teleportation_fidelity_default = defineTool4({
 // src/lib/mcp/tools/pauli-correction.ts
 import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@2.0.4";
 import { z as z5 } from "npm:zod@^4.4.3";
-var OPERATORS = {
-  "00": { op: "I", description: "Identity \u2014 no correction needed" },
-  "01": { op: "X", description: "Bit flip on Bob's qubit" },
-  "10": { op: "Z", description: "Phase flip on Bob's qubit" },
-  "11": { op: "X\xB7Z", description: "Bit flip followed by phase flip" }
-};
 var pauli_correction_default = defineTool5({
   name: "pauli_correction",
   title: "Teleportation Pauli correction",
@@ -151,11 +164,10 @@ var pauli_correction_default = defineTool5({
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: ({ m1, m2 }) => {
-    const key = `${m1}${m2}`;
-    const { op, description } = OPERATORS[key];
+    const result = pauliCorrection(m1, m2);
     return {
-      content: [{ type: "text", text: `Measurement ${key} \u2192 apply ${op} (${description})` }],
-      structuredContent: { bits: key, operator: op, description }
+      content: [{ type: "text", text: `Measurement ${result.bits} \u2192 apply ${result.operator} (${result.description})` }],
+      structuredContent: result
     };
   }
 });
@@ -165,7 +177,7 @@ var mcp_default = defineMcp({
   name: "vers3dynamics-teleportation-mcp",
   title: "Vers3Dynamics Teleportation",
   version: "0.1.0",
-  instructions: "Analytical quantum-mechanics tools backing the Vers3Dynamics Teleportation lab. Use `barrier_transmission` for 1D rectangular-barrier transmission (tunneling/resonant/oscillatory), `double_slit_intensity` for Fraunhofer double-slit fringes, `born_probabilities` for single-qubit measurement probabilities, `teleportation_fidelity` for Werner-state teleportation fidelity and concurrence, and `pauli_correction` to look up the Pauli operator required for a given pair of Bell-basis measurement bits.",
+  instructions: "Analytical quantum-mechanics tools backing the Vers3Dynamics Teleportation lab. Use `barrier_transmission` for 1D rectangular-barrier transmission (tunneling/resonant/oscillatory), `double_slit_intensity` for Fraunhofer double-slit fringes, `born_probabilities` for single-qubit measurement probabilities, `teleportation_fidelity` for Horodecki Werner-state teleportation fidelity F=(2f+1)/3 and concurrence, and `pauli_correction` to look up the Pauli operator required for a given pair of Bell-basis measurement bits.",
   tools: [
     barrier_transmission_default,
     double_slit_intensity_default,

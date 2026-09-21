@@ -47,12 +47,58 @@ export function bornProbabilities(theta: number) {
 }
 
 /**
- * Teleportation fidelity model. Ideal protocol yields F = 1; here we
- * degrade by a Bell-pair purity term to keep the readout meaningful
- * under user tuning.
+ * Pearson χ² for comparing an observed histogram with expected counts.
+ * Used by the Born-rule bench to show convergence to P(i) = |⟨i|ψ⟩|².
+ */
+export function pearsonChiSquared(observed: number[], expected: number[]) {
+  let chi = 0;
+  const n = Math.min(observed.length, expected.length);
+  for (let i = 0; i < n; i++) {
+    if (expected[i] > 0) {
+      const residual = observed[i] - expected[i];
+      chi += (residual * residual) / expected[i];
+    }
+  }
+  return chi;
+}
+
+/**
+ * Singlet fraction of a Werner pair ρ = p|Φ⁺⟩⟨Φ⁺| + (1-p)I/4 after a
+ * depolarizing channel of strength d. f = [1 + 3p(1-d)] / 4.
+ */
+export function wernerSingletFraction(purity: number, decoherence = 0) {
+  const p = clamp(purity);
+  const d = clamp(decoherence);
+  return (1 + 3 * p * (1 - d)) / 4;
+}
+
+/**
+ * Horodecki average teleportation fidelity F = (2f + 1) / 3, where f is
+ * the fully entangled fraction of the shared pair (Horodecki, Horodecki &
+ * Horodecki, Phys. Rev. A 60, 1888 (1999)). Equivalent closed form:
+ * F = [1 + p(1-d)] / 2. Ideal Bell pair (p = 1, d = 0) yields F = 1;
+ * the classical Massar–Popescu bound F = 2/3 sits at the Werner
+ * entanglement threshold p = 1/3.
  */
 export function teleportationFidelity(bellPurity: number, decoherence: number) {
-  return clamp(bellPurity * (1 - decoherence * 0.5) + 0.25 * (1 - bellPurity));
+  const f = wernerSingletFraction(bellPurity, decoherence);
+  return clamp((2 * f + 1) / 3);
+}
+
+export const PAULI_CORRECTIONS = {
+  '00': { operator: 'I', description: 'Identity — no correction needed' },
+  '01': { operator: 'X', description: 'Bit flip on Bob\'s qubit' },
+  '10': { operator: 'Z', description: 'Phase flip on Bob\'s qubit' },
+  '11': { operator: 'X·Z', description: 'Bit flip followed by phase flip' },
+} as const;
+
+export type PauliBits = keyof typeof PAULI_CORRECTIONS;
+
+/** Bennett-protocol Pauli correction from Alice's two Bell-basis bits. */
+export function pauliCorrection(m1: 0 | 1, m2: 0 | 1) {
+  const bits = `${m1}${m2}` as PauliBits;
+  const { operator, description } = PAULI_CORRECTIONS[bits];
+  return { bits, operator, description };
 }
 
 /** HSV → HSL string. Used for complex-phase (arg ψ) domain colouring. */
@@ -70,11 +116,13 @@ export function toCSV(rows: { id: number; timestamp: number; value: number; type
 }
 
 /**
- * Concurrence of a Werner state ρ = p|Φ⁺⟩⟨Φ⁺| + (1-p) I/4.
- * C(ρ) = max(0, (3p − 1) / 2).  Entangled iff p > 1/3.
+ * Concurrence of a Werner state ρ = p|Φ⁺⟩⟨Φ⁺| + (1-p) I/4 after optional
+ * depolarizing decoherence d. C = max(0, (3p(1-d) − 1) / 2).
+ * Entangled iff the effective purity p(1-d) > 1/3.
  */
-export function wernerConcurrence(purity: number) {
-  return Math.max(0, (3 * purity - 1) / 2);
+export function wernerConcurrence(purity: number, decoherence = 0) {
+  const pEff = clamp(purity) * (1 - clamp(decoherence));
+  return Math.max(0, (3 * pEff - 1) / 2);
 }
 
 /**

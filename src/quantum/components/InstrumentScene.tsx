@@ -247,6 +247,44 @@ export const InstrumentScene: React.FC<InstrumentSceneProps> = ({
         return;
       }
 
+      if (mode === 'interference') {
+        const startX = 80;
+        const width = 800;
+        const baselineY = 430;
+        ctx.save();
+        ctx.strokeStyle = '#8b5cf6';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for (let px = 0; px <= width; px += 2) {
+          const yMm = ((px / width) * 2 - 1) * 4;
+          const I = Math.cos((Math.PI * 100e3 * Math.sin(Math.atan2(yMm, 1000))) / 633) ** 2;
+          const x = startX + px;
+          const y = baselineY - I * 280;
+          if (px === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.fillStyle = '#0d0d0d';
+        ctx.font = '600 14px Inter, sans-serif';
+        ctx.fillText('Fraunhofer I/I₀ = cos²(π d sinθ / λ)  [established]', startX + 10, 120);
+        ctx.restore();
+        return;
+      }
+
+      if (mode === 'superposition') {
+        const p0 = Math.cos(Math.PI / 6) ** 2;
+        ctx.save();
+        ctx.fillStyle = '#0ea5b7';
+        ctx.fillRect(280, 400 - p0 * 240, 120, p0 * 240);
+        ctx.fillStyle = '#7c3aed';
+        ctx.fillRect(480, 400 - (1 - p0) * 240, 120, (1 - p0) * 240);
+        ctx.fillStyle = '#0d0d0d';
+        ctx.font = '600 14px Inter, sans-serif';
+        ctx.fillText('Born rule  P(0)=cos²(θ/2)   P(1)=sin²(θ/2)  [established]', 180, 120);
+        ctx.restore();
+        return;
+      }
+
       // Remaining modes use the field backdrop with a labelled centre marker.
       ctx.fillStyle = 'rgba(13, 13, 13, 0.6)';
       ctx.font = '600 14px Inter, sans-serif';
