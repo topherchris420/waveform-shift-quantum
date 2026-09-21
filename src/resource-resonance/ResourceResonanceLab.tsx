@@ -85,7 +85,10 @@ export const ResourceResonanceLab: React.FC = () => {
     setNeeds(initialNeeds);
     setRelays(initialRelays);
     
-    setResult(runSimulation(params));
+    const timer = setTimeout(() => {
+      setResult(runSimulation(params));
+    }, 0);
+    return () => clearTimeout(timer);
   }, [params]);
 
   const handleRoute = useCallback(() => {

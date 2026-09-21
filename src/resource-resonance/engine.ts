@@ -1403,7 +1403,33 @@ export function runAblationAnalysis(input: SimulationParams, seed = 20260813): A
 }
 
 export interface RegimePoint { x:number; y:number; financialStress:number; telemetryReliability:number; winner:ArchitectureVerdict; utilities:Record<Architecture,number> }
-export function buildCoordinationRegimeMap(base:SimulationParams, dimensionX:'resourceScarcity'|'liquidityStress'|'creditAvailability'='liquidityStress', dimensionY:'telemetryReliability'|'geographicalFriction'|'renewableVolatility'='telemetryReliability', steps=5):RegimePoint[]{ const points:RegimePoint[]=[]; for(let yi=0;yi<steps;yi++)for(let xi=0;xi<steps;xi++){const x=xi/(steps-1),y=yi/(steps-1);const p={...base,[dimensionX]:x,[dimensionY]:y};const r=runSimulation(p,4400+yi*101+xi);points.push({x,y,financialStress:p.liquidityStress,telemetryReliability:p.telemetryReliability,winner:r.architectureVerdict,utilities:Object.fromEntries(ARCHITECTURES.map(a=>[a,r.architectures[a].totalNetworkUtility])) as Record<Architecture,number>})}return points; }
+export function buildCoordinationRegimeMap(
+  base: SimulationParams,
+  dimensionX: 'resourceScarcity' | 'liquidityStress' | 'creditAvailability' = 'liquidityStress',
+  dimensionY: 'telemetryReliability' | 'geographicalFriction' | 'renewableVolatility' = 'telemetryReliability',
+  steps = 5
+): RegimePoint[] {
+  const points: RegimePoint[] = [];
+  for (let yi = 0; yi < steps; yi++) {
+    for (let xi = 0; xi < steps; xi++) {
+      const x = xi / (steps - 1);
+      const y = yi / (steps - 1);
+      const p = { ...base, [dimensionX]: x, [dimensionY]: y, ensembleSize: 2 };
+      const r = runSimulation(p, 4400 + yi * 101 + xi);
+      points.push({
+        x,
+        y,
+        financialStress: p.liquidityStress,
+        telemetryReliability: p.telemetryReliability,
+        winner: r.architectureVerdict,
+        utilities: Object.fromEntries(
+          ARCHITECTURES.map((a) => [a, r.architectures[a].totalNetworkUtility])
+        ) as Record<Architecture, number>,
+      });
+    }
+  }
+  return points;
+}
 
 export interface StageEvidence { seeds:number[]; deltaUtility:number; deltaConfidence:number; deltaVsHybrid:number; deltaVsHybridConfidence:number; winRate:number; riskChecks:RiskCheck[]; draws:number }
 export interface SuperiorityGate { id:string; label:string; detail:string; passed:boolean }

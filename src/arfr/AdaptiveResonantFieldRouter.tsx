@@ -31,6 +31,7 @@ import {
   createSimulation,
   queueDisturbance,
   routePosition,
+  runBuiltInExperiment,
   runEnergyProfileComparison,
   stepSimulation,
   summarizeExperiment,
@@ -661,14 +662,38 @@ export const AdaptiveResonantFieldRouter: React.FC = () => {
   const runBenchmark = useCallback(() => {
     setIsBenchmarking(true);
     toast.info('Running energy profile comparison benchmark...');
-    window.setTimeout(() => {
-      const rows = runEnergyProfileComparison(stateRef.current.config.seed, 120);
-      setBenchmarkRows(rows);
-      setIsBenchmarking(false);
-      toast.success('Profile benchmark complete', {
-        description: `Evaluated ${rows.length} energy configurations across 120 ticks.`,
+
+    const profiles: EnergyProfile[] = ['precision', 'balanced', 'low_energy', 'max_confinement'];
+    const seed = stateRef.current.config.seed;
+    const rows: EnergyComparisonRow[] = [];
+    let index = 0;
+
+    const processNext = () => {
+      if (index >= profiles.length) {
+        setBenchmarkRows(rows);
+        setIsBenchmarking(false);
+        toast.success('Profile benchmark complete', {
+          description: `Evaluated ${rows.length} energy configurations across 120 ticks.`,
+        });
+        return;
+      }
+
+      const profile = profiles[index];
+      const run = runBuiltInExperiment('energy_optimization', { seed, energyProfile: profile }, 120);
+      rows.push({
+        profile,
+        finalPositionError: run.summary.finalPositionError,
+        totalEnergy: run.summary.totalEnergy,
+        energyPerSimulatedMeter: run.summary.energyPerSimulatedMeter,
+        particleRetention: run.summary.particleRetention,
+        stableConfinementTime: run.summary.stableConfinementTime,
       });
-    }, 20);
+
+      index += 1;
+      setTimeout(processNext, 10);
+    };
+
+    setTimeout(processNext, 10);
   }, []);
 
   const exportPassport = useCallback(async () => {
