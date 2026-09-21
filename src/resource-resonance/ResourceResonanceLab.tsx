@@ -28,7 +28,9 @@ export const ResourceResonanceLab: React.FC = () => {
   const [simulatedTime, setSimulatedTime] = useState<number>(12); // 12:00 PM default
 
   useEffect(() => {
-    // Generate initial baseline network
+    let cancelled = false;
+
+    // Keep route changes responsive: build the baseline after the first paint.
     const declared = (overrides: Partial<SubjectivePreference> = {}): SubjectivePreference => ({
       declaredReservationValue: .75,
       priorityWeight: .7,
@@ -39,7 +41,10 @@ export const ResourceResonanceLab: React.FC = () => {
       source: 'human-declared',
       ...overrides,
     });
-    const initialOffers: ResourceOffer[] = [
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+
+      const initialOffers: ResourceOffer[] = [
       {
         id: 'o1', providerId: 'NODE-A4', type: 'gpu', amount: 8,
         vector: { scarcity: 0.7, demand: 0.9, urgency: 0.4, quality: 0.9, locationCost: 0.8, energyCost: 0.9, reliability: 0.95, compatibility: 0.9 },
@@ -83,9 +88,14 @@ export const ResourceResonanceLab: React.FC = () => {
 
     setOffers(initialOffers);
     setNeeds(initialNeeds);
-    setRelays(initialRelays);
-    
-    setResult(runSimulation(params));
+      setRelays(initialRelays);
+      setResult(runSimulation(params));
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [params]);
 
   const handleRoute = useCallback(() => {
@@ -151,7 +161,6 @@ export const ResourceResonanceLab: React.FC = () => {
 
   const handleDiscover = (newParams: SimulationParams) => {
     setParams(newParams);
-    setResult(runSimulation(newParams));
     toast.success("Region frozen — challenging on holdout seeds");
   };
 
