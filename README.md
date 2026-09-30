@@ -1,22 +1,36 @@
 <div align="center">
 
-# R.A.I.N. Lab
+# Waveform
 
-### Experiment #9 · Rigorous Scientific Workstation
+### Change a parameter. Challenge a model. Keep the result.
 
-**A multi-domain simulation platform for quantum mechanics, wavefront routing, complex-systems logistics, and financial network stress.**
+**An open simulation studio from Vers3Dynamics for comparing predictions and keeping experiments reproducible.**
+
+Start with a question about field coupling. Run a controlled sweep. See where the proposed model separates from its baseline—and where the effect disappears. Export the complete record, then import it to check the computation again.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-6.1-646CFF.svg)](https://vitejs.dev/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF.svg)](https://vitejs.dev/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB.svg)](https://react.dev/)
 [![Vitest](https://img.shields.io/badge/Testing-Vitest-6E9F18.svg)](https://vitest.dev/)
 
-[Research Workstations](#research-workstations) · [Epistemic Framework](#epistemic-framework) · [Quickstart](#quickstart) · [Integrity](#experiment-integrity)
+[Run your first experiment](#run-your-first-experiment) · [Research Workstations](#research-workstations) · [Epistemic Framework](#epistemic-framework) · [Quickstart](#quickstart) · [Integrity](#experiment-integrity)
 
 </div>
 
-> **Research instrument notice.** R.A.I.N. Lab separates established laws, proposed models, interpretive claims, and testable predictions. Simulations are exploratory instruments—not experimental evidence—and every export is designed to be reproducible and auditable.
+> **Research instrument notice.** Waveform separates established laws, proposed models, interpretive claims, and testable predictions. Simulations are exploratory instruments—not experimental evidence—and every export is designed to be reproducible and auditable.
+
+## Run your first experiment
+
+Open **`/experiments`** after starting the app. Everything in this workbench runs locally; no account, API key, or backend is required.
+
+1. Choose **Driven field**, then **Run comparison**. The workbench sweeps coupling while holding the rest of the protocol fixed.
+2. Inspect maximum and mean population separation, the zero-coupling control, probability conservation, and agreement with a half-sized timestep.
+3. Choose **Null control** and run again. With a spatially uniform static field, the population effect disappears.
+4. **Save record** to keep parameters, numerical results, checks, source commit, and a SHA-256 digest. **CSV** exports the sampled values.
+5. **Import & replay** the JSON. The app checks its structure and digest, recomputes the sweep, and rejects mismatches.
+
+A passing replay establishes computational agreement with the current engine. It does **not** authenticate an author or establish the proposed model in nature. See the [experiment protocol](docs/EXPERIMENT_WORKBENCH.md) for units, bounds, tolerances, and limitations.
 
 ## Research Workstations
 
@@ -24,6 +38,7 @@ Each workstation is isolated by domain. A result produced in one model is never 
 
 | Workstation | Route | Focus |
 | --- | --- | --- |
+| **Experiment Workbench** | `/experiments` | Controlled two-site coupling sweeps, numerical checks, JSON replay, and CSV export. |
 | **Quantum & Woodyard Model** | `/` | Standard quantum-mechanical baselines contrasted with a proposed scalar-field localization model. |
 | **Adaptive Resonant Field Router** | `/arfr` | Spatial wave-packet propagation, field-modulated routing, and wavefront dynamics. See [experiment integrity](docs/ARFR_EXPERIMENT_INTEGRITY.md). |
 | **Genesis Resource Lab** | `/resonance` | Bounded resource coordination under scarcity, energy, urgency, quality, and compatibility constraints. See [operating boundaries](docs/GENESIS_OPERATING_BOUNDARIES.md). |
@@ -101,31 +116,31 @@ If atom-interferometry or optical-clock measurements constrain this deviation to
 
 ### Prerequisites
 
-- Node.js `22.x` or newer
-- pnpm
+- Node.js `22.x` (CI uses `22.22.2`)
+- npm (the CI lockfile is `package-lock.json`)
 
 ### Install and run
 
 ```bash
-pnpm install
-pnpm dev
+npm ci
+npm run dev
 ```
 
 ### Verification commands
 
 ```bash
-pnpm test                 # Vitest unit and invariant tests
-pnpm lint                 # ESLint
-pnpm typecheck            # Strict TypeScript checks
-pnpm verify               # lint, typecheck, test, and build
-pnpm build                # Production bundle
-pnpm audit:dependencies   # Dependency audit
-pnpm sbom > sbom.cdx.json # CycloneDX SBOM export
+npm test                 # Vitest unit and invariant tests
+npm run lint                 # ESLint
+npm run typecheck            # Strict TypeScript checks
+npm run verify               # lint, typecheck, test, and build
+npm run build                # Production bundle
+npm run audit:dependencies   # Dependency audit
+npm run --silent sbom > sbom.cdx.json # CycloneDX SBOM export
 ```
 
 ## Experiment Integrity
 
-R.A.I.N. Lab follows these reproducibility rules:
+Waveform follows these reproducibility rules:
 
 - **Deterministic stepping:** simulation loops use refresh-rate-independent, fixed timestep integration.
 - **Explicit provenance:** experiment passports record git SHAs, active parameters, timestamps, and audit events.
@@ -135,6 +150,7 @@ R.A.I.N. Lab follows these reproducibility rules:
 
 ## Documentation
 
+- [Experiment workbench and replay protocol](docs/EXPERIMENT_WORKBENCH.md)
 - [Adaptive Resonant Field Router integrity](docs/ARFR_EXPERIMENT_INTEGRITY.md)
 - [Genesis operating boundaries](docs/GENESIS_OPERATING_BOUNDARIES.md)
 - [Monetary coordination model](docs/MONETARY_COORDINATION_MODEL.md)
@@ -144,6 +160,6 @@ R.A.I.N. Lab follows these reproducibility rules:
 
 <div align="center">
 
-*R.A.I.N. Lab — bridging quantum physics, complex systems, and financial network dynamics.*
+*Waveform / Vers3Dynamics — open instruments, inspectable results.*
 
 </div>

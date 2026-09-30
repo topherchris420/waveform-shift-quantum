@@ -5,6 +5,8 @@ export const GlobalNav = () => {
   const location = useLocation();
   const isResonance = location.pathname === "/resonance";
   const isSystemic = location.pathname === "/systemic-lab";
+  const isPhysics = location.pathname === "/";
+  const isExperiments = location.pathname === "/experiments";
   const isARFR = location.pathname === "/arfr";
 
   return (
@@ -40,12 +42,17 @@ export const GlobalNav = () => {
         >
           <Link
             to="/"
-            aria-current={
-              !isResonance && !isARFR && !isSystemic ? "page" : undefined
-            }
-            className={`nav-tab ${!isResonance && !isARFR && !isSystemic ? "nav-tab--active" : ""}`}
+            aria-current={isPhysics ? "page" : undefined}
+            className={`nav-tab ${isPhysics ? "nav-tab--active" : ""}`}
           >
             Physics lab
+          </Link>
+          <Link
+            to="/experiments"
+            aria-current={isExperiments ? "page" : undefined}
+            className={`nav-tab ${isExperiments ? "nav-tab--active" : ""}`}
+          >
+            Experiments
           </Link>
           <Link
             to="/resonance"
@@ -79,11 +86,11 @@ export const GlobalNav = () => {
           </span>
           <Activity className="h-3.5 w-3.5 text-primary" />
           <span className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-            Live simulation
+            Local simulation
           </span>
         </div>
 
-        {!isResonance && !isARFR && !isSystemic && (
+        {isPhysics && (
           <a href="#reality-split" className="nav-launch">
             <span className="hidden sm:inline">Open workspace</span>
             <span className="sm:hidden">Open</span>

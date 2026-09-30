@@ -11,6 +11,7 @@ import { GlobalNav } from "./components/GlobalNav";
 const Index = lazy(() => import("./pages/Index"));
 const ResonanceIndex = lazy(() => import("./pages/ResonanceIndex"));
 const SystemicLab = lazy(() => import("./systemic-lab/SystemicLab"));
+const ExperimentWorkbench = lazy(() => import("./experiments/ExperimentWorkbench"));
 const ARFR = lazy(() => import("./pages/ARFR"));
 
 const queryClient = new QueryClient();
@@ -110,6 +111,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/resonance" element={<ResonanceIndex />} />
               <Route path="/systemic-lab" element={<SystemicLab />} />
+              <Route path="/experiments" element={<ExperimentWorkbench />} />
               <Route path="/arfr" element={<ARFR />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
