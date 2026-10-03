@@ -3,6 +3,7 @@ import { AlertTriangle, HelpCircle, Info, Scale, ShieldAlert, CheckCircle2 } fro
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { compareModels, ModelComparisonResult } from '@/lib/physics';
+import { COMPARISON_DERIVATIONS } from '@/lib/epistemics';
 
 interface ComparisonPanelProps {
   experimentMode: string;
@@ -24,6 +25,10 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ experimentMode
 
   const comparison: ModelComparisonResult = compareModels(experimentMode, parameters);
   const deltaSign = comparison.delta >= 0 ? '+' : '';
+  const derivation = COMPARISON_DERIVATIONS[comparison.derivation];
+  // A number that is not derived from the model must never share the styling
+  // of one that is: dashed border, muted value, and an explicit label.
+  const derived = derivation.isModelPrediction;
 
   return (
     <div className="rounded-xl border border-slate-700/60 bg-slate-900/90 p-5 shadow-2xl backdrop-blur-md">
@@ -52,6 +57,17 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ experimentMode
         </div>
       </div>
 
+      <div
+        className={`mb-4 rounded-lg border p-3 text-[11px] ${
+          derived
+            ? 'border-slate-700 text-slate-400'
+            : 'border-dashed border-rose-500/60 bg-rose-950/20 text-rose-200'
+        }`}
+      >
+        <span className="font-mono font-bold uppercase tracking-wider">{derivation.label}</span>
+        <span className="ml-2">{comparison.derivationNote}</span>
+      </div>
+
       {/* Side-by-side Cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* Standard QM Card */}
@@ -72,16 +88,24 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ experimentMode
         </div>
 
         {/* Woodyard Model Card */}
-        <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 p-4 transition-all hover:border-amber-500/50">
+        <div
+          className={`rounded-lg p-4 transition-all ${
+            derived
+              ? 'border border-amber-500/30 bg-amber-950/20 hover:border-amber-500/50'
+              : 'border border-dashed border-rose-500/50 bg-transparent'
+          }`}
+        >
           <div className="mb-2 flex items-center justify-between">
             <span className="font-mono text-xs font-bold uppercase tracking-wider text-amber-400">
-              WOODYARD MODEL
+              {derived ? 'WOODYARD MODEL' : 'NOT A MODEL PREDICTION'}
             </span>
             <Badge className="bg-amber-600/30 text-[10px] text-amber-200">
               {comparison.scientificStatus.toUpperCase()}
             </Badge>
           </div>
-          <div className="my-2 font-mono text-3xl font-extrabold text-amber-100">
+          <div
+            className={`my-2 font-mono text-3xl font-extrabold ${derived ? 'text-amber-100' : 'text-slate-400 line-through decoration-rose-500/60'}`}
+          >
             {comparison.woodyardModel.toFixed(4)}
           </div>
           <div className="font-mono text-xs text-slate-400">{comparison.observableName}</div>
@@ -94,9 +118,9 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ experimentMode
         <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-4 transition-all hover:border-emerald-500/50">
           <div className="mb-2 flex items-center justify-between">
             <span className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400">
-              MEASURABLE DEVIATION Δ
+              {derived ? 'MODEL DIFFERENCE Δ' : 'ILLUSTRATIVE Δ'}
             </span>
-            <Badge className="bg-emerald-600/30 text-[10px] text-emerald-200">DELTA</Badge>
+            <Badge className="bg-emerald-600/30 text-[10px] text-emerald-200">SIMULATED</Badge>
           </div>
           <div className="my-2 font-mono text-3xl font-extrabold text-emerald-300">
             {deltaSign}
@@ -106,9 +130,9 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ experimentMode
             Deviation: <span className="text-emerald-400 font-bold">{deltaSign}{comparison.percentDeviation.toFixed(2)}%</span>
           </div>
           <div className="mt-3 text-[11px] text-slate-400">
-            {Math.abs(comparison.delta) > 0.05
-              ? 'Potentially measurable in precision interferometry.'
-              : 'Small deviation; requires high-sensitivity sensor.'}
+            {derived
+              ? 'Difference between two simulated predictions in simulation units. No apparatus sensitivity is specified, so detectability is unknown.'
+              : 'Not derived from the model: no measurement can test this number.'}
           </div>
         </div>
       </div>
@@ -153,7 +177,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> = ({ experimentMode
           <div className="mt-2 flex items-center gap-2 text-[11px] text-red-300/80">
             <CheckCircle2 className="h-3.5 w-3.5 text-red-400" />
             <span>
-              If experimental observations match the Standard QM prediction within 5σ confidence, the field-modulated hypothesis is falsified for these parameters.
+              Only a calibrated measurement that excludes the predicted deviation at its declared resolution could exclude these parameters. A simulation cannot falsify the physical hypothesis; g and φ currently have no calibration.
             </span>
           </div>
         </div>

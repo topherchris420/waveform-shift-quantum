@@ -155,7 +155,7 @@ export const ExperimentCardView: React.FC<ExperimentCardViewProps> = ({
               [
                 ['g', card.parameters.g],
                 ['α', card.parameters.alpha],
-                ['Δ (eV)', card.parameters.delta],
+                ['Δ (ε₀)', card.parameters.delta],
                 ['φA', card.parameters.phiA],
                 ['φB', card.parameters.phiB],
                 ['Γ', card.parameters.gamma],

@@ -9,11 +9,25 @@
 //   Branch B — Proposed Model (Woodyard 2026):
 //     H_mod(t) = [[E_A + g φ_A(t), Δ], [Δ, E_B + g φ_B(t)]]
 //
-// Both branches are propagated with the same exact unitary propagator
-// (evolveTwoSiteState), so any difference between them is a consequence of the
-// proposed coupling g alone — never of numerical asymmetry between the two
+// Both branches are propagated by the same step function (evolveTwoSiteState)
+// on the same time grid, so any difference between them is a consequence of
+// the proposed coupling g alone — never of numerical asymmetry between the two
 // integrations. When g = 0 the two branches are identical for all t, which is
 // the engine's central falsifiable invariant (see src/test/realitySplit.test.ts).
+//
+// What is exact and what is not:
+//
+//   • Each step applies the exact matrix exponential exp(−iH dt) of a FROZEN
+//     Hamiltonian. The established branch, and the proposed branch whenever the
+//     drive amplitude is zero, have time-independent H, so their trajectories
+//     carry no discretisation error (only rounding, ~1e-13).
+//   • With a drive, H(t) is frozen at each step's midpoint (exponential midpoint
+//     rule). That trajectory is a second-order approximation, NOT an analytic
+//     solution: its error falls as dt². The experiment protocol measures it with
+//     a dt → dt/2 → dt/4 ladder (src/quantum/validation/convergence.ts).
+//
+// Units: simulation units with ħ = 1. Energies are in ε₀, times in ħ/ε₀; g and
+// φ are uncalibrated (see TWO_SITE_UNITS in ./units).
 
 import {
   evolveTwoSiteState,
@@ -25,21 +39,21 @@ import {
 export type SplitMode = 'two_site' | 'scalar_kernel';
 
 export interface RealitySplitParams {
-  /** Bare site A energy (eV). */
+  /** Bare site A energy (ε₀, simulation units). */
   EA: number;
-  /** Bare site B energy (eV). */
+  /** Bare site B energy (ε₀, simulation units). */
   EB: number;
-  /** Static scalar field value at site A. */
+  /** Static scalar field value at site A (unidentified φ-unit). */
   phiA: number;
-  /** Static scalar field value at site B. */
+  /** Static scalar field value at site B (unidentified φ-unit). */
   phiB: number;
-  /** Matter-scalar coupling strength g. Setting g = 0 collapses the split. */
+  /** Matter-scalar coupling strength g (ε₀ per φ-unit; uncalibrated). Setting g = 0 collapses the split. */
   g: number;
-  /** Inter-site mixing amplitude Δ (eV). */
+  /** Inter-site mixing amplitude Δ (ε₀, simulation units). */
   delta: number;
-  /** Amplitude of the time-dependent field drive applied antisymmetrically to A/B. */
+  /** Amplitude of the time-dependent field drive applied antisymmetrically to A/B (φ-unit). */
   driveAmplitude: number;
-  /** Angular frequency of the field drive. */
+  /** Angular frequency of the field drive (ε₀/ħ). */
   driveOmega: number;
   /** Response strength α for the localization kernel (scalar_kernel mode). */
   alpha: number;
@@ -101,9 +115,13 @@ const initialState = (): TwoSiteStateVector => ({
 });
 
 export interface SimulateOptions {
-  /** Total simulated duration (arbitrary time units). */
+  /** Total simulated duration (ħ/ε₀ — simulation units, never seconds). */
   duration?: number;
-  /** Integration step. Smaller is more accurate; the propagator is exact per step. */
+  /**
+   * Integration step. The frozen-step propagator is exact, so time-independent
+   * configurations carry no discretisation error; a driven field is sampled at
+   * each step's midpoint and converges as dt².
+   */
   dt?: number;
   /**
    * Detection threshold used to report when the two models first become
@@ -127,6 +145,13 @@ export interface RealitySplitTrajectory {
    * the two models never separate beyond it within the window.
    */
   firstDetectableTime: number | null;
+  /**
+   * Final state vectors of both branches. Retained so phase-sensitive,
+   * global-phase-invariant quantities (the coherence c_A* c_B) can be checked
+   * for timestep convergence alongside the populations.
+   */
+  finalStandard: TwoSiteStateVector;
+  finalModel: TwoSiteStateVector;
 }
 
 /**
@@ -224,6 +249,8 @@ export function simulateRealitySplit(
     maxDivergenceTime,
     meanDivergence: divergenceSum / steps,
     firstDetectableTime,
+    finalStandard: standardState,
+    finalModel: modelState,
   };
 }
 
@@ -291,10 +318,12 @@ const SITE_A_X = -0.55;
 const SITE_B_X = 0.55;
 const SITE_WIDTH = 0.28;
 
+/** Baseline resonance ω₀ in ω_loc = ω₀ + βφ + κ∇²φ (kernel frequency unit). */
+export const KERNEL_OMEGA0 = 10.0;
 /** Field coupling coefficient β in ω_loc = ω₀ + βφ + κ∇²φ. */
-const KERNEL_BETA = 2.0;
+export const KERNEL_BETA = 2.0;
 /** Field curvature coefficient κ in the same expression. */
-const KERNEL_KAPPA = 0.15;
+export const KERNEL_KAPPA = 0.15;
 /** Width over which the scalar field crosses between its two asymptotic values. */
 const FIELD_TRANSITION_WIDTH = 0.5;
 
@@ -397,7 +426,7 @@ export function computeDivergenceField(
       born[i] = gaussian(xi, 0, 0.32);
       const { phi, laplacian } = scalarFieldProfile(params, xi);
       kernels[i] = localizationKernel({
-        omega0: 10.0,
+        omega0: KERNEL_OMEGA0,
         beta: KERNEL_BETA,
         kappa: KERNEL_KAPPA,
         phi,

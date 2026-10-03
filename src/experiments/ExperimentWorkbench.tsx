@@ -8,16 +8,24 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RESEARCH_GATES, RESEARCH_STATUSES } from "@/lib/epistemics";
+import { TWO_SITE_UNITS, unitFor } from "@/lib/units";
+import { CONVERGENCE_METRICS } from "@/quantum/validation/convergence";
+import type { VerificationResult } from "@/quantum/validation/results";
 import {
+  DEFAULT_QUESTION,
   DEFAULT_SPEC,
   PRESETS,
   PROTOCOL,
   MAX_RECORD_BYTES,
+  QUESTION_INPUT_SCHEMA,
   createExperimentRecord,
   experimentCsv,
-  replayExperiment,
+  inspectReplay,
+  type AnyExperimentRecord,
   type ExperimentRecord,
   type ExperimentSpec,
+  type ResearchQuestionInput,
 } from "./engine";
 
 function download(name: string, text: string, type: string) {
@@ -32,6 +40,7 @@ function download(name: string, text: string, type: string) {
 const controls = [
   {
     key: "maxCoupling",
+    unitKey: "g",
     label: "Maximum coupling g",
     min: 0,
     max: 2,
@@ -39,6 +48,7 @@ const controls = [
   },
   {
     key: "fieldContrast",
+    unitKey: "phiA",
     label: "Static field contrast φB − φA",
     min: 0,
     max: 2,
@@ -46,6 +56,7 @@ const controls = [
   },
   {
     key: "mixing",
+    unitKey: "delta",
     label: "Inter-site mixing Δ",
     min: 0.05,
     max: 1,
@@ -53,6 +64,7 @@ const controls = [
   },
   {
     key: "driveAmplitude",
+    unitKey: "driveAmplitude",
     label: "Antisymmetric drive amplitude",
     min: 0,
     max: 1,
@@ -60,40 +72,267 @@ const controls = [
   },
 ] as const;
 
+const STATUS_STYLE: Record<VerificationResult["status"], [string, string]> = {
+  pass: ["PASS", "text-primary"],
+  fail: ["FAIL", "text-destructive"],
+  warning: ["WARN", "text-amber-300"],
+  not_applicable: ["N/A", "text-muted-foreground"],
+};
+const GATE_STYLE = {
+  pass: "text-primary",
+  fail: "text-destructive",
+  warning: "text-amber-300",
+  not_evaluable: "text-muted-foreground",
+} as const;
+
+const fmt = (v: number | undefined) =>
+  v === undefined
+    ? ""
+    : v === 0
+      ? "0"
+      : Math.abs(v) < 1e-3 || Math.abs(v) >= 1e4
+        ? v.toExponential(2)
+        : v.toFixed(4);
+
+function PhysicsIntegrity({ record }: { record: ExperimentRecord }) {
+  const { integrity, assessment } = record.results;
+  const status = RESEARCH_STATUSES[assessment.status];
+  return (
+    <div className="mt-6 border-t pt-5" aria-labelledby="integrity-heading">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h3
+          id="integrity-heading"
+          className="font-mono text-xs uppercase tracking-widest"
+        >
+          Physics integrity
+        </h3>
+        <span className="text-xs text-muted-foreground">
+          {integrity.filter((c) => c.source === "executed").length} executed ·{" "}
+          {integrity.filter((c) => c.source === "metadata").length} declared
+        </span>
+      </div>
+      {assessment.gates.map((gate) => (
+        <section key={gate.id} className="mt-4">
+          <h4 className="flex flex-wrap justify-between gap-2 text-sm font-semibold">
+            <span>{RESEARCH_GATES[gate.id as keyof typeof RESEARCH_GATES].question}</span>
+            <span className={`font-mono text-xs ${GATE_STYLE[gate.outcome]}`}>
+              {gate.outcome === "not_evaluable"
+                ? "NOT EVALUABLE BY SIMULATION"
+                : gate.outcome.toUpperCase()}
+            </span>
+          </h4>
+          <ul className="mt-2 space-y-1 font-mono text-xs">
+            {integrity
+              .filter((c) => c.gate === gate.id)
+              .map((c) => {
+                const [label, tone] = STATUS_STYLE[c.status];
+                return (
+                  <li key={c.id}>
+                    <details>
+                      <summary className="flex cursor-pointer flex-wrap gap-x-3">
+                        <strong className={`w-10 shrink-0 ${tone}`}>{label}</strong>
+                        <span className="min-w-0 flex-1 font-sans">
+                          {c.label}
+                          {c.source === "metadata" && (
+                            <span className="ml-2 text-muted-foreground">
+                              (declared)
+                            </span>
+                          )}
+                        </span>
+                        {c.measured !== undefined && (
+                          <span className="text-muted-foreground">
+                            {fmt(c.measured)}
+                            {c.tolerance !== undefined && ` / ${fmt(c.tolerance)}`}
+                          </span>
+                        )}
+                      </summary>
+                      <p className="mb-2 ml-12 mt-1 font-sans leading-relaxed text-muted-foreground">
+                        {c.explanation}
+                      </p>
+                    </details>
+                  </li>
+                );
+              })}
+          </ul>
+        </section>
+      ))}
+      <div className="mt-5 rounded border p-4">
+        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+          Research status
+        </p>
+        <p className="mt-2 font-mono text-lg">{status.label}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{assessment.statement}</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {RESEARCH_STATUSES.empirical_result_required.label}:{" "}
+          {RESEARCH_STATUSES.empirical_result_required.meaning}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ConvergenceLadder({ record }: { record: ExperimentRecord }) {
+  return (
+    <details className="mt-5">
+      <summary className="cursor-pointer text-sm text-primary">
+        Convergence ladder: dt = {PROTOCOL.dt} → {PROTOCOL.dt / 2} →{" "}
+        {PROTOCOL.dt / 4}
+      </summary>
+      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+        Each step applies the exact exponential of a frozen Hamiltonian. A
+        static H therefore has no discretisation error (rounding only); a
+        driven H is frozen at each step’s midpoint, an O(dt²) approximation,
+        so errors should fall about 4× per halving. Errors are compared at the
+        shared coarse-grid times. Each row reports the sample with the largest
+        finest-pair error.
+      </p>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full text-left font-mono text-xs">
+          <caption className="sr-only">Timestep convergence ladder</caption>
+          <thead>
+            <tr>
+              {["Metric", "err(dt, dt/2)", "err(dt/2, dt/4)", "Reduction", "Order", "Regime"].map(
+                (h) => (
+                  <th key={h} scope="col" className="p-2">
+                    {h}
+                  </th>
+                ),
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {record.results.convergence.map((m) => (
+              <tr key={m.metric} className="border-t">
+                <td className="p-2">
+                  {CONVERGENCE_METRICS.find((c) => c.id === m.metric)?.label}
+                </td>
+                <td className="p-2">{m.coarseVsHalf.toExponential(2)}</td>
+                <td className="p-2">{m.halfVsQuarter.toExponential(2)}</td>
+                <td className="p-2">
+                  {m.reduction === null ? "—" : `${m.reduction.toFixed(2)}×`}
+                </td>
+                <td className="p-2">
+                  {m.observedOrder === null ? "—" : m.observedOrder.toFixed(2)}
+                </td>
+                <td className="p-2">{m.regime.replace("_", "-")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  );
+}
+
+function RecordedQuestion({ record }: { record: ExperimentRecord }) {
+  const q = record.question;
+  const rows: [string, string | string[]][] = [
+    ["Question", q.question],
+    ["Hypothesis", q.hypothesis],
+    ["Baseline", q.baseline],
+    ["Nulls", q.nulls],
+    ["Independent variables", q.independentVariables],
+    ["Observables", q.observables],
+    ["Numerical requirements", q.numericalRequirements],
+    [
+      "Declared resolution",
+      q.declaredResolution === null ? "Not declared" : String(q.declaredResolution),
+    ],
+    ["Rejection criteria", q.rejectionCriteria],
+  ];
+  return (
+    <details className="mt-5">
+      <summary className="cursor-pointer text-sm text-primary">
+        Research question bound into this record
+      </summary>
+      <dl className="mt-3 space-y-3 text-sm">
+        {rows.map(([k, v]) => (
+          <div key={k}>
+            <dt className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+              {k}
+            </dt>
+            <dd className="mt-1">
+              {Array.isArray(v) ? (
+                <ul className="list-disc space-y-1 pl-5">
+                  {v.map((x) => (
+                    <li key={x}>{x}</li>
+                  ))}
+                </ul>
+              ) : (
+                v
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-3 text-xs text-muted-foreground">
+        The card is serialised at run start and covered by the digest. That
+        binds it to the result; it cannot prove the question was written before
+        anyone saw an earlier run.
+      </p>
+    </details>
+  );
+}
+
 export default function ExperimentWorkbench() {
   const [spec, setSpec] = useState<ExperimentSpec>({ ...DEFAULT_SPEC });
-  const [record, setRecord] = useState<ExperimentRecord | null>(null);
+  const [question, setQuestion] = useState<ResearchQuestionInput>({
+    ...DEFAULT_QUESTION,
+  });
+  const [record, setRecord] = useState<AnyExperimentRecord | null>(null);
+  // What "Save record" writes: the run as created, or an import exactly as
+  // uploaded (its digest still verifies). The screen shows `record`, whose
+  // text for an import is regenerated by this build.
+  const [exportable, setExportable] = useState<AnyExperimentRecord | null>(null);
+  const [notices, setNotices] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(
-    "Choose a preset, then run your first comparison.",
+    "Choose a preset, state the question, then run your first comparison.",
   );
   const [error, setError] = useState("");
   const input = useRef<HTMLInputElement>(null);
   const sourceCommit =
     typeof __SOURCE_COMMIT__ === "string" ? __SOURCE_COMMIT__ : "unknown";
+  const v2 = record?.schema === "waveform-experiment.v2" ? record : null;
   const stale =
-    record !== null && JSON.stringify(record.spec) !== JSON.stringify(spec);
+    record !== null &&
+    (JSON.stringify(record.spec) !== JSON.stringify(spec) ||
+      (v2 !== null &&
+        (v2.question.question !== question.question.trim() ||
+          v2.question.hypothesis !== question.hypothesis.trim() ||
+          v2.question.declaredResolution !== question.declaredResolution)));
   const points = record?.results.points ?? [];
   const max = points.reduce(
     (best, p) => (p.maxSeparation > best.maxSeparation ? p : best),
     points[0],
   );
-  const allPassed =
-    record && Object.values(record.results.checks).every(Boolean);
+  const integrity = v2?.results.integrity ?? [];
+  const failed = integrity.filter((c) => c.status === "fail").length;
+  const executedPassed = integrity.filter(
+    (c) => c.status === "pass" && c.source === "executed",
+  ).length;
+  const legacyChecks = record && !v2 ? Object.values(record.results.checks) : [];
 
   async function run() {
     setBusy(true);
     setError("");
-    setMessage("Running paired trajectories and numerical controls…");
+    setNotices([]);
+    setMessage("Running paired trajectories, the timestep ladder and controls…");
     // Let the pending state paint before the bounded synchronous computation.
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => setTimeout(resolve, 0)),
     );
     try {
-      const next = await createExperimentRecord(spec, sourceCommit);
+      if (!QUESTION_INPUT_SCHEMA.safeParse(question).success) {
+        throw new Error(
+          "State the question and hypothesis (1–600 characters each). A declared resolution, if given, must lie in (0, 1].",
+        );
+      }
+      const next = await createExperimentRecord(spec, sourceCommit, question);
       setRecord(next);
+      setExportable(next);
       setMessage(
-        "Run complete. Review the controls before interpreting the separation.",
+        "Run complete. Review physics integrity before interpreting the separation.",
       );
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Experiment failed.");
@@ -110,16 +349,26 @@ export default function ExperimentWorkbench() {
     setMessage("Checking record integrity and replaying the experiment…");
     try {
       if (file.size > MAX_RECORD_BYTES)
-        throw new Error("Record exceeds the 100 KB limit.");
-      const next = await replayExperiment(await file.text());
+        throw new Error("Record exceeds the 256 KB limit.");
+      const outcome = await inspectReplay(await file.text());
+      const next = outcome.display;
       setSpec({ ...next.spec });
+      if (next.schema === "waveform-experiment.v2") {
+        setQuestion({
+          question: next.question.question,
+          hypothesis: next.question.hypothesis,
+          declaredResolution: next.question.declaredResolution,
+        });
+      }
       setRecord(next);
+      setExportable(outcome.record);
+      setNotices(outcome.notices);
       const version =
         next.sourceCommit === sourceCommit
           ? "Source commit matches."
           : "Source commit differs; results agree with the current engine.";
       setMessage(
-        `Replay verified. ${version} A matching digest does not authenticate the author.`,
+        `Replay verified. ${version} A matching digest does not authenticate the author, and a reproduced result is not a valid one: read the integrity checks.`,
       );
     } catch (cause) {
       setError(
@@ -155,9 +404,12 @@ export default function ExperimentWorkbench() {
         <span className="rounded border px-3 py-2">
           Deterministic · SHA-256 record
         </span>
+        <span className="rounded border px-3 py-2">
+          Simulation units · ħ = 1
+        </span>
       </div>
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-[320px_1fr]">
+      <div className="mt-10 grid gap-6 lg:grid-cols-[340px_1fr]">
         <section
           className="rounded-lg border bg-card p-6"
           aria-labelledby="configure-heading"
@@ -172,7 +424,10 @@ export default function ExperimentWorkbench() {
                 <button
                   type="button"
                   key={p.name}
-                  onClick={() => setSpec({ ...p.spec })}
+                  onClick={() => {
+                    setSpec({ ...p.spec });
+                    setQuestion({ ...p.question });
+                  }}
                   className="block w-full rounded border p-3 text-left transition-colors hover:border-primary focus-visible:outline-primary"
                 >
                   <span className="block text-sm font-semibold">{p.name}</span>
@@ -182,13 +437,73 @@ export default function ExperimentWorkbench() {
                 </button>
               ))}
             </div>
+            <div className="space-y-3 rounded border p-3">
+              <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                Research question
+              </p>
+              <label className="block text-xs" htmlFor="rq-question">
+                Question
+                <textarea
+                  id="rq-question"
+                  className="mt-1 block w-full rounded border bg-background p-2 text-sm"
+                  rows={3}
+                  maxLength={600}
+                  value={question.question}
+                  onChange={(e) =>
+                    setQuestion((q) => ({ ...q, question: e.target.value }))
+                  }
+                />
+              </label>
+              <label className="block text-xs" htmlFor="rq-hypothesis">
+                Hypothesis
+                <textarea
+                  id="rq-hypothesis"
+                  className="mt-1 block w-full rounded border bg-background p-2 text-sm"
+                  rows={3}
+                  maxLength={600}
+                  value={question.hypothesis}
+                  onChange={(e) =>
+                    setQuestion((q) => ({ ...q, hypothesis: e.target.value }))
+                  }
+                />
+              </label>
+              <label className="block text-xs" htmlFor="rq-resolution">
+                Declared resolution on |ΔP_B| (optional, before running)
+                <input
+                  id="rq-resolution"
+                  type="number"
+                  min={0}
+                  max={1}
+                  step="any"
+                  placeholder="Not declared"
+                  className="mt-1 block w-full rounded border bg-background p-2 text-sm"
+                  value={question.declaredResolution ?? ""}
+                  onChange={(e) =>
+                    setQuestion((q) => ({
+                      ...q,
+                      declaredResolution:
+                        e.target.value === "" ? null : Number(e.target.value),
+                    }))
+                  }
+                />
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Baseline, nulls, observables and rejection criteria are fixed by
+                the protocol and recorded with the run.
+              </p>
+            </div>
             {controls.map((c) => (
               <div key={c.key}>
                 <label
                   htmlFor={c.key}
                   className="flex justify-between gap-2 text-xs"
                 >
-                  <span>{c.label}</span>
+                  <span>
+                    {c.label}
+                    <span className="block text-[11px] text-muted-foreground">
+                      {unitFor(TWO_SITE_UNITS, c.unitKey)}
+                    </span>
+                  </span>
                   <output htmlFor={c.key} className="font-mono text-primary">
                     {spec[c.key].toFixed(2)}
                   </output>
@@ -214,9 +529,19 @@ export default function ExperimentWorkbench() {
           </fieldset>
           <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
             {spec.samples} samples from g = 0 to {spec.maxCoupling}. Both
-            branches start at site A. Duration {PROTOCOL.duration} in engine
-            units; Δt = {PROTOCOL.dt}, checked against Δt/2. No random sampling.
+            branches start at site A. Duration {PROTOCOL.duration} ħ/ε₀
+            (simulation units, not seconds); Δt = {PROTOCOL.dt}, checked against
+            Δt/2 and Δt/4. No random sampling.
           </p>
+          <details className="mt-3 text-xs text-muted-foreground">
+            <summary className="cursor-pointer text-primary">Units</summary>
+            <p className="mt-2 leading-relaxed">{TWO_SITE_UNITS.system.description}</p>
+            <ul className="mt-2 list-disc space-y-1 pl-4">
+              {TWO_SITE_UNITS.underspecified.map((u) => (
+                <li key={u}>{u}</li>
+              ))}
+            </ul>
+          </details>
         </section>
 
         <section
@@ -229,7 +554,7 @@ export default function ExperimentWorkbench() {
               02 / Compare the predictions
             </h2>
             <span className="font-mono text-xs text-muted-foreground">
-              TWO-SITE MODEL
+              TWO-SITE MODEL · {record?.schema === "waveform-experiment.v1" ? "PROTOCOL V1" : "PROTOCOL V2"}
             </span>
           </div>
           <p role="status" className="mt-4 text-sm text-muted-foreground">
@@ -243,10 +568,18 @@ export default function ExperimentWorkbench() {
               {error}
             </p>
           )}
+          {notices.map((n) => (
+            <p
+              key={n}
+              className="mt-3 rounded border border-amber-400/50 p-3 text-sm text-amber-300"
+            >
+              {n}
+            </p>
+          ))}
           {stale && (
             <p className="mt-3 rounded border border-amber-400/50 p-3 text-sm text-amber-300">
-              Settings changed. The chart and downloads still describe the last
-              completed run. Run again to update them.
+              Settings or question changed. The chart and downloads still
+              describe the last completed run. Run again to update them.
             </p>
           )}
           {record ? (
@@ -270,13 +603,24 @@ export default function ExperimentWorkbench() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">
-                    Numerical checks
+                    {v2 ? "Research status" : "Numerical checks (v1)"}
                   </p>
-                  <p
-                    className={`mt-2 font-mono text-2xl ${allPassed ? "text-primary" : "text-amber-300"}`}
-                  >
-                    {allPassed ? "3 / 3 passed" : "Review required"}
-                  </p>
+                  {v2 ? (
+                    <p
+                      className={`mt-2 font-mono text-base ${failed ? "text-destructive" : "text-primary"}`}
+                    >
+                      {RESEARCH_STATUSES[v2.results.assessment.status].label}
+                      <span className="block text-xs text-muted-foreground">
+                        {executedPassed} executed passed · {failed} failed
+                      </span>
+                    </p>
+                  ) : (
+                    <p
+                      className={`mt-2 font-mono text-2xl ${legacyChecks.every(Boolean) ? "text-primary" : "text-amber-300"}`}
+                    >
+                      {legacyChecks.filter(Boolean).length} / {legacyChecks.length} passed
+                    </p>
+                  )}
                 </div>
               </div>
               <figure className="mt-8">
@@ -353,42 +697,32 @@ export default function ExperimentWorkbench() {
                   </span>
                 </figcaption>
               </figure>
-              <div className="mt-6 space-y-2 border-t pt-5 text-sm">
-                {[
-                  [
-                    "Zero-coupling control",
-                    record.results.checks.zeroCoupling,
-                    `≤ ${PROTOCOL.controlTolerance}`,
-                  ],
-                  [
-                    "Probability conservation",
-                    record.results.checks.normalization,
-                    `≤ ${PROTOCOL.normalizationTolerance}`,
-                  ],
-                  [
-                    "Half-timestep agreement",
-                    record.results.checks.timestepConvergence,
-                    `≤ ${PROTOCOL.convergenceTolerance}`,
-                  ],
-                ].map(([label, passed, tolerance]) => (
-                  <div
-                    key={String(label)}
-                    className="flex flex-wrap justify-between gap-2"
-                  >
-                    <span>
-                      {label}{" "}
-                      <span className="text-xs text-muted-foreground">
-                        {tolerance}
-                      </span>
-                    </span>
-                    <strong
-                      className={passed ? "text-primary" : "text-amber-300"}
-                    >
-                      {passed ? "PASS" : "FAIL"}
-                    </strong>
+              {v2 ? (
+                <>
+                  <PhysicsIntegrity record={v2} />
+                  <ConvergenceLadder record={v2} />
+                  <RecordedQuestion record={v2} />
+                </>
+              ) : (
+                record && (
+                  <div className="mt-6 space-y-2 border-t pt-5 text-sm">
+                    {(
+                      [
+                        ["Zero-coupling control", record.results.checks.zeroCoupling],
+                        ["Probability conservation", record.results.checks.normalization],
+                        ["Half-timestep agreement", record.results.checks.timestepConvergence],
+                      ] as const
+                    ).map(([label, passed]) => (
+                      <div key={label} className="flex flex-wrap justify-between gap-2">
+                        <span>{label}</span>
+                        <strong className={passed ? "text-primary" : "text-amber-300"}>
+                          {passed ? "PASS" : "FAIL"}
+                        </strong>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )
+              )}
               <p className="mt-5 text-sm text-muted-foreground">
                 Separation is a difference between two model predictions, not a
                 measurement or detection significance. The largest sampled
@@ -410,7 +744,8 @@ export default function ExperimentWorkbench() {
                           "Max |ΔPᵦ|",
                           "Mean |ΔPᵦ|",
                           "Norm error",
-                          "Step error",
+                          "dt→dt/2",
+                          ...(v2 ? ["dt/2→dt/4"] : []),
                         ].map((h) => (
                           <th key={h} scope="col" className="p-2">
                             {h}
@@ -430,6 +765,11 @@ export default function ExperimentWorkbench() {
                           <td className="p-2">
                             {p.timestepError.toExponential(2)}
                           </td>
+                          {v2 && (
+                            <td className="p-2">
+                              {v2.results.points[i].quarterStepError.toExponential(2)}
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -461,9 +801,12 @@ export default function ExperimentWorkbench() {
               03 / Keep it. Replay it.
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              The JSON record contains parameters, protocol, results, checks,
-              source commit, and an integrity digest. Importing recomputes the
-              sweep and rejects mismatches. Files stay in your browser.
+              The JSON record contains the protocol, model assumptions, unit
+              declaration, research question, results, convergence ladder,
+              every integrity check (failures included), source commit, and an
+              integrity digest. Importing recomputes everything and rejects
+              mismatches. Version 1 records still replay under their own
+              protocol. Files stay in your browser.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -471,10 +814,10 @@ export default function ExperimentWorkbench() {
               variant="outline"
               disabled={!record || busy}
               onClick={() =>
-                record &&
+                exportable &&
                 download(
-                  `waveform-${record.digest.slice(0, 12)}.json`,
-                  JSON.stringify(record, null, 2),
+                  `waveform-${exportable.digest.slice(0, 12)}.json`,
+                  JSON.stringify(exportable, null, 2),
                   "application/json",
                 )
               }

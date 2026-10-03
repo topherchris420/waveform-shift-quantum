@@ -58,19 +58,19 @@ const TOOLS: ToolDef[] = [
     title: 'Two-Site Localization Transfer (Woodyard 2026)',
     summary: 'Continuous localization transfer between site A & B via detuning δ(t) = (EB - EA) + g(φB - φA).',
     fields: [
-      { name: 'bare_EA', label: 'Site EA', type: 'number', default: 1.0, step: 0.1, unit: 'eV' },
-      { name: 'bare_EB', label: 'Site EB', type: 'number', default: 1.0, step: 0.1, unit: 'eV' },
+      { name: 'bare_EA', label: 'Site EA', type: 'number', default: 1.0, step: 0.1, unit: 'ε₀' },
+      { name: 'bare_EB', label: 'Site EB', type: 'number', default: 1.0, step: 0.1, unit: 'ε₀' },
       { name: 'field_phiA', label: 'Field φA', type: 'number', default: -0.5, step: 0.1 },
       { name: 'field_phiB', label: 'Field φB', type: 'number', default: 0.5, step: 0.1 },
       { name: 'coupling_g', label: 'Coupling g', type: 'number', default: 0.8, step: 0.1 },
-      { name: 'mixing_delta', label: 'Mixing Δ', type: 'number', default: 0.2, min: 0.01, step: 0.05, unit: 'eV' },
+      { name: 'mixing_delta', label: 'Mixing Δ', type: 'number', default: 0.2, min: 0.01, step: 0.05, unit: 'ε₀' },
     ],
 
     visualize: (o) => (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="border-cyan-500/40 bg-cyan-500/10 text-cyan-200">
-              Detuning δ = {num(o.detuning).toFixed(3)} eV
+              Detuning δ = {num(o.detuning).toFixed(3)} ε₀
             </Badge>
             <span className="font-mono text-xs text-slate-400">θ = {(num(o.theta) * (180 / Math.PI)).toFixed(1)}°</span>
           </div>

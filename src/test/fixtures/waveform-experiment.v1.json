@@ -1,0 +1,59 @@
+{
+  "schema": "waveform-experiment.v1",
+  "classification": "simulation-only",
+  "protocol": {
+    "id": "two-site-coupling-sweep.v1",
+    "duration": 12,
+    "dt": 0.02,
+    "initialState": "A",
+    "bareEnergyA": 1,
+    "bareEnergyB": 1,
+    "driveOmega": 1.5,
+    "normalizationTolerance": 1e-10,
+    "controlTolerance": 1e-12,
+    "convergenceTolerance": 0.001
+  },
+  "sourceCommit": "390dd3f",
+  "createdAt": "2026-10-03T10:31:36.233Z",
+  "spec": {
+    "maxCoupling": 1.6,
+    "fieldContrast": 1.2,
+    "mixing": 0.25,
+    "driveAmplitude": 0.4,
+    "samples": 3
+  },
+  "results": {
+    "points": [
+      {
+        "coupling": 0,
+        "maxSeparation": 0,
+        "meanSeparation": 0,
+        "peakTime": 0,
+        "normError": 1.773026170326375e-13,
+        "timestepError": 1.1501910535116622e-13
+      },
+      {
+        "coupling": 0.8,
+        "maxSeparation": 0.9573121183969047,
+        "meanSeparation": 0.39878121743561046,
+        "peakTime": 5.86,
+        "normError": 1.773026170326375e-13,
+        "timestepError": 0.000002598415046128899
+      },
+      {
+        "coupling": 1.6,
+        "maxSeparation": 0.8932872987254196,
+        "meanSeparation": 0.4124622560411225,
+        "peakTime": 6.94,
+        "normError": 1.773026170326375e-13,
+        "timestepError": 0.000006938746088203107
+      }
+    ],
+    "checks": {
+      "zeroCoupling": true,
+      "normalization": true,
+      "timestepConvergence": true
+    }
+  },
+  "digest": "60d87e842253faccc61752f32b0c040d9169914b037aaf4aa404af3b26b51d2a"
+}
