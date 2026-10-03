@@ -2,7 +2,7 @@
 
 ## Automated gate
 
-`npm run verify` executes repository-wide ESLint, strict TypeScript, the full Vitest suite, a production Vite build, and the deterministic physics audit. Pull requests run the same four stages on pinned Node 22.22.2, fail on high/critical dependency advisories, and validate a generated SBOM. Open schemas/examples are regenerated with `npm run schemas`; dependencies are checked with `npm run audit:dependencies`; a valid CycloneDX JSON SBOM is emitted with `npm run --silent sbom > sbom.cdx.json`.
+`npm run verify` executes repository-wide ESLint, strict TypeScript, the full Vitest suite, a production Vite build, and the deterministic physics audit. Pull requests run the same four stages on pinned Node 22.22.2, fail on high/critical dependency advisories, and validate a generated SBOM. Open schemas/examples are regenerated with `npm run schemas`; dependencies are checked with `npm run audit:dependencies`, which runs `npm audit` twice: production dependencies with no exceptions, then the full tree, where an advisory listed in `.github/audit-exceptions.json` is tolerated only if it does not reach production and its exception has not expired (each entry records the reason and a re-evaluation date); a valid CycloneDX JSON SBOM is emitted with `npm run --silent sbom > sbom.cdx.json`.
 
 ## Physics validation
 

@@ -1,0 +1,9 @@
+[
+  {
+    "id": "GHSA-vfj7-8cjw-p6xm",
+    "package": "braces",
+    "added": "2026-10-03",
+    "expires": "2026-11-03",
+    "reason": "Stack-exhaustion DoS from deeply nested glob patterns. No patched braces release exists (3.0.3 is latest and affected). It reaches the tree only through build-time devDependencies (tailwindcss, @tailwindcss/typography, tailwindcss-animate via chokidar/fast-glob/micromatch, and typescript-eslint via fast-glob), which evaluate glob patterns from this repository's own config, never from users. Remove when braces ships a fix, or when typescript-eslint >= 8.71 and a Tailwind v4 migration drop the vulnerable chain."
+  }
+]
