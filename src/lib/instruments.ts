@@ -74,7 +74,7 @@ export function evaluateInstrument(
         delta: num(values, 'mixing_delta', 0.2),
       });
       return {
-        text: `δ = ${res.detuning.toFixed(4)} eV, P_A = ${res.PA.toFixed(6)}, P_B = ${res.PB.toFixed(6)}, z = ${res.z.toFixed(6)}`,
+        text: `δ = ${res.detuning.toFixed(4)} ε₀, P_A = ${res.PA.toFixed(6)}, P_B = ${res.PB.toFixed(6)}, z = ${res.z.toFixed(6)}`,
         structured: {
           detuning: res.detuning,
           theta: res.theta,

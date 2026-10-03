@@ -1,4 +1,9 @@
 import { NormalizationError, HermitianError } from '../errors/QuantumError';
+import { checkHermitian2x2 } from './results';
+
+// Throwing guards for inputs. They share their arithmetic with the structured
+// checks in ./results, which a research run uses instead so that every failure
+// is recorded rather than thrown.
 
 export interface Matrix2x2 {
   elements: [[number, number], [number, number]];
@@ -12,11 +17,10 @@ export function validateNormalization(probabilities: number[], tolerance = 1e-4)
 }
 
 export function validateHermitian2x2(matrix: [[number, number], [number, number]] | number[][]): void {
-  if (matrix.length !== 2 || matrix[0].length !== 2 || matrix[1].length !== 2) {
-    throw new HermitianError('Matrix must be 2x2');
-  }
-  // For real matrices H[0][1] must equal H[1][0]
-  if (Math.abs(matrix[0][1] - matrix[1][0]) > 1e-6) {
-    throw new HermitianError('Matrix off-diagonal elements are not equal');
-  }
+  const result = checkHermitian2x2(
+    { id: 'hermitian-guard', label: 'Hermitian 2×2', category: 'structure', gate: 'numerics' },
+    matrix,
+    1e-6
+  );
+  if (result.status !== 'pass') throw new HermitianError(result.explanation);
 }

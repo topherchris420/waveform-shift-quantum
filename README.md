@@ -24,13 +24,13 @@ Start with a question about field coupling. Run a controlled sweep. See where th
 
 Open **`/experiments`** after starting the app. Everything in this workbench runs locally; no account, API key, or backend is required.
 
-1. Choose **Driven field**, then **Run comparison**. The workbench sweeps coupling while holding the rest of the protocol fixed.
-2. Inspect maximum and mean population separation, the zero-coupling control, probability conservation, and agreement with a half-sized timestep.
+1. Choose **Driven field**, state the research question (a default is provided), then **Run comparison**. The workbench sweeps coupling while holding the rest of the protocol fixed.
+2. Inspect maximum and mean population separation, then **Physics integrity**: every executed check (g = 0 collapse, uniform-field nulls, Δ = 0 and E_A = E_B limits, Hermiticity, propagator unitarity, probability conservation, the dt → dt/2 → dt/4 ladder), grouped under four separate questions. Failures stay visible.
 3. Choose **Null control** and run again. With a spatially uniform static field, the population effect disappears.
-4. **Save record** to keep parameters, numerical results, checks, source commit, and a SHA-256 digest. **CSV** exports the sampled values.
-5. **Import & replay** the JSON. The app checks its structure and digest, recomputes the sweep, and rejects mismatches.
+4. **Save record** to keep the protocol, model assumptions, unit declaration, research question, results, convergence ladder, checks, source commit, and a SHA-256 digest. **CSV** exports the sampled values.
+5. **Import & replay** the JSON. The app checks its structure and digest, recomputes everything, and rejects mismatches. Version 1 records still replay under their own protocol.
 
-A passing replay establishes computational agreement with the current engine. It does **not** authenticate an author or establish the proposed model in nature. See the [experiment protocol](docs/EXPERIMENT_WORKBENCH.md) for units, bounds, tolerances, and limitations.
+A passing replay establishes computational agreement with the current engine. It does **not** authenticate an author or establish the proposed model in nature, and a record whose checks failed replays as failed: reproducibility is not validity. The protocol runs in simulation units (ħ = 1, energies in ε₀, time in ħ/ε₀); g and φ have no physical calibration. See the [experiment protocol](docs/EXPERIMENT_WORKBENCH.md) for units, bounds, tolerances, and limitations.
 
 ## Research Workstations
 
@@ -87,9 +87,11 @@ The localization response uses the kernel $$\chi(x) = \exp\left[\alpha L(x)\righ
 
 $$P_{\mathrm{loc}}(x) = \frac{\chi(x)P_B(x)}{\int \chi(x')P_B(x')\,\mathrm{d}x'}$$
 
-Time propagation uses the unitary infinitesimal propagator:
+Time propagation applies the exact exponential of each frozen step Hamiltonian:
 
 $$U(\mathrm{d}t) = \exp\left(-\frac{i}{\hbar}H\,\mathrm{d}t\right)$$
+
+This is exact for a static Hamiltonian. A driven $$H(t)$$ is frozen at each step's midpoint, a second-order approximation whose error is measured by a dt → dt/2 → dt/4 ladder.
 
 The expected invariant is total probability conservation:
 
@@ -97,11 +99,11 @@ $$P_A(t) + P_B(t) \equiv 1$$
 
 ### Falsification protocol
 
-A proposed coupling must produce a measurable phase deviation:
+The proposed coupling predicts an interferometric phase
 
 $$\Delta\phi_{\phi} = \frac{g}{\hbar}\int \left[\phi(x_1(t),t) - \phi(x_2(t),t)\right]\,\mathrm{d}t$$
 
-If atom-interferometry or optical-clock measurements constrain this deviation to zero within $$\sigma < 10^{-4}$$ across the model's stated parameter region, that region is rejected and discarded.
+but no number can yet be predicted for a real apparatus: φ is not identified with a physical field and g has no calibration. The empirical falsification condition is therefore **defined but not operational**. A static gradient is also exactly degenerate with an uncalibrated bare detuning, so only a controlled modulation of φ could separate the two. Simulation can reject the *implementation* (a failed limit, invariant or null control). It cannot reject or support the physical hypothesis. See the [audit report](research/gpd/reviews/2026-10-03-woodyard-two-site-audit.md).
 
 ## Core Capabilities
 
@@ -132,7 +134,8 @@ npm run dev
 npm test                 # Vitest unit and invariant tests
 npm run lint                 # ESLint
 npm run typecheck            # Strict TypeScript checks
-npm run verify               # lint, typecheck, test, and build
+npm run verify               # lint, typecheck, test, build, and physics audit
+npm run physics:audit        # deterministic physics audit (console + physics-audit.json)
 npm run build                # Production bundle
 npm run audit:dependencies   # Dependency audit
 npm run --silent sbom > sbom.cdx.json # CycloneDX SBOM export
@@ -151,6 +154,8 @@ Waveform follows these reproducibility rules:
 ## Documentation
 
 - [Experiment workbench and replay protocol](docs/EXPERIMENT_WORKBENCH.md)
+- [Validation and reproducibility](docs/VALIDATION.md)
+- [Physics research workspace (GPD methodology)](research/gpd/README.md)
 - [Adaptive Resonant Field Router integrity](docs/ARFR_EXPERIMENT_INTEGRITY.md)
 - [Genesis operating boundaries](docs/GENESIS_OPERATING_BOUNDARIES.md)
 - [Monetary coordination model](docs/MONETARY_COORDINATION_MODEL.md)

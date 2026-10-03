@@ -2,7 +2,25 @@
 
 ## Automated gate
 
-`npm run verify` executes repository-wide ESLint, strict TypeScript, the full Vitest suite, and a production Vite build. Pull requests run the same four stages on pinned Node 22.22.2, fail on high/critical dependency advisories, and validate a generated SBOM. Open schemas/examples are regenerated with `npm run schemas`; dependencies are checked with `npm run audit:dependencies`; a valid CycloneDX JSON SBOM is emitted with `npm run --silent sbom > sbom.cdx.json`.
+`npm run verify` executes repository-wide ESLint, strict TypeScript, the full Vitest suite, a production Vite build, and the deterministic physics audit. Pull requests run the same four stages on pinned Node 22.22.2, fail on high/critical dependency advisories, and validate a generated SBOM. Open schemas/examples are regenerated with `npm run schemas`; dependencies are checked with `npm run audit:dependencies`; a valid CycloneDX JSON SBOM is emitted with `npm run --silent sbom > sbom.cdx.json`.
+
+## Physics validation
+
+Physics checks are deterministic functions in `src/quantum/validation/`. Each returns a structured `VerificationResult` (`pass`, `fail`, `warning` or `not_applicable`, with measured value, tolerance and explanation) rather than throwing, so a research run keeps every outcome. No language model or other non-deterministic source decides whether a check passes. A result restating a declaration (`source: metadata`) can only warn.
+
+| Area | Enforced property |
+| --- | --- |
+| Structure | every step Hamiltonian real symmetric; step propagator unitary and equal to an independent exp(−iH dt) |
+| Conservation | probability in both branches; rendered and kernel densities normalised, divergence integrating to 0 |
+| Controls | g = 0 collapse; uniform static and driven field nulls on populations |
+| Limits | Δ = 0 no transfer; static branches equal the Rabi closed form; α → 0 gives the Born density; flat field and constant kernel cancel |
+| Symmetry | E_A = E_B: P_B invariant under g → −g (with a negative control for E_A ≠ E_B) |
+| Invariants | uniform field acts as the pure global phase e^{−igcT} |
+| Convergence | dt → dt/2 → dt/4 ladder on six metrics with observed order; kernel grid 160 → 320 → 640 |
+| Units | dimensional consistency of every declared constraint; no seconds or eV under ħ = 1; no calibration without a source |
+| Identifiability | static coupling exactly degenerate with a bare detuning (reported as a warning) |
+
+`npm run physics:audit` runs all of these against every research model, checks that every declared invariant and limiting case maps to an executed check, and writes `physics-audit.json`. It exits non-zero on any executed failure and is part of `npm run verify` and CI. It produces no overall score. The physics checks do not apply to the financial or resource models, and a test enforces that the import graphs stay separate.
 
 ## Systemic-lab validation matrix
 

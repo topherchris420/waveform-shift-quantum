@@ -1,6 +1,8 @@
 // Analytical results for the QuantumLab. Kept small and dependency-free so
 // every readout in the UI traces back to a real closed-form expression.
 
+import type { ComparisonDerivation } from './epistemics';
+
 export const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
 
 /**
@@ -143,13 +145,30 @@ export function zzCorrelation(bits: Array<[0 | 1, 0 | 1]>) {
  * ============================================================================
  */
 
+// Units: every two-site energy is in the simulation energy unit ε₀ (ħ = 1),
+// not eV. φ is an unidentified field, so only the product gφ (an energy) is
+// fixed; see TWO_SITE_UNITS in ./units.
 export interface TwoSiteParams {
-  EA: number;       // Bare site A energy (eV)
-  EB: number;       // Bare site B energy (eV)
-  phiA: number;     // Local scalar field value at site A
-  phiB: number;     // Local scalar field value at site B
-  g: number;        // Matter-scalar coupling strength
-  delta: number;    // Inter-site mixing amplitude Δ (eV)
+  EA: number;       // Bare site A energy (ε₀)
+  EB: number;       // Bare site B energy (ε₀)
+  phiA: number;     // Local scalar field value at site A (unidentified φ-unit)
+  phiB: number;     // Local scalar field value at site B (unidentified φ-unit)
+  g: number;        // Matter-scalar coupling strength (ε₀ per φ-unit; uncalibrated)
+  delta: number;    // Inter-site mixing amplitude Δ (ε₀)
+}
+
+/**
+ * The frozen two-site Hamiltonian H = [[E_A + gφ_A, Δ], [Δ, E_B + gφ_B]].
+ *
+ * Every propagation step builds its matrix here, so structural checks
+ * (Hermiticity, finiteness) inspect the matrix that is actually exponentiated.
+ */
+export function twoSiteHamiltonian(params: TwoSiteParams): [[number, number], [number, number]] {
+  const { EA, EB, phiA, phiB, g, delta: Delta } = params;
+  return [
+    [EA + g * phiA, Delta],
+    [Delta, EB + g * phiB],
+  ];
 }
 
 /**
@@ -221,9 +240,17 @@ export interface TwoSiteStateVector {
 }
 
 /**
- * Numerical Time Evolution of Two-Site Hamiltonian iħ d|ψ>/dt = H(t)|ψ>
- * Uses exact 2x2 unitary matrix propagator U(dt) = exp(-i H dt / ħ).
- * This guarantees strict norm conservation: |cA(t)|² + |cB(t)|² = 1.0.
+ * One step of iħ d|ψ>/dt = H|ψ> for a FROZEN (time-independent) Hamiltonian.
+ *
+ * The step applies the exact 2×2 matrix exponential U(dt) = exp(−iH dt/ħ) of
+ * the Hamiltonian it is given, so norm is conserved to rounding error and a
+ * time-independent H is propagated with no discretisation error at all.
+ *
+ * It is NOT an exact solution for a time-dependent H(t). A caller that freezes
+ * H(t) at one instant per step (Reality Split samples the midpoint) commits a
+ * discretisation error of O(dt²) globally — the exponential midpoint rule. That
+ * error belongs to the caller's time discretisation, and is what the timestep
+ * convergence ladder measures.
  */
 export function evolveTwoSiteState(
   state: TwoSiteStateVector,
@@ -231,10 +258,7 @@ export function evolveTwoSiteState(
   dt: number,
   hbar = 1.0
 ): { state: TwoSiteStateVector; PA: number; PB: number; norm: number } {
-  const { EA, EB, phiA, phiB, g, delta: Delta } = params;
-  const H11 = EA + g * phiA;
-  const H22 = EB + g * phiB;
-  const H12 = Delta; // real off-diagonal coupling
+  const [[H11, H12], [, H22]] = twoSiteHamiltonian(params); // H12 = H21 = Δ, real
 
   // Matrix decomposition: H = e0 * I + d_x * σ_x + d_z * σ_z
   const e0 = (H11 + H22) / 2;
@@ -419,7 +443,29 @@ export interface ModelComparisonResult {
   assumptions: string[];
   scientificStatus: 'Established' | 'Proposed' | 'Speculative';
   falsificationCondition: string;
+  /**
+   * How the "woodyardModel" number was produced. Only 'derived_prediction'
+   * follows from the model's declared equations; every other category is a
+   * choice layered on top and must not be displayed as a model prediction.
+   */
+  derivation: ComparisonDerivation;
+  /** Why this branch carries its derivation category. */
+  derivationNote: string;
 }
+
+/**
+ * Constants used by compareModels' single-point kernel branch. They are NOT
+ * declared parameters of the proposed model and differ from the spatial
+ * kernel's coefficients in realitySplit.ts (β = 2.0, κ = 0.15, analytic ∇²φ),
+ * which is one reason that branch is classified illustrative.
+ */
+export const ILLUSTRATIVE_KERNEL_COEFFICIENTS = {
+  omega0: 10.0,
+  beta: 0.5,
+  kappa: 0.1,
+  /** A fixed stand-in for ∇²φ, not computed from any field profile. */
+  d2phi: 0.2,
+} as const;
 
 /**
  * Generate a rigorous comparison result between Standard QM and the Woodyard Model
@@ -467,18 +513,18 @@ export function compareModels(
         ],
         scientificStatus: 'Proposed',
         falsificationCondition:
-          'Absence of population shift ΔPB under non-zero scalar gradient (φB - φA) within 1e-4 experimental noise floor excludes model coupling g.',
+          'With E_B − E_A and Δ independently calibrated, a controlled change of the scalar gradient (φB − φA) that produces no population shift ΔPB beyond a declared, calibrated resolution bounds |g| for that apparatus. Not yet operational: φ has no physical identification and g no calibration, and a static gradient is exactly degenerate with an uncalibrated bare detuning.',
+        derivation: 'derived_prediction',
+        derivationNote:
+          'Lower-eigenstate occupation sin²θ of the declared Hamiltonian (Eq. 15–19), which itself assumes adiabatic ground-state preparation. With E_A = E_B the fixed value 1 ε₀ does not affect populations. Static, so g(φB − φA) acts exactly like a bare detuning.',
       };
     }
 
     case 'localization':
     case 'scalar_kernel': {
       const kernelRes = localizationKernel({
-        omega0: 10.0,
-        beta: 0.5,
-        kappa: 0.1,
+        ...ILLUSTRATIVE_KERNEL_COEFFICIENTS,
         phi: (phiA + phiB) / 2,
-        d2phi: 0.2,
         omega_w: params.omega_w ?? 12.0,
         gamma: params.gamma ?? 1.5,
         alpha,
@@ -500,7 +546,10 @@ export function compareModels(
         ],
         scientificStatus: 'Proposed',
         falsificationCondition:
-          'If matter-wave density profile P_loc(x) shows zero frequency-selective enhancement near ω_w, the non-linear response kernel model is falsified.',
+          'If a calibrated density-profile measurement shows no frequency-selective redistribution of P_loc(x) near ω_w beyond its declared resolution, the kernel model is excluded for those parameters. The bare factor χ shown here is not that observable: a spatially constant χ cancels under normalisation.',
+        derivation: 'illustrative_transformation',
+        derivationNote:
+          'Bare kernel factor χ at one point, using fixed β, κ and ∇²φ constants that are not model parameters. χ is an internal model variable; the model’s observable is the normalised density, computed by kernelRegionSeparation.',
       };
     }
 
@@ -525,6 +574,9 @@ export function compareModels(
         scientificStatus: 'Speculative',
         falsificationCondition:
           'Teleportation fidelity remains strictly bounded by standard Werner decoherence without field modulation dependence.',
+        derivation: 'speculative_scenario',
+        derivationNote:
+          'Decoherence is scaled by the heuristic factor (1 − 0.1α). Nothing in the proposed model derives this factor; it shows a hypothetical scenario only.',
       };
     }
 
@@ -539,9 +591,14 @@ export function compareModels(
         percentDeviation: (diff / stdVal) * 100,
         observableName: 'Matter-Wave Probability',
         assumptions: ['Standard field-modulated spatial coupling'],
-        scientificStatus: 'Proposed',
+        // A placeholder number (0.5 + 0.1α), not a derivation, so it cannot be
+        // labelled as a proposed-model result.
+        scientificStatus: 'Speculative',
         falsificationCondition:
-          'Absence of measurable deviation ΔP in matter-wave interferometry.',
+          'None defined: this placeholder is not derived from the model, so no measurement can test it.',
+        derivation: 'illustrative_transformation',
+        derivationNote:
+          'Fallback placeholder 0.5 + 0.1α for experiment types without a model implementation. It is not a prediction of the proposed model.',
       };
     }
   }

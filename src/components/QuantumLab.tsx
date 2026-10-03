@@ -292,7 +292,7 @@ export const QuantumLab: React.FC = () => {
     const z = eigenState.z;
     recordMeasurement(experimentMode, (z + 1) / 2);
     setStatusMessage(
-      `Run recorded — detuning δ = ${eigenState.detuning.toFixed(4)} eV, P_A = ${(eigenState.PA * 100).toFixed(2)}%, ` +
+      `Run recorded — detuning δ = ${eigenState.detuning.toFixed(4)} ε₀, P_A = ${(eigenState.PA * 100).toFixed(2)}%, ` +
         `P_B = ${(eigenState.PB * 100).toFixed(2)}%, imbalance z = ${z.toFixed(4)}. ` +
         `This is simulation output, not measured data.`
     );
@@ -442,7 +442,7 @@ export const QuantumLab: React.FC = () => {
           <Metric label="Imbalance z" value={eigenState.z.toFixed(3)} icon={Zap} tone="violet" kind="proposed" />
           <Metric label="Kernel χ" value={kernel.chi.toFixed(3)} icon={Waves} tone="lime" kind="proposed" />
           <Metric label="Phase Δφ_φ" value={`${phaseShift.toFixed(3)} rad`} icon={Target} tone="copper" kind="prediction" />
-          <Metric label="Detuning δ" value={`${eigenState.detuning.toFixed(3)} eV`} icon={Activity} tone="primary" kind="proposed" />
+          <Metric label="Detuning δ" value={`${eigenState.detuning.toFixed(3)} ε₀`} icon={Activity} tone="primary" kind="proposed" />
         </Reveal>
       </Reveal>
 
@@ -536,7 +536,7 @@ export const QuantumLab: React.FC = () => {
                   min={0.05}
                   max={1}
                   step={0.01}
-                  display={`${splitParams.delta.toFixed(2)} eV`}
+                  display={`${splitParams.delta.toFixed(2)} ε₀`}
                 />
                 <LabSlider
                   icon={Activity}

@@ -197,6 +197,8 @@ describe('Experiment card', () => {
         assumptions: [],
         scientificStatus: 'Proposed',
         falsificationCondition: '',
+        derivation: 'derived_prediction',
+        derivationNote: '',
       },
     });
 

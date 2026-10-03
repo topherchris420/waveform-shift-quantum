@@ -14,10 +14,11 @@
     "test": "vitest run",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "verify": "npm run lint && npm run typecheck && npm test && npm run build",
+    "verify": "npm run lint && npm run typecheck && npm test && npm run build && npm run physics:audit",
     "schemas": "node --import tsx scripts/export-systemic-schemas.ts",
     "audit:dependencies": "npm audit",
-    "sbom": "npm sbom --sbom-format cyclonedx"
+    "sbom": "npm sbom --sbom-format cyclonedx",
+    "physics:audit": "node --import tsx scripts/physics-audit.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
