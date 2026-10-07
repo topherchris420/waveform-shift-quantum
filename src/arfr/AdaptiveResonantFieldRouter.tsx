@@ -469,7 +469,7 @@ const ARFRCanvas: React.FC<ARFRCanvasProps> = ({ state, onMouseMove, hoverPoint 
       height={CANVAS_HEIGHT}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
-      aria-label="Projected three-dimensional Adaptive Resonant Field Router field volume"
+      aria-label="Projected three-dimensional Field-Modulated Spatial Localization field volume"
       className="block h-auto w-full cursor-crosshair touch-none"
     />
   );
@@ -730,8 +730,8 @@ export const AdaptiveResonantFieldRouter: React.FC = () => {
           <div>
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-[#38bdf8]">Vers3Dynamics · numerical research instrument</p>
             <h1 className="mt-3 max-w-4xl font-display text-4xl font-extrabold uppercase leading-[0.92] tracking-[-0.04em] text-[#f8fafc] sm:text-6xl">
-              Adaptive Resonant<br />
-              <span className="text-[#38bdf8] drop-shadow-[0_0_20px_rgba(56,189,248,0.4)]">Field Router</span>
+              Field-Modulated<br />
+              <span className="text-[#38bdf8] drop-shadow-[0_0_20px_rgba(56,189,248,0.4)]">Spatial Localization</span>
             </h1>
             <p className="mt-4 max-w-2xl font-mono text-xs leading-relaxed text-[#94a3b8]">
               A bounded simulation of field-defined transport. The sources remain spatially fixed while phase, frequency, amplitude, and rotation are retuned in a closed loop.
