@@ -55,7 +55,7 @@ function testGrid(values: Array<{ x: number; y: number; z: number; value: number
   };
 }
 
-describe('Adaptive Resonant Field Router numerical core', () => {
+describe('Field-Modulated Spatial Localization numerical core', () => {
   it('preserves linear field superposition', () => {
     const sources = createSourceArrangement('ring', { radius: 1.2, rotationRate: 0 });
     const point = vec3(0.25, -0.2, 0.1);

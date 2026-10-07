@@ -40,7 +40,7 @@ Each workstation is isolated by domain. A result produced in one model is never 
 | --- | --- | --- |
 | **Experiment Workbench** | `/experiments` | Controlled two-site coupling sweeps, numerical checks, JSON replay, and CSV export. |
 | **Quantum & Woodyard Model** | `/` | Standard quantum-mechanical baselines contrasted with a proposed scalar-field localization model. |
-| **Adaptive Resonant Field Router** | `/arfr` | Spatial wave-packet propagation, field-modulated routing, and wavefront dynamics. See [experiment integrity](docs/ARFR_EXPERIMENT_INTEGRITY.md). |
+| **Field-Modulated Spatial Localization** | `/arfr` | Spatial wave-packet propagation, field-modulated routing, and wavefront dynamics. See [experiment integrity](docs/ARFR_EXPERIMENT_INTEGRITY.md). |
 | **Genesis Resource Lab** | `/resonance` | Bounded resource coordination under scarcity, energy, urgency, quality, and compatibility constraints. See [operating boundaries](docs/GENESIS_OPERATING_BOUNDARIES.md). |
 | **Systemic Stress & Coordination** | `/systemic-lab` | Reconciled balance sheets, intraday settlement disruption, liquidity cascades, and margin spirals. See [lab documentation](docs/SYSTEMIC_STRESS_LAB.md). |
 
@@ -156,7 +156,7 @@ Waveform follows these reproducibility rules:
 - [Experiment workbench and replay protocol](docs/EXPERIMENT_WORKBENCH.md)
 - [Validation and reproducibility](docs/VALIDATION.md)
 - [Physics research workspace (GPD methodology)](research/gpd/README.md)
-- [Adaptive Resonant Field Router integrity](docs/ARFR_EXPERIMENT_INTEGRITY.md)
+- [Field-Modulated Spatial Localization integrity](docs/ARFR_EXPERIMENT_INTEGRITY.md)
 - [Genesis operating boundaries](docs/GENESIS_OPERATING_BOUNDARIES.md)
 - [Monetary coordination model](docs/MONETARY_COORDINATION_MODEL.md)
 - [Systemic stress lab](docs/SYSTEMIC_STRESS_LAB.md)

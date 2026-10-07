@@ -22,7 +22,7 @@ export interface ARFRPassportInput {
 
 export interface ARFRExperimentPassport {
   schema: 'arfr-experiment-passport.v2';
-  technology: 'Adaptive Resonant Field Router';
+  technology: 'Field-Modulated Spatial Localization';
   simulationVersion: string;
   generatedAt: string;
   provenance: {
@@ -128,7 +128,7 @@ export function passportIdentity(
       artifactKind: 'result-snapshot',
       replayBoundary: 'Records current configuration and cumulative results. Interactive parameter edits, disturbance history, and variable timestep schedules are not recorded; this snapshot is not an exact replay archive.',
     },
-    technology: 'Adaptive Resonant Field Router',
+    technology: 'Field-Modulated Spatial Localization',
     simulationVersion: config.simulationVersion,
     seed: config.seed,
     experiment: input.experiment,
@@ -200,7 +200,7 @@ export async function verifyARFRPassport(passport: unknown): Promise<boolean> {
     if (!passport || typeof passport !== 'object' || Array.isArray(passport)) return false;
     const { generatedAt: _generatedAt, integrity, ...identity } = passport as ARFRExperimentPassport;
     if (identity.schema !== 'arfr-experiment-passport.v2' ||
-        identity.technology !== 'Adaptive Resonant Field Router' ||
+        identity.technology !== 'Field-Modulated Spatial Localization' ||
         integrity?.canonicalNumberVersion !== CANONICAL_NUMBER_VERSION ||
         typeof integrity.identityHash !== 'string' || !/^[a-f0-9]{64}$/.test(integrity.identityHash)) return false;
     const expected = await sha256Text(canonicalJson(identity));
